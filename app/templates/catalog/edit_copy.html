@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Copy - ePustaka Munshi{% endblock %}
+{% block page_title %}Edit Book Copy{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card table-card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Edit Copy: {{ copy.accession_number }}</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">Book: <strong>{{ copy.book.title }}</strong></p>
+                
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Accession Number</label>
+                        <input type="text" class="form-control" value="{{ copy.accession_number }}" readonly disabled>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="barcode" class="form-label">Barcode</label>
+                        <input type="text" class="form-control" id="barcode" name="barcode" value="{{ copy.barcode or '' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status" {% if copy.status == 'on_loan' %}disabled{% endif %}>
+                            <option value="available" {% if copy.status == 'available' %}selected{% endif %}>Available</option>
+                            <option value="on_loan" {% if copy.status == 'on_loan' %}selected{% endif %}>On Loan</option>
+                            <option value="lost" {% if copy.status == 'lost' %}selected{% endif %}>Lost</option>
+                            <option value="damaged" {% if copy.status == 'damaged' %}selected{% endif %}>Damaged</option>
+                            <option value="withdrawn" {% if copy.status == 'withdrawn' %}selected{% endif %}>Withdrawn</option>
+                        </select>
+                        {% if copy.status == 'on_loan' %}
+                        <div class="form-text text-warning">Cannot change status while book is on loan</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="condition" class="form-label">Condition</label>
+                        <select class="form-select" id="condition" name="condition">
+                            <option value="Good" {% if copy.condition == 'Good' %}selected{% endif %}>Good</option>
+                            <option value="Fair" {% if copy.condition == 'Fair' %}selected{% endif %}>Fair</option>
+                            <option value="Poor" {% if copy.condition == 'Poor' %}selected{% endif %}>Poor</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="location" class="form-label">Shelf Location</label>
+                        <input type="text" class="form-control" id="location" name="location" value="{{ copy.location or '' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="2">{{ copy.notes or '' }}</textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Save Changes
+                    </button>
+                    <a href="{{ url_for('catalog.view_book', book_id=copy.book_id) }}" class="btn btn-outline-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

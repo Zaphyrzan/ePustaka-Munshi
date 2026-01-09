@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Books - ePustaka Munshi{% endblock %}
+{% block page_title %}Book Catalog{% endblock %}
+
+{% block content %}
+<!-- Search & Filter -->
+<div class="card table-card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" name="search" placeholder="Search by title, author, ISBN..." value="{{ search }}">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" name="category">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary me-2">Search</button>
+                <a href="{{ url_for('catalog.index') }}" class="btn btn-outline-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Actions -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <p class="text-muted mb-0">Showing {{ books.items|length }} of {{ books.total }} books</p>
+    {% if current_user.can(8) %}
+    <a href="{{ url_for('catalog.add_book') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Add Book
+    </a>
+    {% endif %}
+</div>
+
+<!-- Books Table -->
+<div class="card table-card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Title</th>
+                        <th>Author</th>
+                        <th>Category</th>
+                        <th>Call No.</th>
+                        <th>Copies</th>
+                        <th>Available</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for book in books.items %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('catalog.view_book', book_id=book.id) }}" class="text-decoration-none">
+                                {{ book.title }}
+                            </a>
+                        </td>
+                        <td>{{ book.author or '-' }}</td>
+                        <td>{{ book.category or '-' }}</td>
+                        <td><code>{{ book.call_number or '-' }}</code></td>
+                        <td>{{ book.total_copies }}</td>
+                        <td>
+                            {% if book.available_copies > 0 %}
+                                <span class="badge bg-success">{{ book.available_copies }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">0</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('catalog.view_book', book_id=book.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            {% if current_user.can(8) %}
+                            <a href="{{ url_for('catalog.edit_book', book_id=book.id) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">No books found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if books.pages > 1 %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if books.has_prev %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('catalog.index', page=books.prev_num, search=search, category=category) }}">Previous</a>
+        </li>
+        {% endif %}
+        
+        {% for page_num in books.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if page_num %}
+                <li class="page-item {% if page_num == books.page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('catalog.index', page=page_num, search=search, category=category) }}">{{ page_num }}</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if books.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('catalog.index', page=books.next_num, search=search, category=category) }}">Next</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Add Member - ePustaka Munshi{% endblock %}
+{% block page_title %}Add New Member{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card table-card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="bi bi-person-plus text-primary"></i> Add New Member</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="member_id" class="form-label">Member ID <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="member_id" name="member_id" required placeholder="e.g., STU001">
+                        <div class="form-text">Student card number or staff ID</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="full_name" class="form-label">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="full_name" name="full_name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">Phone</label>
+                        <input type="tel" class="form-control" id="phone" name="phone">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="member_type" class="form-label">Member Type</label>
+                            <select class="form-select" id="member_type" name="member_type">
+                                <option value="Student">Student</option>
+                                <option value="Staff">Staff</option>
+                                <option value="External">External</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="class_group" class="form-label">Class / Department</label>
+                            <input type="text" class="form-control" id="class_group" name="class_group" placeholder="e.g., Form 5 Science 1">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Add Member
+                    </button>
+                    <a href="{{ url_for('users.member_list') }}" class="btn btn-outline-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

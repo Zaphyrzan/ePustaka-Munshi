@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Pinjaman Saya - ePustaka Munshi{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-journal-bookmark me-2"></i>Pinjaman Saya</h2>
+            <p class="text-muted mb-0">Lihat buku yang sedang dipinjam dan sejarah pinjaman</p>
+        </div>
+        <a href="{{ url_for('student.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Kembali
+        </a>
+    </div>
+
+    {% if not member %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i>
+        Akaun anda tidak dikaitkan dengan rekod ahli perpustakaan. 
+        Sila hubungi pustakawan untuk pendaftaran.
+    </div>
+    {% else %}
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 shadow-sm bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1 opacity-75">Sedang Dipinjam</h6>
+                            <h2 class="mb-0">{{ active_loans|length }}</h2>
+                        </div>
+                        <i class="bi bi-journal-check display-4 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 shadow-sm bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1 opacity-75">Buku Dibaca (NILAM)</h6>
+                            <h2 class="mb-0">{{ member.total_books_read }}</h2>
+                        </div>
+                        <i class="bi bi-trophy display-4 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 shadow-sm bg-secondary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1 opacity-75">Jumlah Pinjaman</h6>
+                            <h2 class="mb-0">{{ active_loans|length + history|length }}</h2>
+                        </div>
+                        <i class="bi bi-graph-up display-4 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Loans -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="bi bi-journal-text me-2"></i>Buku Sedang Dipinjam
+            </h5>
+            <span class="badge bg-primary">{{ active_loans|length }} buku</span>
+        </div>
+        <div class="card-body p-0">
+            {% if active_loans %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Buku</th>
+                            <th>No. Akses</th>
+                            <th>Tarikh Pinjam</th>
+                            <th>Tarikh Pulang</th>
+                            <th>Status</th>
+                            <th>Baki Hari</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loan in active_loans %}
+                        {% set days_left = (loan.due_date - now).days if loan.due_date and now else 0 %}
+                        <tr class="{{ 'table-danger' if loan.status == 'overdue' else ('table-warning' if days_left <= 3 else '') }}">
+                            <td>
+                                <a href="{{ url_for('student.view_book', book_id=loan.book_copy.book.id) }}" 
+                                   class="text-decoration-none">
+                                    <strong>{{ loan.book_copy.book.title }}</strong>
+                                </a>
+                                <br><small class="text-muted">{{ loan.book_copy.book.author }}</small>
+                            </td>
+                            <td>
+                                <code>{{ loan.book_copy.accession_number }}</code>
+                            </td>
+                            <td>{{ loan.checkout_date.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                <strong>{{ loan.due_date.strftime('%d/%m/%Y') if loan.due_date else '-' }}</strong>
+                            </td>
+                            <td>
+                                {% if loan.status == 'overdue' %}
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>Tamat Tempoh
+                                    </span>
+                                {% elif days_left <= 3 %}
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="bi bi-clock me-1"></i>Hampir Tamat
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle me-1"></i>Aktif
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if loan.status == 'overdue' %}
+                                    <span class="text-danger fw-bold">{{ days_left }} hari</span>
+                                {% elif days_left <= 3 %}
+                                    <span class="text-warning fw-bold">{{ days_left }} hari</span>
+                                {% else %}
+                                    <span class="text-success">{{ days_left }} hari</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-journal display-1 text-muted"></i>
+                <h5 class="mt-3">Tiada buku dipinjam</h5>
+                <p class="text-muted">Jom pinjam buku dari perpustakaan!</p>
+                <a href="{{ url_for('student.search_books') }}" class="btn btn-primary">
+                    <i class="bi bi-search me-1"></i>Cari Buku
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Loan History -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="bi bi-clock-history me-2"></i>Sejarah Pinjaman
+            </h5>
+            <small class="text-muted">20 pinjaman terakhir</small>
+        </div>
+        <div class="card-body p-0">
+            {% if history %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Buku</th>
+                            <th>Tarikh Pinjam</th>
+                            <th>Tarikh Pulang</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loan in history %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('student.view_book', book_id=loan.book_copy.book.id) }}" 
+                                   class="text-decoration-none">
+                                    {{ loan.book_copy.book.title }}
+                                </a>
+                                <br><small class="text-muted">{{ loan.book_copy.book.author }}</small>
+                            </td>
+                            <td>{{ loan.checkout_date.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ loan.return_date.strftime('%d/%m/%Y') if loan.return_date else '-' }}</td>
+                            <td>
+                                <span class="badge bg-secondary">
+                                    <i class="bi bi-check me-1"></i>Dipulangkan
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <p class="text-muted mb-0">Tiada sejarah pinjaman</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}

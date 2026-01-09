@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Return Book - ePustaka Munshi{% endblock %}
+{% block page_title %}Return Book{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card table-card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="bi bi-box-arrow-in-left text-success"></i> Return Book</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="accession_number" class="form-label">Book Accession Number / Barcode</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-upc-scan"></i></span>
+                            <input type="text" class="form-control form-control-lg" id="accession_number" name="accession_number" 
+                                   placeholder="Scan or enter accession number" required autofocus>
+                            <button type="button" class="btn btn-outline-secondary" id="lookupCopy">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="loanInfo" class="d-none mb-3">
+                        <!-- Filled by JS -->
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success btn-lg w-100">
+                        <i class="bi bi-check-circle"></i> Process Return
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card table-card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Instructions</h5>
+            </div>
+            <div class="card-body">
+                <ol class="mb-0">
+                    <li class="mb-2">Scan or enter the book's <strong>Accession Number</strong> or barcode</li>
+                    <li class="mb-2">Verify the loan information displayed</li>
+                    <li class="mb-2">Check the book condition</li>
+                    <li>Click <strong>Process Return</strong> to complete</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('lookupCopy').addEventListener('click', function() {
+    const accession = document.getElementById('accession_number').value;
+    if (!accession) return;
+    
+    fetch(`/circulation/api/copy/${accession}/loan`)
+        .then(response => response.json())
+        .then(data => {
+            const infoDiv = document.getElementById('loanInfo');
+            
+            if (data.error) {
+                infoDiv.className = 'alert alert-danger mb-3';
+                infoDiv.innerHTML = '<strong>Book copy not found</strong>';
+            } else if (!data.current_loan) {
+                infoDiv.className = 'alert alert-warning mb-3';
+                infoDiv.innerHTML = `<strong>${data.book_title}</strong><br><small>This book is not currently on loan</small>`;
+            } else {
+                const loan = data.current_loan;
+                const isOverdue = loan.is_overdue;
+                infoDiv.className = isOverdue ? 'alert alert-danger mb-3' : 'alert alert-info mb-3';
+                infoDiv.innerHTML = `
+                    <strong>${data.book_title}</strong><br>
+                    <table class="table table-sm table-borderless mb-0 mt-2">
+                        <tr><td width="120">Member:</td><td><strong>${loan.member_name}</strong> (${loan.member_card})</td></tr>
+                        <tr><td>Checkout:</td><td>${new Date(loan.checkout_date).toLocaleDateString()}</td></tr>
+                        <tr><td>Due Date:</td><td>${new Date(loan.due_date).toLocaleDateString()}</td></tr>
+                        ${isOverdue ? `<tr><td>Status:</td><td class="text-danger"><strong>OVERDUE (${loan.days_overdue} days)</strong></td></tr>` : ''}
+                    </table>
+                `;
+            }
+            infoDiv.classList.remove('d-none');
+        });
+});
+
+document.getElementById('accession_number').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('lookupCopy').click();
+    }
+});
+</script>
+{% endblock %}

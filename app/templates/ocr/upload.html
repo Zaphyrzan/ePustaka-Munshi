@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Scan - ePustaka Munshi{% endblock %}
+{% block page_title %}Upload Scanned Document{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card table-card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="bi bi-upload text-primary"></i> Upload File for OCR</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="job_name" class="form-label">Job Name (optional)</label>
+                        <input type="text" class="form-control" id="job_name" name="job_name" 
+                               placeholder="e.g., Ledger 2024 Jan-Mar">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="file" class="form-label">Scanned Document</label>
+                        <input type="file" class="form-control form-control-lg" id="file" name="file" 
+                               accept=".png,.jpg,.jpeg,.tiff,.pdf" required>
+                        <div class="form-text">
+                            Supported formats: PNG, JPG, JPEG, TIFF, PDF (max 50MB)
+                        </div>
+                    </div>
+                    
+                    <div id="preview" class="mb-4 d-none">
+                        <img id="previewImg" src="" class="img-fluid rounded border" style="max-height: 300px;">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-cloud-upload"></i> Upload & Create Job
+                    </button>
+                    <a href="{{ url_for('ocr.index') }}" class="btn btn-outline-secondary btn-lg">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card table-card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="bi bi-lightbulb"></i> Tips</h5>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li class="mb-2">Scan at <strong>300 DPI</strong> for best OCR results</li>
+                    <li class="mb-2">Ensure the document is <strong>straight</strong> (not skewed)</li>
+                    <li class="mb-2">Use good lighting for clear text</li>
+                    <li class="mb-2">For handwritten text, ensure legibility</li>
+                    <li>Multi-page PDFs are supported</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card table-card mt-4">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="bi bi-pc-display"></i> Scanner Integration</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-0">
+                    <i class="bi bi-info-circle"></i>
+                    USB scanner integration is planned for future versions. 
+                    For now, please scan documents externally and upload the files here.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('file').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('previewImg').src = e.target.result;
+            document.getElementById('preview').classList.remove('d-none');
+        };
+        reader.readAsDataURL(file);
+    } else {
+        document.getElementById('preview').classList.add('d-none');
+    }
+});
+</script>
+{% endblock %}

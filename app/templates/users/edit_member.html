@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Member - ePustaka Munshi{% endblock %}
+{% block page_title %}Edit Member{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card table-card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0">Edit: {{ member.full_name }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Member ID</label>
+                        <input type="text" class="form-control" value="{{ member.member_id }}" readonly disabled>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="full_name" class="form-label">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="full_name" name="full_name" value="{{ member.full_name }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ member.email or '' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">Phone</label>
+                        <input type="tel" class="form-control" id="phone" name="phone" value="{{ member.phone or '' }}">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="member_type" class="form-label">Member Type</label>
+                            <select class="form-select" id="member_type" name="member_type">
+                                <option value="Student" {% if member.member_type == 'Student' %}selected{% endif %}>Student</option>
+                                <option value="Staff" {% if member.member_type == 'Staff' %}selected{% endif %}>Staff</option>
+                                <option value="External" {% if member.member_type == 'External' %}selected{% endif %}>External</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="class_group" class="form-label">Class / Department</label>
+                            <input type="text" class="form-control" id="class_group" name="class_group" value="{{ member.class_group or '' }}">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="2">{{ member.notes or '' }}</textarea>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="is_active" name="is_active" {% if member.is_active %}checked{% endif %}>
+                        <label class="form-check-label" for="is_active">Active (can borrow books)</label>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Save Changes
+                    </button>
+                    <a href="{{ url_for('users.view_member', member_id=member.id) }}" class="btn btn-outline-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

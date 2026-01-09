@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout - ePustaka Munshi{% endblock %}
+{% block page_title %}Book Checkout{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card table-card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="bi bi-box-arrow-right text-primary"></i> Checkout Book</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="checkoutForm">
+                    <div class="mb-3">
+                        <label for="member_id" class="form-label">Member ID / Card Number</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-person-badge"></i></span>
+                            <input type="text" class="form-control" id="member_id" name="member_id" 
+                                   placeholder="Enter member ID (e.g., STU001)" required autofocus>
+                            <button type="button" class="btn btn-outline-secondary" id="lookupMember">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="memberInfo" class="alert alert-info d-none mb-3">
+                        <strong id="memberName"></strong><br>
+                        <small>
+                            Type: <span id="memberType"></span> | 
+                            Active Loans: <span id="activeLoans"></span> |
+                            Status: <span id="memberStatus"></span>
+                        </small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="accession_number" class="form-label">Book Accession Number / Barcode</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-upc-scan"></i></span>
+                            <input type="text" class="form-control" id="accession_number" name="accession_number" 
+                                   placeholder="Scan or enter accession number" required>
+                            <button type="button" class="btn btn-outline-secondary" id="lookupBook">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="bookInfo" class="alert alert-info d-none mb-3">
+                        <strong id="bookTitle"></strong><br>
+                        <small>
+                            Accession: <span id="bookAccession"></span> | 
+                            Status: <span id="bookStatus"></span>
+                        </small>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                        <i class="bi bi-check-circle"></i> Process Checkout
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card table-card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Instructions</h5>
+            </div>
+            <div class="card-body">
+                <ol class="mb-0">
+                    <li class="mb-2">Enter or scan the member's <strong>Member ID</strong> (student card number)</li>
+                    <li class="mb-2">Verify the member information displayed</li>
+                    <li class="mb-2">Enter or scan the book's <strong>Accession Number</strong> or barcode</li>
+                    <li class="mb-2">Verify the book information</li>
+                    <li>Click <strong>Process Checkout</strong> to complete</li>
+                </ol>
+                
+                <hr>
+                
+                <p class="text-muted small mb-0">
+                    <i class="bi bi-lightbulb"></i> 
+                    Default loan period is 14 days. Members can renew up to 2 times if not overdue.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('lookupMember').addEventListener('click', function() {
+    const memberId = document.getElementById('member_id').value;
+    if (!memberId) return;
+    
+    fetch(`/circulation/api/member/${memberId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById('memberInfo').className = 'alert alert-danger mb-3';
+                document.getElementById('memberInfo').innerHTML = '<strong>Member not found</strong>';
+            } else {
+                document.getElementById('memberInfo').className = 'alert alert-info mb-3';
+                document.getElementById('memberName').textContent = data.full_name;
+                document.getElementById('memberType').textContent = data.member_type;
+                document.getElementById('activeLoans').textContent = data.active_loans;
+                document.getElementById('memberStatus').textContent = data.can_borrow ? '✓ Can Borrow' : '✗ Cannot Borrow';
+                document.getElementById('memberStatus').className = data.can_borrow ? 'text-success' : 'text-danger';
+            }
+            document.getElementById('memberInfo').classList.remove('d-none');
+        });
+});
+
+document.getElementById('lookupBook').addEventListener('click', function() {
+    const accession = document.getElementById('accession_number').value;
+    if (!accession) return;
+    
+    fetch(`/catalog/api/copy/${accession}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById('bookInfo').className = 'alert alert-danger mb-3';
+                document.getElementById('bookInfo').innerHTML = '<strong>Book copy not found</strong>';
+            } else {
+                document.getElementById('bookInfo').className = data.is_available ? 'alert alert-success mb-3' : 'alert alert-warning mb-3';
+                document.getElementById('bookTitle').textContent = data.book_title;
+                document.getElementById('bookAccession').textContent = data.accession_number;
+                document.getElementById('bookStatus').textContent = data.is_available ? '✓ Available' : `✗ ${data.status}`;
+            }
+            document.getElementById('bookInfo').classList.remove('d-none');
+        });
+});
+
+// Auto-lookup on Enter key
+document.getElementById('member_id').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('lookupMember').click();
+        document.getElementById('accession_number').focus();
+    }
+});
+
+document.getElementById('accession_number').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        document.getElementById('lookupBook').click();
+    }
+});
+</script>
+{% endblock %}

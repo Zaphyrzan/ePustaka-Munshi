@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}{{ book.title }} - ePustaka Munshi{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('student.index') }}">Portal Pelajar</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('student.search_books') }}">Cari Buku</a></li>
+            <li class="breadcrumb-item active">{{ book.title[:30] }}...</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Book Details -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center mb-3">
+                            <!-- Book cover placeholder -->
+                            <div class="bg-light rounded d-flex align-items-center justify-content-center" 
+                                 style="height: 200px;">
+                                <i class="bi bi-book display-1 text-muted"></i>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <h2 class="mb-2">{{ book.title }}</h2>
+                            <h5 class="text-muted mb-3">{{ book.author }}</h5>
+                            
+                            <div class="row mb-3">
+                                <div class="col-6 col-md-4 mb-2">
+                                    <small class="text-muted d-block">ISBN</small>
+                                    <strong>{{ book.isbn or '-' }}</strong>
+                                </div>
+                                <div class="col-6 col-md-4 mb-2">
+                                    <small class="text-muted d-block">Kategori</small>
+                                    <span class="badge bg-secondary">{{ book.category or 'General' }}</span>
+                                </div>
+                                <div class="col-6 col-md-4 mb-2">
+                                    <small class="text-muted d-block">Bahasa</small>
+                                    <strong>{{ book.language or 'Malay' }}</strong>
+                                </div>
+                                <div class="col-6 col-md-4 mb-2">
+                                    <small class="text-muted d-block">Penerbit</small>
+                                    <strong>{{ book.publisher or '-' }}</strong>
+                                </div>
+                                <div class="col-6 col-md-4 mb-2">
+                                    <small class="text-muted d-block">Tahun</small>
+                                    <strong>{{ book.publication_year or '-' }}</strong>
+                                </div>
+                                <div class="col-6 col-md-4 mb-2">
+                                    <small class="text-muted d-block">No. Panggilan</small>
+                                    <strong class="text-primary">{{ book.call_number or '-' }}</strong>
+                                </div>
+                            </div>
+
+                            {% if book.description %}
+                            <div class="mt-3">
+                                <small class="text-muted d-block mb-1">Sinopsis</small>
+                                <p>{{ book.description }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Availability Panel -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-geo-alt me-2"></i>Ketersediaan
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <div class="display-4 {{ 'text-success' if available_copies else 'text-danger' }}">
+                            {{ available_copies|length }}
+                        </div>
+                        <p class="mb-0">daripada {{ total_copies }} naskhah tersedia</p>
+                    </div>
+
+                    {% if available_copies %}
+                    <div class="alert alert-success d-flex align-items-center" role="alert">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        <div>Buku ini tersedia untuk dipinjam!</div>
+                    </div>
+
+                    <h6 class="mb-3">Lokasi Naskhah:</h6>
+                    <ul class="list-group list-group-flush">
+                        {% for copy in available_copies %}
+                        <li class="list-group-item d-flex justify-content-between align-items-start px-0">
+                            <div>
+                                <strong>{{ copy.accession_number }}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    <i class="bi bi-geo me-1"></i>{{ copy.location or 'Rak Umum' }}
+                                </small>
+                            </div>
+                            <span class="badge bg-{{ 'success' if copy.condition == 'Good' else 'warning' }}">
+                                {{ copy.condition }}
+                            </span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="alert alert-warning d-flex align-items-center" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <div>Semua naskhah sedang dipinjam. Sila semak kemudian.</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- How to Borrow -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-info-circle me-2"></i>Cara Meminjam
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ol class="mb-0 ps-3">
+                        <li class="mb-2">Cari buku di rak mengikut No. Panggilan</li>
+                        <li class="mb-2">Bawa ke kaunter perpustakaan</li>
+                        <li class="mb-2">Tunjukkan kad pelajar</li>
+                        <li>Pustakawan akan proses pinjaman</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

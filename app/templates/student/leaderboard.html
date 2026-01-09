@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Papan NILAM - ePustaka Munshi{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-trophy me-2"></i>Papan NILAM</h2>
+            <p class="text-muted mb-0">Carta pembaca terbaik mengikut tingkatan</p>
+        </div>
+        <a href="{{ url_for('student.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Kembali
+        </a>
+    </div>
+
+    <!-- Year Filter Tabs -->
+    <ul class="nav nav-pills mb-4">
+        <li class="nav-item">
+            <a class="nav-link {{ 'active' if not selected_year }}" 
+               href="{{ url_for('student.leaderboard') }}">
+                <i class="bi bi-people me-1"></i>Semua Tingkatan
+            </a>
+        </li>
+        {% for year in years %}
+        <li class="nav-item">
+            <a class="nav-link {{ 'active' if selected_year == year }}" 
+               href="{{ url_for('student.leaderboard', year=year) }}">
+                Tingkatan {{ year }}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <div class="row">
+        <!-- Leaderboard -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-gradient bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-star-fill me-2"></i>
+                        {% if selected_year %}
+                            Pembaca Terbaik Tingkatan {{ selected_year }}
+                        {% else %}
+                            Pembaca Terbaik Keseluruhan
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if top_readers %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="text-center" style="width: 60px;">#</th>
+                                    <th>Nama</th>
+                                    <th>Kelas</th>
+                                    <th class="text-center">Buku Dibaca</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for reader in top_readers %}
+                                <tr>
+                                    <td class="text-center">
+                                        {% if loop.index == 1 %}
+                                            <span class="display-6">🥇</span>
+                                        {% elif loop.index == 2 %}
+                                            <span class="display-6">🥈</span>
+                                        {% elif loop.index == 3 %}
+                                            <span class="display-6">🥉</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ loop.index }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <strong>{{ reader.full_name }}</strong>
+                                        <br><small class="text-muted">{{ reader.member_id }}</small>
+                                    </td>
+                                    <td>
+                                        {% if reader.student_year %}
+                                            <span class="badge bg-info">T{{ reader.student_year }}</span>
+                                        {% endif %}
+                                        {{ reader.class_group or '-' }}
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success fs-6">
+                                            <i class="bi bi-book me-1"></i>{{ reader.total_books_read }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-trophy display-1 text-muted"></i>
+                        <h5 class="mt-3">Tiada data pembacaan</h5>
+                        <p class="text-muted">Jadilah pembaca pertama yang tersenarai!</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats by Year -->
+        <div class="col-lg-4">
+            <!-- Top 3 Highlight -->
+            {% if top_readers and top_readers|length >= 3 %}
+            <div class="card border-0 shadow-sm mb-4 bg-light">
+                <div class="card-body text-center">
+                    <h6 class="text-muted mb-3">🏆 3 Pembaca Terbaik</h6>
+                    <div class="row">
+                        <!-- Second Place -->
+                        <div class="col-4 pt-4">
+                            <div class="bg-white rounded-circle mx-auto d-flex align-items-center justify-content-center shadow-sm"
+                                 style="width: 60px; height: 60px;">
+                                <i class="bi bi-person-fill text-secondary fs-3"></i>
+                            </div>
+                            <div class="mt-2">
+                                <span class="display-6">🥈</span>
+                                <p class="small mb-0 fw-bold">{{ top_readers[1].full_name.split()[0] }}</p>
+                                <small class="text-muted">{{ top_readers[1].total_books_read }} buku</small>
+                            </div>
+                        </div>
+                        <!-- First Place -->
+                        <div class="col-4">
+                            <div class="bg-warning rounded-circle mx-auto d-flex align-items-center justify-content-center shadow"
+                                 style="width: 80px; height: 80px;">
+                                <i class="bi bi-person-fill text-dark fs-1"></i>
+                            </div>
+                            <div class="mt-2">
+                                <span class="display-5">🥇</span>
+                                <p class="small mb-0 fw-bold">{{ top_readers[0].full_name.split()[0] }}</p>
+                                <small class="text-success fw-bold">{{ top_readers[0].total_books_read }} buku</small>
+                            </div>
+                        </div>
+                        <!-- Third Place -->
+                        <div class="col-4 pt-4">
+                            <div class="bg-white rounded-circle mx-auto d-flex align-items-center justify-content-center shadow-sm"
+                                 style="width: 60px; height: 60px;">
+                                <i class="bi bi-person-fill text-secondary fs-3"></i>
+                            </div>
+                            <div class="mt-2">
+                                <span class="display-6">🥉</span>
+                                <p class="small mb-0 fw-bold">{{ top_readers[2].full_name.split()[0] }}</p>
+                                <small class="text-muted">{{ top_readers[2].total_books_read }} buku</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Stats by Year -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-bar-chart me-2"></i>Statistik Mengikut Tingkatan
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if year_stats %}
+                    <ul class="list-group list-group-flush">
+                        {% for stat in year_stats %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Tingkatan {{ stat.student_year }}</strong>
+                                <br>
+                                <small class="text-muted">{{ stat.student_count }} pelajar</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-primary">{{ stat.total_read or 0 }} buku</span>
+                                <br>
+                                <small class="text-muted">
+                                    Purata: {{ "%.1f"|format(stat.avg_read or 0) }}
+                                </small>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <p class="text-muted mb-0">Tiada statistik</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- NILAM Info -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-info-circle me-2"></i>Tentang NILAM
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="small mb-2">
+                        <strong>NILAM</strong> (Nadi Ilmu Amalan Membaca) adalah program 
+                        galakan membaca oleh Kementerian Pendidikan Malaysia.
+                    </p>
+                    <p class="small mb-0">
+                        Baca lebih banyak buku dan rekodkan di perpustakaan 
+                        untuk menaiki carta pembaca terbaik!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

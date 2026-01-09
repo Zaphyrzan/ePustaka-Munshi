@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Add Book - ePustaka Munshi{% endblock %}
+{% block page_title %}Add New Book{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card table-card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="bi bi-plus-circle text-primary"></i> Add New Book</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="author" class="form-label">Author</label>
+                            <input type="text" class="form-control" id="author" name="author">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="isbn" class="form-label">ISBN</label>
+                            <input type="text" class="form-control" id="isbn" name="isbn">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="publisher" class="form-label">Publisher</label>
+                            <input type="text" class="form-control" id="publisher" name="publisher">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="publication_year" class="form-label">Publication Year</label>
+                            <input type="number" class="form-control" id="publication_year" name="publication_year" min="1800" max="2100">
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="category" class="form-label">Category</label>
+                            <input type="text" class="form-control" id="category" name="category" list="categoryList">
+                            <datalist id="categoryList">
+                                <option value="Fiction">
+                                <option value="Non-Fiction">
+                                <option value="Science">
+                                <option value="History">
+                                <option value="Textbook">
+                                <option value="Reference">
+                                <option value="Biography">
+                            </datalist>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="call_number" class="form-label">Call Number</label>
+                            <input type="text" class="form-control" id="call_number" name="call_number">
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="language" class="form-label">Language</label>
+                            <select class="form-select" id="language" name="language">
+                                <option value="Malay">Malay</option>
+                                <option value="English">English</option>
+                                <option value="Chinese">Chinese</option>
+                                <option value="Tamil">Tamil</option>
+                                <option value="Arabic">Arabic</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Add Book
+                    </button>
+                    <a href="{{ url_for('catalog.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
