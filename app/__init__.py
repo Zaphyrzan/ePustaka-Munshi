@@ -34,6 +34,10 @@ def create_app(config_name=None):
     db.init_app(app)
     login_manager.init_app(app)
     
+    # Register i18n (internationalization) for language switching
+    from app.utils.i18n import register_i18n
+    register_i18n(app)
+    
     # Register blueprints
     from app.routes.main import main_bp
     from app.routes.auth import auth_bp

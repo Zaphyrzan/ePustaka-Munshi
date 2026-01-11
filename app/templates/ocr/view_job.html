@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
-{% block title %}OCR Job - ePustaka Munshi{% endblock %}
-{% block page_title %}OCR Job Details{% endblock %}
+{% block title %}Kerja OCR - ePustaka Munshi{% endblock %}
+{% block page_title %}Butiran Kerja OCR{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -21,15 +21,15 @@
             </div>
             <div class="card-body">
                 <table class="table table-borderless">
-                    <tr><th width="150">Source File</th><td>{{ job.original_filename or job.source_path }}</td></tr>
-                    <tr><th>Source Type</th><td>{{ job.source_type }}</td></tr>
-                    <tr><th>Pages</th><td>{{ job.page_count }}</td></tr>
-                    <tr><th>Created</th><td>{{ job.created_at.strftime('%d/%m/%Y %H:%M') }}</td></tr>
+                    <tr><th width="150">Fail Sumber</th><td>{{ job.original_filename or job.source_path }}</td></tr>
+                    <tr><th>Jenis Sumber</th><td>{{ job.source_type }}</td></tr>
+                    <tr><th>Halaman</th><td>{{ job.page_count }}</td></tr>
+                    <tr><th>Dicipta</th><td>{{ job.created_at.strftime('%d/%m/%Y %H:%M') }}</td></tr>
                     {% if job.completed_at %}
-                    <tr><th>Completed</th><td>{{ job.completed_at.strftime('%d/%m/%Y %H:%M') }}</td></tr>
+                    <tr><th>Selesai</th><td>{{ job.completed_at.strftime('%d/%m/%Y %H:%M') }}</td></tr>
                     {% endif %}
                     {% if job.error_message %}
-                    <tr><th>Error</th><td class="text-danger">{{ job.error_message }}</td></tr>
+                    <tr><th>Ralat</th><td class="text-danger">{{ job.error_message }}</td></tr>
                     {% endif %}
                 </table>
                 
@@ -38,28 +38,28 @@
                     {% if job.status == 'pending' or job.status == 'failed' %}
                     <form method="POST" action="{{ url_for('ocr.process_job', job_id=job.id) }}" class="d-inline">
                         <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-play-fill"></i> Run OCR Processing
+                            <i class="bi bi-play-fill"></i> Jalankan OCR
                         </button>
                     </form>
                     {% endif %}
                     
                     {% if job.status == 'completed' %}
                     <a href="{{ url_for('ocr.review_job', job_id=job.id) }}" class="btn btn-success">
-                        <i class="bi bi-check2-square"></i> Review Results
+                        <i class="bi bi-check2-square"></i> Semak Keputusan
                     </a>
                     {% endif %}
                     
                     {% if job.status == 'reviewed' %}
                     <form method="POST" action="{{ url_for('ocr.commit_job', job_id=job.id) }}" class="d-inline">
-                        <button type="submit" class="btn btn-warning" onclick="return confirm('Commit validated records to loan history?')">
-                            <i class="bi bi-database-fill-up"></i> Commit to Database
+                        <button type="submit" class="btn btn-warning" onclick="return confirm('Simpan rekod ke Daftar Buku Perpustakaan?')">
+                            <i class="bi bi-database-fill-up"></i> Simpan ke Daftar
                         </button>
                     </form>
                     {% endif %}
                     
                     <form method="POST" action="{{ url_for('ocr.delete_job', job_id=job.id) }}" class="d-inline">
-                        <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Delete this OCR job?')">
-                            <i class="bi bi-trash"></i> Delete
+                        <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Padam kerja OCR ini?')">
+                            <i class="bi bi-trash"></i> Padam
                         </button>
                     </form>
                 </div>
@@ -70,7 +70,7 @@
         {% if results %}
         <div class="card table-card">
             <div class="card-header bg-transparent">
-                <h5 class="mb-0">Extracted Results ({{ results|length }})</h5>
+                <h5 class="mb-0">Rekod Diekstrak ({{ results|length }})</h5>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -78,11 +78,11 @@
                         <thead class="table-light">
                             <tr>
                                 <th>#</th>
-                                <th>Raw Text</th>
-                                <th>Member ID</th>
-                                <th>Book ID</th>
-                                <th>Date</th>
-                                <th>Conf.</th>
+                                <th>No Perolehan</th>
+                                <th>Tajuk Buku</th>
+                                <th>Pengarang</th>
+                                <th>Penerbit</th>
+                                <th>Keyakinan</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
@@ -90,12 +90,12 @@
                             {% for result in results %}
                             <tr>
                                 <td>{{ result.row_number }}</td>
-                                <td><small>{{ result.raw_text[:50] }}{% if result.raw_text|length > 50 %}...{% endif %}</small></td>
-                                <td>{{ result.member_id_extracted or '-' }}</td>
-                                <td>{{ result.book_id_extracted or '-' }}</td>
-                                <td>{{ result.date_extracted or '-' }}</td>
+                                <td>{{ result.no_perolehan_corrected or result.no_perolehan_extracted or '-' }}</td>
+                                <td><small>{{ (result.tajuk_buku_corrected or result.tajuk_buku_extracted or '-')[:40] }}{% if (result.tajuk_buku_corrected or result.tajuk_buku_extracted or '')|length > 40 %}...{% endif %}</small></td>
+                                <td><small>{{ result.pengarang_corrected or result.pengarang_extracted or '-' }}</small></td>
+                                <td><small>{{ (result.penerbit_corrected or result.penerbit_extracted or '-')[:20] }}</small></td>
                                 <td>
-                                    {% set conf = (result.confidence_overall * 100)|int %}
+                                    {% set conf = ((result.confidence_overall or 0) * 100)|int %}
                                     <span class="badge {% if conf >= 70 %}bg-success{% elif conf >= 40 %}bg-warning{% else %}bg-danger{% endif %}">
                                         {{ conf }}%
                                     </span>
@@ -103,12 +103,12 @@
                                 <td>
                                     {% if result.is_reviewed %}
                                         {% if result.is_valid %}
-                                            <span class="badge bg-success">✓ Valid</span>
+                                            <span class="badge bg-success">✓ Sah</span>
                                         {% else %}
-                                            <span class="badge bg-secondary">✗ Invalid</span>
+                                            <span class="badge bg-secondary">✗ Batal</span>
                                         {% endif %}
                                     {% else %}
-                                        <span class="badge bg-warning">Pending</span>
+                                        <span class="badge bg-warning">Belum Semak</span>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -124,19 +124,19 @@
     <div class="col-lg-4">
         <div class="card table-card">
             <div class="card-header bg-transparent">
-                <h5 class="mb-0">Summary</h5>
+                <h5 class="mb-0">Ringkasan</h5>
             </div>
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-2">
-                    <span>Total Results</span>
+                    <span>Jumlah Rekod</span>
                     <strong>{{ job.result_count }}</strong>
                 </div>
                 <div class="d-flex justify-content-between mb-2">
-                    <span>Reviewed</span>
+                    <span>Sudah Disemak</span>
                     <strong>{{ job.reviewed_count }}</strong>
                 </div>
                 <div class="d-flex justify-content-between">
-                    <span>Pending Review</span>
+                    <span>Belum Disemak</span>
                     <strong>{{ job.pending_review_count }}</strong>
                 </div>
             </div>
@@ -145,7 +145,7 @@
         <div class="card table-card mt-4">
             <div class="card-body">
                 <a href="{{ url_for('ocr.index') }}" class="btn btn-outline-secondary w-100">
-                    <i class="bi bi-arrow-left"></i> Back to OCR Jobs
+                    <i class="bi bi-arrow-left"></i> Kembali ke Senarai OCR
                 </a>
             </div>
         </div>

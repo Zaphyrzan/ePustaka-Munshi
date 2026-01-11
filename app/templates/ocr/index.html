@@ -1,13 +1,19 @@
 {% extends "base.html" %}
 
-{% block title %}OCR Digitization - ePustaka Munshi{% endblock %}
-{% block page_title %}OCR Ledger Digitization{% endblock %}
+{% block title %}{{ t('ocr_digitization') }} - ePustaka Munshi{% endblock %}
+{% block page_title %}{{ t('ocr_ledger_digitization') }}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <p class="text-muted mb-0">Digitize handwritten/printed circulation ledgers using OCR</p>
+    <p class="text-muted mb-0">
+        {% if current_language == 'en' %}
+        Digitize handwritten/printed library ledgers using OCR
+        {% else %}
+        Digitasikan daftar perpustakaan tulisan tangan/cetakan menggunakan OCR
+        {% endif %}
+    </p>
     <a href="{{ url_for('ocr.upload') }}" class="btn btn-primary">
-        <i class="bi bi-upload"></i> Upload New Scan
+        <i class="bi bi-upload"></i> {{ t('upload') }}
     </a>
 </div>
 
@@ -18,12 +24,12 @@
                 <thead class="table-light">
                     <tr>
                         <th>ID</th>
-                        <th>Job Name</th>
-                        <th>Source</th>
-                        <th>Status</th>
-                        <th>Results</th>
-                        <th>Created</th>
-                        <th>Actions</th>
+                        <th>{{ t('job_name') }}</th>
+                        <th>{{ 'Source' if current_language == 'en' else 'Sumber' }}</th>
+                        <th>{{ t('status') }}</th>
+                        <th>{{ 'Results' if current_language == 'en' else 'Keputusan' }}</th>
+                        <th>{{ t('created_at') }}</th>
+                        <th>{{ t('actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -36,22 +42,22 @@
                         </td>
                         <td>
                             {% if job.status == 'pending' %}
-                                <span class="badge bg-secondary">Pending</span>
+                                <span class="badge bg-secondary">{{ t('pending') }}</span>
                             {% elif job.status == 'processing' %}
-                                <span class="badge bg-primary">Processing</span>
+                                <span class="badge bg-primary">{{ t('processing') }}</span>
                             {% elif job.status == 'completed' %}
-                                <span class="badge bg-success">Completed</span>
+                                <span class="badge bg-success">{{ t('completed') }}</span>
                             {% elif job.status == 'reviewed' %}
-                                <span class="badge bg-info">Reviewed</span>
+                                <span class="badge bg-info">{{ 'Reviewed' if current_language == 'en' else 'Disemak' }}</span>
                             {% elif job.status == 'committed' %}
-                                <span class="badge bg-dark">Committed</span>
+                                <span class="badge bg-dark">{{ 'Committed' if current_language == 'en' else 'Disimpan' }}</span>
                             {% elif job.status == 'failed' %}
-                                <span class="badge bg-danger">Failed</span>
+                                <span class="badge bg-danger">{{ t('failed') }}</span>
                             {% endif %}
                         </td>
                         <td>
                             {% if job.result_count > 0 %}
-                                {{ job.reviewed_count }}/{{ job.result_count }} reviewed
+                                {{ job.reviewed_count }}/{{ job.result_count }} {{ 'reviewed' if current_language == 'en' else 'disemak' }}
                             {% else %}
                                 -
                             {% endif %}
@@ -63,7 +69,7 @@
                             </a>
                             {% if job.status == 'completed' %}
                             <a href="{{ url_for('ocr.review_job', job_id=job.id) }}" class="btn btn-sm btn-outline-success">
-                                <i class="bi bi-check2-square"></i> Review
+                                <i class="bi bi-check2-square"></i> {{ t('review') }}
                             </a>
                             {% endif %}
                         </td>
@@ -71,7 +77,7 @@
                     {% else %}
                     <tr>
                         <td colspan="7" class="text-center text-muted py-4">
-                            No OCR jobs yet. <a href="{{ url_for('ocr.upload') }}">Upload a scanned ledger</a> to get started.
+                            {{ t('no_jobs') }}
                         </td>
                     </tr>
                     {% endfor %}

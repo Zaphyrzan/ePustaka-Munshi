@@ -177,76 +177,76 @@
         <ul class="nav flex-column">
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
-                    <i class="bi bi-speedometer2"></i> Dashboard
+                    <i class="bi bi-speedometer2"></i> {{ t('dashboard') }}
                 </a>
             </li>
             
             {% if current_user.role and current_user.role.name == 'Student' %}
             <!-- Student Portal - Only for students -->
-            <li class="sidebar-section">Portal Pelajar</li>
+            <li class="sidebar-section">{{ t('my_loans') if current_language == 'en' else 'Portal Pelajar' }}</li>
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'student.index' %}active{% endif %}" href="{{ url_for('student.index') }}">
-                    <i class="bi bi-house"></i> Portal Utama
+                    <i class="bi bi-house"></i> {{ 'Home' if current_language == 'en' else 'Portal Utama' }}
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'student.search_books' %}active{% endif %}" href="{{ url_for('student.search_books') }}">
-                    <i class="bi bi-search"></i> Cari Buku
+                    <i class="bi bi-search"></i> {{ t('search_books') }}
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'student.my_loans' %}active{% endif %}" href="{{ url_for('student.my_loans') }}">
-                    <i class="bi bi-journal-bookmark"></i> Pinjaman Saya
+                    <i class="bi bi-journal-bookmark"></i> {{ t('my_loans') }}
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'student.leaderboard' %}active{% endif %}" href="{{ url_for('student.leaderboard') }}">
-                    <i class="bi bi-trophy"></i> Papan NILAM
+                    <i class="bi bi-trophy"></i> {{ t('leaderboard') }}
                 </a>
             </li>
             {% endif %}
             
             {% if current_user.can(1) or current_user.can(2) %}
             <!-- Staff sections - Catalog, Circulation, etc -->
-            <li class="sidebar-section">Catalog</li>
+            <li class="sidebar-section">{{ t('catalog') }}</li>
             <li class="nav-item">
                 <a class="nav-link {% if 'catalog' in request.endpoint %}active{% endif %}" href="{{ url_for('catalog.index') }}">
-                    <i class="bi bi-book"></i> Books
+                    <i class="bi bi-book"></i> {{ t('books') }}
                 </a>
             </li>
             
-            <li class="sidebar-section">Circulation</li>
+            <li class="sidebar-section">{{ t('circulation') }}</li>
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'circulation.checkout' %}active{% endif %}" href="{{ url_for('circulation.checkout') }}">
-                    <i class="bi bi-box-arrow-right"></i> Checkout
+                    <i class="bi bi-box-arrow-right"></i> {{ t('checkout') }}
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'circulation.return_book' %}active{% endif %}" href="{{ url_for('circulation.return_book') }}">
-                    <i class="bi bi-box-arrow-in-left"></i> Return
+                    <i class="bi bi-box-arrow-in-left"></i> {{ t('return') }}
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'circulation.active_loans' %}active{% endif %}" href="{{ url_for('circulation.active_loans') }}">
-                    <i class="bi bi-list-check"></i> Active Loans
+                    <i class="bi bi-list-check"></i> {{ t('active_loans') }}
                 </a>
             </li>
             {% endif %}
             
             {% if current_user.can(512) %}
-            <li class="sidebar-section">Digitization</li>
+            <li class="sidebar-section">{{ 'Digitization' if current_language == 'en' else 'Pendigitalan' }}</li>
             <li class="nav-item">
                 <a class="nav-link {% if 'ocr' in request.endpoint %}active{% endif %}" href="{{ url_for('ocr.index') }}">
-                    <i class="bi bi-file-earmark-text"></i> OCR Digitization
+                    <i class="bi bi-file-earmark-text"></i> {{ t('ocr_digitization') }}
                 </a>
             </li>
             {% endif %}
             
             {% if current_user.can(128) %}
-            <li class="sidebar-section">Management</li>
+            <li class="sidebar-section">{{ 'Management' if current_language == 'en' else 'Pengurusan' }}</li>
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'users.member_list' %}active{% endif %}" href="{{ url_for('users.member_list') }}">
-                    <i class="bi bi-people"></i> Members
+                    <i class="bi bi-people"></i> {{ t('members') }}
                 </a>
             </li>
             {% endif %}
@@ -254,7 +254,7 @@
             {% if current_user.can(256) %}
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'users.staff_list' %}active{% endif %}" href="{{ url_for('users.staff_list') }}">
-                    <i class="bi bi-person-badge"></i> Staff Users
+                    <i class="bi bi-person-badge"></i> {{ t('staff') }}
                 </a>
             </li>
             {% endif %}
@@ -266,18 +266,38 @@
         <!-- Top Navbar -->
         <nav class="top-navbar d-flex justify-content-between align-items-center">
             <div>
-                <h5 class="mb-0">{% block page_title %}Dashboard{% endblock %}</h5>
+                <h5 class="mb-0">{% block page_title %}{{ t('dashboard') }}{% endblock %}</h5>
             </div>
-            <div class="dropdown">
-                <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                    <i class="bi bi-person-circle"></i> {{ current_user.full_name or current_user.username }}
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}"><i class="bi bi-person"></i> Profile</a></li>
-                    <li><a class="dropdown-item" href="{{ url_for('auth.change_password') }}"><i class="bi bi-key"></i> Change Password</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
-                </ul>
+            <div class="d-flex align-items-center gap-3">
+                <!-- Language Switcher -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-globe2"></i> {{ languages.get(current_language, 'English') }}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        {% for code, name in languages.items() %}
+                        <li>
+                            <a class="dropdown-item {% if code == current_language %}active{% endif %}" 
+                               href="{{ url_for('set_lang', lang_code=code) }}">
+                                {{ name }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                
+                <!-- User Dropdown -->
+                <div class="dropdown">
+                    <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-person-circle"></i> {{ current_user.full_name or current_user.username }}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}"><i class="bi bi-person"></i> {{ t('profile') }}</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('auth.change_password') }}"><i class="bi bi-key"></i> Change Password</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right"></i> {{ t('logout') }}</a></li>
+                    </ul>
+                </div>
             </div>
         </nav>
         

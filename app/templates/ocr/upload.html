@@ -1,29 +1,35 @@
 {% extends "base.html" %}
 
-{% block title %}Upload Scan - ePustaka Munshi{% endblock %}
-{% block page_title %}Upload Scanned Document{% endblock %}
+{% block title %}{{ t('upload') }} - ePustaka Munshi{% endblock %}
+{% block page_title %}{{ t('upload_ledger') }}{% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-lg-8">
         <div class="card table-card">
             <div class="card-header bg-transparent">
-                <h5 class="mb-0"><i class="bi bi-upload text-primary"></i> Upload File for OCR</h5>
+                <h5 class="mb-0"><i class="bi bi-upload text-primary"></i> 
+                    {{ 'Upload File for OCR' if current_language == 'en' else 'Muat Naik Fail untuk OCR' }}
+                </h5>
             </div>
             <div class="card-body">
                 <form method="POST" enctype="multipart/form-data">
                     <div class="mb-3">
-                        <label for="job_name" class="form-label">Job Name (optional)</label>
+                        <label for="job_name" class="form-label">
+                            {{ 'Job Name (optional)' if current_language == 'en' else 'Nama Kerja (pilihan)' }}
+                        </label>
                         <input type="text" class="form-control" id="job_name" name="job_name" 
-                               placeholder="e.g., Ledger 2024 Jan-Mar">
+                               placeholder="{{ 'e.g., Ledger 2024 Jan-Mar' if current_language == 'en' else 'cth: Daftar 2024 Jan-Mac' }}">
                     </div>
                     
                     <div class="mb-4">
-                        <label for="file" class="form-label">Scanned Document</label>
+                        <label for="file" class="form-label">
+                            {{ 'Scanned Document' if current_language == 'en' else 'Dokumen Diimbas' }}
+                        </label>
                         <input type="file" class="form-control form-control-lg" id="file" name="file" 
                                accept=".png,.jpg,.jpeg,.tiff,.pdf" required>
                         <div class="form-text">
-                            Supported formats: PNG, JPG, JPEG, TIFF, PDF (max 50MB)
+                            {{ t('supported_formats') }} (max 50MB)
                         </div>
                     </div>
                     
@@ -32,9 +38,10 @@
                     </div>
                     
                     <button type="submit" class="btn btn-primary btn-lg">
-                        <i class="bi bi-cloud-upload"></i> Upload & Create Job
+                        <i class="bi bi-cloud-upload"></i> 
+                        {{ 'Upload & Create Job' if current_language == 'en' else 'Muat Naik & Cipta Kerja' }}
                     </button>
-                    <a href="{{ url_for('ocr.index') }}" class="btn btn-outline-secondary btn-lg">Cancel</a>
+                    <a href="{{ url_for('ocr.index') }}" class="btn btn-outline-secondary btn-lg">{{ t('cancel') }}</a>
                 </form>
             </div>
         </div>
@@ -43,28 +50,43 @@
     <div class="col-lg-4">
         <div class="card table-card">
             <div class="card-header bg-transparent">
-                <h5 class="mb-0"><i class="bi bi-lightbulb"></i> Tips</h5>
+                <h5 class="mb-0"><i class="bi bi-lightbulb"></i> {{ 'Tips' if current_language == 'en' else 'Petua' }}</h5>
             </div>
             <div class="card-body">
+                {% if current_language == 'en' %}
                 <ul class="mb-0">
                     <li class="mb-2">Scan at <strong>300 DPI</strong> for best OCR results</li>
-                    <li class="mb-2">Ensure the document is <strong>straight</strong> (not skewed)</li>
+                    <li class="mb-2">Ensure document is <strong>straight</strong> (not tilted)</li>
                     <li class="mb-2">Use good lighting for clear text</li>
-                    <li class="mb-2">For handwritten text, ensure legibility</li>
+                    <li class="mb-2">For handwriting, ensure it's legible</li>
                     <li>Multi-page PDFs are supported</li>
                 </ul>
+                {% else %}
+                <ul class="mb-0">
+                    <li class="mb-2">Imbas pada <strong>300 DPI</strong> untuk hasil OCR terbaik</li>
+                    <li class="mb-2">Pastikan dokumen <strong>lurus</strong> (tidak senget)</li>
+                    <li class="mb-2">Gunakan pencahayaan yang baik untuk teks jelas</li>
+                    <li class="mb-2">Untuk tulisan tangan, pastikan ia boleh dibaca</li>
+                    <li>PDF berbilang halaman disokong</li>
+                </ul>
+                {% endif %}
             </div>
         </div>
         
         <div class="card table-card mt-4">
             <div class="card-header bg-transparent">
-                <h5 class="mb-0"><i class="bi bi-pc-display"></i> Scanner Integration</h5>
+                <h5 class="mb-0"><i class="bi bi-pc-display"></i> 
+                    {{ 'Scanner Integration' if current_language == 'en' else 'Integrasi Pengimbas' }}
+                </h5>
             </div>
             <div class="card-body">
                 <p class="text-muted mb-0">
                     <i class="bi bi-info-circle"></i>
-                    USB scanner integration is planned for future versions. 
-                    For now, please scan documents externally and upload the files here.
+                    {% if current_language == 'en' %}
+                    USB scanner integration is planned for future versions. For now, please scan documents externally and upload the file here.
+                    {% else %}
+                    Integrasi pengimbas USB dirancang untuk versi akan datang. Buat masa ini, sila imbas dokumen secara luaran dan muat naik fail di sini.
+                    {% endif %}
                 </p>
             </div>
         </div>
