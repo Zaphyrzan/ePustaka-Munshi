@@ -214,7 +214,34 @@ class OCRService:
         if not PDF_SUPPORT:
             raise RuntimeError("PDF support not available. Install pdf2image and poppler.")
         
-        images = convert_from_path(pdf_path, dpi=dpi)
+        # Find Poppler path - check common locations
+        poppler_path = None
+        poppler_locations = [
+            r"C:\Users\wanza\AppData\Local\Microsoft\WinGet\Packages\oschwartz10612.Poppler_Microsoft.Winget.Source_8wekyb3d8bbwe\poppler-25.07.0\Library\bin",
+            r"C:\Program Files\poppler\bin",
+            r"C:\Program Files\poppler-24.02.0\Library\bin",
+            r"C:\poppler\bin",
+        ]
+        
+        for loc in poppler_locations:
+            if os.path.exists(os.path.join(loc, "pdftoppm.exe")):
+                poppler_path = loc
+                break
+        
+        # Also check PATH environment variable
+        if not poppler_path:
+            import shutil
+            if shutil.which("pdftoppm"):
+                poppler_path = None  # It's in PATH, no need to specify
+        
+        try:
+            if poppler_path:
+                images = convert_from_path(pdf_path, dpi=dpi, poppler_path=poppler_path)
+            else:
+                images = convert_from_path(pdf_path, dpi=dpi)
+        except Exception as e:
+            raise RuntimeError(f"PDF conversion failed: {str(e)}. Ensure Poppler is installed.")
+        
         results = []
         
         for image in images:
