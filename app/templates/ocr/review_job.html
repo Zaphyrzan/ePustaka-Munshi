@@ -1,891 +1,426 @@
 {% extends "base.html" %}
 
-{% block title %}{{ t('review_results') }} - ePustaka Munshi{% endblock %}
-{% block page_title %}{{ t('review_results') }}{% endblock %}
-
-{% block extra_css %}
-<style>
-    /* Spreadsheet-like table styling */
-    .ledger-table {
-        font-size: 0.85rem;
-        border-collapse: collapse;
-    }
-    
-    .ledger-table th {
-        background: linear-gradient(135deg, #1a5f2a 0%, #2d8a3e 100%);
-        color: white;
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        font-weight: 600;
-        padding: 10px 6px;
-        white-space: nowrap;
-        border: 1px solid #155724;
-    }
-    
-    .ledger-table td {
-        padding: 4px;
-        border: 1px solid #dee2e6;
-        vertical-align: top;
-    }
-    
-    .ledger-table tbody tr:hover {
-        background-color: #f8f9fa;
-    }
-    
-    .ledger-table tbody tr.row-valid {
-        background-color: #d4edda;
-    }
-    
-    .ledger-table tbody tr.row-invalid {
-        background-color: #f8d7da;
-    }
-    
-    .ledger-table tbody tr.row-pending {
-        background-color: #fff3cd;
-    }
-    
-    /* Editable cell styling */
-    .editable-cell {
-        position: relative;
-    }
-    
-    .cell-input {
-        width: 100%;
-        border: 1px solid transparent;
-        background: transparent;
-        padding: 4px;
-        font-size: 0.85rem;
-        transition: all 0.2s;
-    }
-    
-    .cell-input:focus {
-        border-color: #28a745;
-        background: white;
-        box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.25);
-        outline: none;
-    }
-    
-    .cell-input.has-suggestion {
-        border-color: #17a2b8;
-        background: #e7f5ff;
-    }
-    
-    .cell-input.ai-corrected {
-        border-color: #28a745;
-        background: #d4edda;
-    }
-    
-    /* Suggestion dropdown */
-    .suggestion-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        z-index: 1000;
-        display: none;
-        max-height: 200px;
-        overflow-y: auto;
-    }
-    
-    .suggestion-dropdown.show {
-        display: block;
-    }
-    
-    .suggestion-item {
-        padding: 8px 12px;
-        cursor: pointer;
-        border-bottom: 1px solid #eee;
-        font-size: 0.8rem;
-    }
-    
-    .suggestion-item:hover, .suggestion-item.active {
-        background: #e9f5e9;
-    }
-    
-    .suggestion-item .confidence {
-        float: right;
-        color: #28a745;
-        font-weight: bold;
-    }
-    
-    .suggestion-item .secondary {
-        color: #6c757d;
-        font-size: 0.75rem;
-    }
-    
-    /* Raw text display */
-    .raw-text-cell {
-        font-family: 'Consolas', monospace;
-        font-size: 0.75rem;
-        color: #6c757d;
-        max-width: 300px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    
-    .raw-text-cell:hover {
-        white-space: normal;
-        word-break: break-word;
-    }
-    
-    /* Action buttons */
-    .row-actions {
-        white-space: nowrap;
-    }
-    
-    .btn-validate {
-        padding: 2px 8px;
-        font-size: 0.75rem;
-    }
-    
-    /* AI indicator */
-    .ai-badge {
-        display: inline-block;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        font-size: 0.65rem;
-        padding: 2px 6px;
-        border-radius: 10px;
-        margin-left: 4px;
-    }
-    
-    /* Column width adjustments */
-    .col-no { width: 70px; }
-    .col-panggilan { width: 80px; }
-    .col-pengarang { width: 150px; }
-    .col-tajuk { width: 200px; }
-    .col-penerbit { width: 150px; }
-    .col-tarikh { width: 80px; }
-    .col-bil { width: 60px; }
-    .col-punca { width: 80px; }
-    .col-harga { width: 70px; }
-    .col-muka { width: 60px; }
-    .col-catatan { width: 100px; }
-    .col-actions { width: 100px; }
-    
-    /* Confidence indicator */
-    .confidence-bar {
-        height: 3px;
-        background: #e9ecef;
-        border-radius: 2px;
-        margin-top: 2px;
-    }
-    
-    .confidence-bar-fill {
-        height: 100%;
-        border-radius: 2px;
-        transition: width 0.3s;
-    }
-    
-    .confidence-low { background: #dc3545; }
-    .confidence-medium { background: #ffc107; }
-    .confidence-high { background: #28a745; }
-    
-    /* Status badge */
-    .status-badge {
-        font-size: 0.7rem;
-        padding: 2px 6px;
-    }
-    
-    /* Progress indicator */
-    .review-progress {
-        background: #e9ecef;
-        border-radius: 10px;
-        height: 8px;
-        overflow: hidden;
-    }
-    
-    .review-progress-bar {
-        height: 100%;
-        background: linear-gradient(90deg, #28a745, #20c997);
-        transition: width 0.3s;
-    }
-    
-    /* Toolbar */
-    .review-toolbar {
-        background: #f8f9fa;
-        border-radius: 8px;
-        padding: 12px;
-        margin-bottom: 16px;
-    }
-    
-    /* Table container with horizontal scroll */
-    .table-container {
-        overflow-x: auto;
-        max-height: 70vh;
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-    }
-</style>
-{% endblock %}
+{% block title %}Review OCR Job - ePustaka Munshi{% endblock %}
+{% block page_title %}Review OCR Results{% endblock %}
 
 {% block content %}
 <div class="row mb-3">
     <div class="col">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('ocr.index') }}">{{ t('ocr_digitization') }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('ocr.index') }}">OCR Jobs</a></li>
                 <li class="breadcrumb-item"><a href="{{ url_for('ocr.view_job', job_id=job.id) }}">{{ job.job_name }}</a></li>
-                <li class="breadcrumb-item active">{{ t('review') }}</li>
+                <li class="breadcrumb-item active">Review</li>
             </ol>
         </nav>
     </div>
 </div>
 
-<!-- Job Info & Progress -->
-<div class="card mb-3">
-    <div class="card-body py-3">
-        <div class="row align-items-center">
-            <div class="col-md-4">
-                <h5 class="mb-1">{{ job.job_name }}</h5>
-                <small class="text-muted">{{ results|length }} {{ 'records to review' if current_language == 'en' else 'rekod untuk disemak' }}</small>
-            </div>
-            <div class="col-md-4">
-                <div class="d-flex align-items-center">
-                    <span class="me-2">{{ 'Progress:' if current_language == 'en' else 'Kemajuan:' }}</span>
-                    <div class="review-progress flex-grow-1 me-2">
-                        <div class="review-progress-bar" id="progressBar" style="width: {{ (job.reviewed_count / results|length * 100) if results|length > 0 else 0 }}%"></div>
-                    </div>
-                    <span id="progressText">{{ job.reviewed_count }}/{{ results|length }}</span>
-                </div>
-            </div>
-            <div class="col-md-4 text-end">
-                <a href="{{ url_for('ocr.view_job', job_id=job.id) }}" class="btn btn-outline-secondary btn-sm">
-                    <i class="bi bi-arrow-left"></i> {{ t('back') }}
-                </a>
-            </div>
+<!-- Job Info Card -->
+<div class="card mb-4">
+    <div class="card-body d-flex justify-content-between align-items-center py-2">
+        <div>
+            <strong>{{ job.job_name }}</strong> 
+            <span class="text-muted ms-3">{{ results|length }} rows to review</span>
         </div>
-    </div>
-</div>
-
-<!-- Toolbar -->
-<div class="review-toolbar">
-    <div class="row align-items-center">
-        <div class="col-md-6">
-            <div class="d-flex align-items-center gap-3">
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="showRawText" checked>
-                    <label class="form-check-label" for="showRawText">{{ 'Show Raw Text' if current_language == 'en' else 'Papar Teks Asal' }}</label>
-                </div>
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="autoSave" checked>
-                    <label class="form-check-label" for="autoSave">{{ 'Auto-Save' if current_language == 'en' else 'Auto-Simpan' }}</label>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 text-end">
-            <button type="button" class="btn btn-outline-primary btn-sm me-2" onclick="applyAllAISuggestions()">
-                <i class="bi bi-robot"></i> {{ t('apply_all') }}
-            </button>
-            <button type="button" class="btn btn-success btn-sm me-2" onclick="markAllValid()">
-                <i class="bi bi-check-all"></i> {{ 'Validate All' if current_language == 'en' else 'Sahkan Semua' }}
-            </button>
-            <button type="button" class="btn btn-warning" onclick="commitRecords()">
-                <i class="bi bi-database-fill-up"></i> {{ 'Save to Catalog' if current_language == 'en' else 'Simpan ke Daftar' }}
+        <div>
+            <a href="{{ url_for('ocr.view_job', job_id=job.id) }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+            <button type="button" class="btn btn-success btn-sm ms-2" onclick="markAllValid()">
+                <i class="bi bi-check-all"></i> Mark All Valid
             </button>
         </div>
     </div>
 </div>
 
 <!-- AI Autofill Info -->
-<div class="alert alert-info d-flex align-items-center mb-3" role="alert">
+<div class="alert alert-info d-flex align-items-center mb-4" role="alert">
     <i class="bi bi-robot fs-4 me-3"></i>
     <div>
-        {% if current_language == 'en' %}
-        <strong>AI Assist Active</strong> - As you type, the system will suggest matches from the database. 
-        Press <kbd>Tab</kbd> or click to accept suggestions. 
-        <span class="ai-badge">AI</span> indicates fields with automatic suggestions.
-        {% else %}
-        <strong>Bantuan AI Aktif</strong> - Semasa anda menaip, sistem akan mencadangkan padanan dari pangkalan data. 
-        Tekan <kbd>Tab</kbd> atau klik untuk menerima cadangan. 
-        <span class="ai-badge">AI</span> menunjukkan medan dengan cadangan automatik.
-        {% endif %}
+        <strong>AI Autofill Active</strong> - As you type, the system will suggest matching members and books from the database. 
+        High-confidence matches (80%+) are auto-filled. Click suggestions to apply.
     </div>
 </div>
 
-<!-- Ledger Table -->
-<div class="table-container">
-    <table class="table ledger-table mb-0" id="ledgerTable">
-        <thead>
-            <tr>
-                <th class="col-no">#</th>
-                <th class="col-no">{{ t('no_perolehan') }}</th>
-                <th class="col-panggilan">{{ t('no_panggilan') }}</th>
-                <th class="col-pengarang">{{ t('pengarang') }}</th>
-                <th class="col-tajuk">{{ t('tajuk_buku') }}</th>
-                <th class="col-penerbit">{{ t('penerbit') }}</th>
-                <th class="col-tarikh">{{ t('tarikh_penerbit') }}</th>
-                <th class="col-tarikh">{{ t('tarikh_perolehan') }}</th>
-                <th class="col-bil">{{ t('bil_no') }}</th>
-                <th class="col-punca">{{ t('punca') }}</th>
-                <th class="col-harga">{{ t('harga_rm') }}</th>
-                <th class="col-muka">{{ t('muka_surat') }}</th>
-                <th class="col-catatan">{{ t('catatan') }}</th>
-                <th class="col-actions">{{ t('status') }}</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for result in results %}
-            <tr id="row-{{ result.id }}" 
-                class="{% if result.is_reviewed %}{% if result.is_valid %}row-valid{% else %}row-invalid{% endif %}{% else %}row-pending{% endif %}"
-                data-result-id="{{ result.id }}">
-                
-                <!-- Row Number -->
-                <td class="text-center">
-                    <strong>{{ result.row_number }}</strong>
-                    {% if result.confidence_overall and result.confidence_overall > 0.7 %}
-                    <span class="ai-badge" title="AI confidence: {{ (result.confidence_overall * 100)|int }}%">AI</span>
-                    {% endif %}
-                </td>
-                
-                <!-- No Perolehan -->
-                <td class="editable-cell">
-                    <input type="text" class="cell-input" 
-                           name="no_perolehan" 
-                           data-field="no_perolehan"
-                           data-original="{{ result.no_perolehan_extracted or '' }}"
-                           value="{{ result.no_perolehan_corrected or result.no_perolehan_extracted or '' }}"
-                           placeholder="{{ 'e.g., 40.21' if current_language == 'en' else 'cth: 40.21' }}">
-                    <div class="suggestion-dropdown"></div>
-                </td>
-                
-                <!-- No Panggilan -->
-                <td class="editable-cell">
-                    <input type="text" class="cell-input" 
-                           name="no_panggilan"
-                           data-field="no_panggilan"
-                           data-original="{{ result.no_panggilan_extracted or '' }}"
-                           value="{{ result.no_panggilan_corrected or result.no_panggilan_extracted or '' }}"
-                           placeholder="cth: 400.233">
-                    <div class="suggestion-dropdown"></div>
-                </td>
-                
-                <!-- Pengarang -->
-                <td class="editable-cell">
-                    <input type="text" class="cell-input" 
-                           name="pengarang"
-                           data-field="pengarang"
-                           data-original="{{ result.pengarang_extracted or '' }}"
-                           value="{{ result.pengarang_corrected or result.pengarang_extracted or '' }}"
-                           placeholder="Nama pengarang">
-                    <div class="suggestion-dropdown"></div>
-                </td>
-                
-                <!-- Tajuk Buku -->
-                <td class="editable-cell">
-                    <input type="text" class="cell-input" 
-                           name="tajuk_buku"
-                           data-field="tajuk_buku"
-                           data-original="{{ result.tajuk_buku_extracted or '' }}"
-                           value="{{ result.tajuk_buku_corrected or result.tajuk_buku_extracted or '' }}"
-                           placeholder="Tajuk buku">
-                    <div class="suggestion-dropdown"></div>
-                </td>
-                
-                <!-- Penerbit -->
-                <td class="editable-cell">
-                    <input type="text" class="cell-input" 
-                           name="penerbit"
-                           data-field="penerbit"
-                           data-original="{{ result.penerbit_extracted or '' }}"
-                           value="{{ result.penerbit_corrected or result.penerbit_extracted or '' }}"
-                           placeholder="Tempat, Penerbit">
-                    <div class="suggestion-dropdown"></div>
-                </td>
-                
-                <!-- Tarikh Penerbit -->
-                <td class="editable-cell">
-                    <input type="text" class="cell-input" 
-                           name="tarikh_penerbit"
-                           data-field="tarikh_penerbit"
-                           data-original="{{ result.tarikh_penerbit_extracted or '' }}"
-                           value="{{ result.tarikh_penerbit_corrected or result.tarikh_penerbit_extracted or '' }}"
-                           placeholder="Tahun"
-                           style="width: 70px;">
-                </td>
-                
-                <!-- Tarikh Perolehan -->
-                <td class="editable-cell">
-                    <input type="text" class="cell-input" 
-                           name="tarikh_perolehan"
-                           data-field="tarikh_perolehan"
-                           data-original="{{ result.tarikh_perolehan_extracted or '' }}"
-                           value="{{ result.tarikh_perolehan_corrected.strftime('%Y') if result.tarikh_perolehan_corrected else (result.tarikh_perolehan_extracted or '') }}"
-                           placeholder="Tahun"
-                           style="width: 70px;">
-                </td>
-                
-                <!-- Bil No -->
-                <td class="editable-cell">
-                    <input type="text" class="cell-input" 
-                           name="bil_no"
-                           data-field="bil_no"
-                           data-original="{{ result.bil_no_extracted or '' }}"
-                           value="{{ result.bil_no_corrected or result.bil_no_extracted or '' }}"
-                           placeholder=""
-                           style="width: 50px;">
-                </td>
-                
-                <!-- Punca -->
-                <td class="editable-cell">
-                    <input type="text" class="cell-input" 
-                           name="punca"
-                           data-field="punca"
-                           data-original="{{ result.punca_extracted or '' }}"
-                           value="{{ result.punca_corrected or result.punca_extracted or '' }}"
-                           placeholder="">
-                </td>
-                
-                <!-- Harga -->
-                <td class="editable-cell">
-                    <input type="text" class="cell-input" 
-                           name="harga"
-                           data-field="harga"
-                           data-original="{{ result.harga_rm_extracted or '' }}.{{ result.harga_sen_extracted or '00' }}"
-                           value="{{ '%.2f'|format(result.harga_rm_corrected|float) if result.harga_rm_corrected else ((result.harga_rm_extracted or '') + '.' + (result.harga_sen_extracted or '00') if result.harga_rm_extracted else '') }}"
-                           placeholder="0.00"
-                           style="width: 60px;">
-                </td>
-                
-                <!-- Muka Surat -->
-                <td class="editable-cell">
-                    <input type="text" class="cell-input" 
-                           name="muka_surat"
-                           data-field="muka_surat"
-                           data-original="{{ result.muka_surat_extracted or '' }}"
-                           value="{{ result.muka_surat_corrected or result.muka_surat_extracted or '' }}"
-                           placeholder=""
-                           style="width: 50px;">
-                </td>
-                
-                <!-- Catatan -->
-                <td class="editable-cell">
-                    <input type="text" class="cell-input" 
-                           name="catatan"
-                           data-field="catatan"
-                           data-original="{{ result.catatan_extracted or '' }}"
-                           value="{{ result.catatan_corrected or result.catatan_extracted or '' }}"
-                           placeholder="">
-                </td>
-                
-                <!-- Status & Actions -->
-                <td class="row-actions text-center">
-                    {% if result.is_reviewed %}
-                        {% if result.is_valid %}
-                        <span class="badge bg-success status-badge">✓ Sah</span>
-                        {% else %}
-                        <span class="badge bg-danger status-badge">✗ Batal</span>
-                        {% endif %}
-                    {% else %}
-                    <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-outline-success btn-validate" 
-                                onclick="validateRow({{ result.id }}, true)" title="Sahkan">
-                            <i class="bi bi-check"></i>
-                        </button>
-                        <button type="button" class="btn btn-outline-danger btn-validate" 
-                                onclick="validateRow({{ result.id }}, false)" title="Batalkan">
-                            <i class="bi bi-x"></i>
-                        </button>
-                    </div>
-                    {% endif %}
-                </td>
-            </tr>
-            
-            <!-- Raw text row (collapsible) -->
-            <tr class="raw-text-row" data-parent-row="{{ result.id }}">
-                <td></td>
-                <td colspan="13" class="raw-text-cell py-1">
-                    <small><i class="bi bi-text-paragraph me-1"></i>{{ result.raw_text }}</small>
+<!-- Results Table -->
+<div class="card table-card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th width="40">#</th>
+                        <th width="120">Raw Member ID</th>
+                        <th width="200">Corrected Member</th>
+                        <th width="120">Raw Book ID</th>
+                        <th width="200">Corrected Book</th>
+                        <th width="100">Date</th>
+                        <th width="80">Status</th>
+                        <th width="100">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in results %}
+                    <tr id="row-{{ result.id }}" class="{% if result.is_reviewed %}{% if result.is_valid %}table-success{% else %}table-danger{% endif %}{% endif %}">
+                        <td>{{ result.row_number }}</td>
+                        
+                        <!-- Raw Member ID -->
+                        <td>
+                            <small class="text-muted">{{ result.member_id_extracted or '-' }}</small>
+                            {% if result.review_notes and 'member' in result.review_notes.lower() %}
+                            <br><span class="badge bg-info text-dark" style="font-size: 0.65rem;">AI suggestion</span>
+                            {% endif %}
+                        </td>
+                        
+                        <!-- Corrected Member with AI Autofill -->
+                        <td>
+                            <div class="position-relative">
+                                <input type="text" 
+                                       class="form-control form-control-sm member-input" 
+                                       id="member-{{ result.id }}"
+                                       data-result-id="{{ result.id }}"
+                                       value="{{ result.reviewed_member_id or result.member_id_extracted or '' }}"
+                                       placeholder="Type member ID..."
+                                       autocomplete="off">
+                                <div class="suggestions-dropdown" id="member-suggestions-{{ result.id }}"></div>
+                            </div>
+                        </td>
+                        
+                        <!-- Raw Book ID -->
+                        <td>
+                            <small class="text-muted">{{ result.book_id_extracted or '-' }}</small>
+                            {% if result.review_notes and 'book' in result.review_notes.lower() %}
+                            <br><span class="badge bg-info text-dark" style="font-size: 0.65rem;">AI suggestion</span>
+                            {% endif %}
+                        </td>
+                        
+                        <!-- Corrected Book with AI Autofill -->
+                        <td>
+                            <div class="position-relative">
+                                <input type="text" 
+                                       class="form-control form-control-sm book-input" 
+                                       id="book-{{ result.id }}"
+                                       data-result-id="{{ result.id }}"
+                                       value="{{ result.reviewed_book_id or result.book_id_extracted or '' }}"
+                                       placeholder="Type accession #..."
+                                       autocomplete="off">
+                                <div class="suggestions-dropdown" id="book-suggestions-{{ result.id }}"></div>
+                            </div>
+                        </td>
+                        
+                        <!-- Date -->
+                        <td>
+                            <input type="date" 
+                                   class="form-control form-control-sm date-input" 
+                                   id="date-{{ result.id }}"
+                                   data-result-id="{{ result.id }}"
+                                   value="{{ result.reviewed_date.strftime('%Y-%m-%d') if result.reviewed_date else (result.parsed_date.strftime('%Y-%m-%d') if result.parsed_date else '') }}">
+                        </td>
+                        
+                        <!-- Status -->
+                        <td>
+                            {% if result.is_reviewed %}
+                                {% if result.is_valid %}
+                                <span class="badge bg-success">Valid</span>
+                                {% else %}
+                                <span class="badge bg-danger">Invalid</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="badge bg-secondary">Pending</span>
+                            {% endif %}
+                        </td>
+                        
+                        <!-- Actions -->
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-success" 
+                                        onclick="saveResult({{ result.id }}, true)" title="Mark Valid">
+                                    <i class="bi bi-check"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger" 
+                                        onclick="saveResult({{ result.id }}, false)" title="Mark Invalid">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
                     {% if result.review_notes %}
-                    <br><small class="text-info"><i class="bi bi-robot me-1"></i>{{ result.review_notes }}</small>
+                    <tr class="table-light">
+                        <td></td>
+                        <td colspan="7">
+                            <small class="text-info"><i class="bi bi-robot"></i> {{ result.review_notes }}</small>
+                        </td>
+                    </tr>
                     {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
-<!-- Floating Action Button -->
-<div class="position-fixed bottom-0 end-0 p-4">
-    <form method="POST" action="{{ url_for('ocr.commit_job', job_id=job.id) }}" id="commitForm">
-        <button type="submit" class="btn btn-warning btn-lg shadow" 
-                onclick="return confirm('Simpan semua rekod yang disahkan ke Daftar Buku Perpustakaan?')">
-            <i class="bi bi-database-fill-up me-2"></i>
-            Simpan ke Daftar
+<!-- Action Buttons -->
+<div class="mt-4 d-flex justify-content-between">
+    <a href="{{ url_for('ocr.view_job', job_id=job.id) }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Job
+    </a>
+    <form method="POST" action="{{ url_for('ocr.commit_job', job_id=job.id) }}" class="d-inline">
+        <button type="submit" class="btn btn-warning" onclick="return confirm('Commit all validated records to loan history?')">
+            <i class="bi bi-database-fill-up"></i> Commit Valid Records
         </button>
     </form>
 </div>
 
+<style>
+.suggestions-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    z-index: 1000;
+    display: none;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.suggestions-dropdown.show {
+    display: block;
+}
+
+.suggestion-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-item:hover {
+    background: #f0f7ff;
+}
+
+.suggestion-item .confidence {
+    float: right;
+    font-size: 0.75rem;
+    color: #666;
+}
+
+.suggestion-item .confidence.high {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.suggestion-item .id {
+    font-weight: 600;
+    color: #1a3a6e;
+}
+
+.suggestion-item .name {
+    font-size: 0.85rem;
+    color: #666;
+}
+</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
-// Global state
-let autoSaveEnabled = true;
-let saveTimeout = null;
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
-    initializeInputListeners();
-    initializeSuggestionSystem();
-    updateProgress();
-    
-    // Toggle raw text visibility
-    document.getElementById('showRawText').addEventListener('change', function() {
-        document.querySelectorAll('.raw-text-row').forEach(row => {
-            row.style.display = this.checked ? '' : 'none';
-        });
-    });
-    
-    // Toggle auto-save
-    document.getElementById('autoSave').addEventListener('change', function() {
-        autoSaveEnabled = this.checked;
-    });
-});
-
-// Initialize input change listeners
-function initializeInputListeners() {
-    document.querySelectorAll('.cell-input').forEach(input => {
-        input.addEventListener('change', function() {
-            const row = this.closest('tr');
-            const resultId = row.dataset.resultId;
-            
-            // Mark as modified
-            this.classList.add('modified');
-            
-            // Auto-save after delay
-            if (autoSaveEnabled) {
-                clearTimeout(saveTimeout);
-                saveTimeout = setTimeout(() => saveRow(resultId), 1000);
-            }
-        });
-        
-        // Keyboard navigation
-        input.addEventListener('keydown', function(e) {
-            if (e.key === 'Tab' && !e.shiftKey) {
-                // Accept suggestion if dropdown is open
-                const dropdown = this.parentElement.querySelector('.suggestion-dropdown');
-                if (dropdown && dropdown.classList.contains('show')) {
-                    const active = dropdown.querySelector('.suggestion-item.active');
-                    if (active) {
-                        e.preventDefault();
-                        applySuggestion(this, active);
-                    }
-                }
-            } else if (e.key === 'ArrowDown') {
-                navigateSuggestions(this, 1);
-                e.preventDefault();
-            } else if (e.key === 'ArrowUp') {
-                navigateSuggestions(this, -1);
-                e.preventDefault();
-            } else if (e.key === 'Escape') {
-                closeSuggestions(this);
-            } else if (e.key === 'Enter') {
-                const dropdown = this.parentElement.querySelector('.suggestion-dropdown');
-                if (dropdown && dropdown.classList.contains('show')) {
-                    const active = dropdown.querySelector('.suggestion-item.active');
-                    if (active) {
-                        e.preventDefault();
-                        applySuggestion(this, active);
-                    }
-                }
-            }
-        });
-    });
-}
-
-// Initialize AI suggestion system
-function initializeSuggestionSystem() {
-    const suggestibleFields = ['pengarang', 'tajuk_buku', 'penerbit', 'no_panggilan'];
-    
-    document.querySelectorAll('.cell-input').forEach(input => {
-        const field = input.dataset.field;
-        
-        if (suggestibleFields.includes(field)) {
-            input.addEventListener('input', debounce(function() {
-                const value = this.value.trim();
-                if (value.length >= 2) {
-                    fetchSuggestions(this, field, value);
-                } else {
-                    closeSuggestions(this);
-                }
-            }, 300));
-            
-            input.addEventListener('blur', function() {
-                setTimeout(() => closeSuggestions(this), 200);
-            });
-        }
-    });
-}
-
-// Fetch suggestions from API
-function fetchSuggestions(input, field, value) {
-    fetch('{{ url_for("ocr.api_suggest") }}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({ field: field, value: value })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.suggestions && data.suggestions.length > 0) {
-            showSuggestions(input, data.suggestions, data.related);
-        } else {
-            closeSuggestions(input);
-        }
-    })
-    .catch(err => console.error('Suggestion error:', err));
-}
-
-// Show suggestions dropdown
-function showSuggestions(input, suggestions, related) {
-    const dropdown = input.parentElement.querySelector('.suggestion-dropdown');
-    if (!dropdown) return;
-    
-    dropdown.innerHTML = suggestions.map((s, i) => `
-        <div class="suggestion-item ${i === 0 ? 'active' : ''}" 
-             data-value="${escapeHtml(s.value)}"
-             data-related='${JSON.stringify(s)}'>
-            <span>${escapeHtml(s.display || s.value)}</span>
-            ${s.similarity ? `<span class="confidence">${Math.round(s.similarity * 100)}%</span>` : ''}
-            ${s.secondary ? `<div class="secondary">${escapeHtml(s.secondary)}</div>` : ''}
-        </div>
-    `).join('');
-    
-    // Add click handlers
-    dropdown.querySelectorAll('.suggestion-item').forEach(item => {
-        item.addEventListener('click', () => applySuggestion(input, item));
-    });
-    
-    dropdown.classList.add('show');
-    input.classList.add('has-suggestion');
-}
-
-// Apply selected suggestion
-function applySuggestion(input, suggestionItem) {
-    const value = suggestionItem.dataset.value;
-    const related = JSON.parse(suggestionItem.dataset.related || '{}');
-    
-    input.value = value;
-    input.classList.remove('has-suggestion');
-    input.classList.add('ai-corrected');
-    closeSuggestions(input);
-    
-    // Apply related fields (e.g., author when title is selected)
-    if (related.author && input.dataset.field === 'tajuk_buku') {
-        const row = input.closest('tr');
-        const authorInput = row.querySelector('input[name="pengarang"]');
-        if (authorInput && !authorInput.value) {
-            authorInput.value = related.author;
-            authorInput.classList.add('ai-corrected');
-        }
-    }
-    
-    if (related.publisher && input.dataset.field === 'tajuk_buku') {
-        const row = input.closest('tr');
-        const pubInput = row.querySelector('input[name="penerbit"]');
-        if (pubInput && !pubInput.value) {
-            pubInput.value = related.publisher;
-            pubInput.classList.add('ai-corrected');
-        }
-    }
-    
-    // Trigger auto-save
-    input.dispatchEvent(new Event('change'));
-}
-
-// Close suggestions dropdown
-function closeSuggestions(input) {
-    const dropdown = input.parentElement.querySelector('.suggestion-dropdown');
-    if (dropdown) {
-        dropdown.classList.remove('show');
-    }
-    input.classList.remove('has-suggestion');
-}
-
-// Navigate suggestions with arrow keys
-function navigateSuggestions(input, direction) {
-    const dropdown = input.parentElement.querySelector('.suggestion-dropdown');
-    if (!dropdown || !dropdown.classList.contains('show')) return;
-    
-    const items = dropdown.querySelectorAll('.suggestion-item');
-    if (items.length === 0) return;
-    
-    let activeIndex = -1;
-    items.forEach((item, i) => {
-        if (item.classList.contains('active')) {
-            activeIndex = i;
-            item.classList.remove('active');
-        }
-    });
-    
-    let newIndex = activeIndex + direction;
-    if (newIndex < 0) newIndex = items.length - 1;
-    if (newIndex >= items.length) newIndex = 0;
-    
-    items[newIndex].classList.add('active');
-    items[newIndex].scrollIntoView({ block: 'nearest' });
-}
-
-// Save row data
-function saveRow(resultId) {
-    const row = document.querySelector(`tr[data-result-id="${resultId}"]`);
-    if (!row) return;
-    
-    const data = {
-        result_id: resultId,
-        no_perolehan: row.querySelector('input[name="no_perolehan"]').value,
-        no_panggilan: row.querySelector('input[name="no_panggilan"]').value,
-        pengarang: row.querySelector('input[name="pengarang"]').value,
-        tajuk_buku: row.querySelector('input[name="tajuk_buku"]').value,
-        penerbit: row.querySelector('input[name="penerbit"]').value,
-        tarikh_penerbit: row.querySelector('input[name="tarikh_penerbit"]').value,
-        tarikh_perolehan: row.querySelector('input[name="tarikh_perolehan"]').value,
-        bil_no: row.querySelector('input[name="bil_no"]').value,
-        punca: row.querySelector('input[name="punca"]').value,
-        harga: row.querySelector('input[name="harga"]').value,
-        muka_surat: row.querySelector('input[name="muka_surat"]').value,
-        catatan: row.querySelector('input[name="catatan"]').value
-    };
-    
-    fetch('{{ url_for("ocr.api_save_result") }}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            // Visual feedback
-            row.querySelectorAll('.modified').forEach(el => el.classList.remove('modified'));
-            showToast('Disimpan', 'success');
-        }
-    })
-    .catch(err => {
-        console.error('Save error:', err);
-        showToast('Ralat menyimpan', 'error');
-    });
-}
-
-// Validate row
-function validateRow(resultId, isValid) {
-    const row = document.querySelector(`tr[data-result-id="${resultId}"]`);
-    if (!row) return;
-    
-    // First save the data
-    saveRow(resultId);
-    
-    // Then mark as validated
-    fetch('{{ url_for("ocr.api_validate_result") }}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({ result_id: resultId, is_valid: isValid })
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            // Update row appearance
-            row.classList.remove('row-pending', 'row-valid', 'row-invalid');
-            row.classList.add(isValid ? 'row-valid' : 'row-invalid');
-            
-            // Update status cell
-            const actionCell = row.querySelector('.row-actions');
-            actionCell.innerHTML = isValid 
-                ? '<span class="badge bg-success status-badge">✓ Sah</span>'
-                : '<span class="badge bg-danger status-badge">✗ Batal</span>';
-            
-            updateProgress();
-        }
-    })
-    .catch(err => console.error('Validate error:', err));
-}
-
-// Mark all rows as valid
-function markAllValid() {
-    if (!confirm('Sahkan semua rekod yang belum disemak?')) return;
-    
-    document.querySelectorAll('tr.row-pending').forEach(row => {
-        const resultId = row.dataset.resultId;
-        validateRow(resultId, true);
-    });
-}
-
-// Apply all AI suggestions
-function applyAllAISuggestions() {
-    if (!confirm('Gunakan semua cadangan AI untuk medan kosong?')) return;
-    
-    document.querySelectorAll('.cell-input').forEach(input => {
-        if (!input.value && input.dataset.original) {
-            // Use extracted value as fallback
-            const original = input.dataset.original;
-            if (original && original.length > 1) {
-                input.value = original;
-            }
-        }
-    });
-    
-    showToast('Cadangan AI digunakan', 'success');
-}
-
-// Update progress bar
-function updateProgress() {
-    const total = document.querySelectorAll('tr[data-result-id]').length;
-    const reviewed = document.querySelectorAll('tr.row-valid, tr.row-invalid').length;
-    
-    const percent = total > 0 ? (reviewed / total * 100) : 0;
-    document.getElementById('progressBar').style.width = percent + '%';
-    document.getElementById('progressText').textContent = reviewed + '/' + total;
-}
-
-// Commit records
-function commitRecords() {
-    document.getElementById('commitForm').submit();
-}
-
-// Utility functions
+// Debounce function to limit API calls
 function debounce(func, wait) {
     let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func.apply(this, args);
-        };
+    return function(...args) {
         clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
+        timeout = setTimeout(() => func.apply(this, args), wait);
     };
 }
 
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+// Hide all suggestions
+function hideAllSuggestions() {
+    document.querySelectorAll('.suggestions-dropdown').forEach(el => {
+        el.classList.remove('show');
+    });
 }
 
-function showToast(message, type) {
-    // Simple toast notification
-    const toast = document.createElement('div');
-    toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed`;
-    toast.style.cssText = 'bottom: 20px; left: 20px; z-index: 9999; min-width: 200px;';
-    toast.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>${message}`;
-    document.body.appendChild(toast);
+// Show member suggestions
+async function fetchMemberSuggestions(inputEl) {
+    const query = inputEl.value.trim();
+    const resultId = inputEl.dataset.resultId;
+    const dropdown = document.getElementById('member-suggestions-' + resultId);
     
-    setTimeout(() => toast.remove(), 2000);
+    if (query.length < 2) {
+        dropdown.classList.remove('show');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/ocr/api/suggest/member', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query: query })
+        });
+        
+        const data = await response.json();
+        
+        if (data.suggestions && data.suggestions.length > 0) {
+            dropdown.innerHTML = data.suggestions.map(s => `
+                <div class="suggestion-item" onclick="selectMember(${resultId}, '${s.id}')">
+                    <span class="confidence ${s.confidence >= 0.8 ? 'high' : ''}">${Math.round(s.confidence * 100)}%</span>
+                    <span class="id">${s.id}</span>
+                    <div class="name">${s.name || ''}</div>
+                </div>
+            `).join('');
+            dropdown.classList.add('show');
+        } else {
+            dropdown.classList.remove('show');
+        }
+    } catch (err) {
+        console.error('Error fetching member suggestions:', err);
+    }
 }
+
+// Show book suggestions
+async function fetchBookSuggestions(inputEl) {
+    const query = inputEl.value.trim();
+    const resultId = inputEl.dataset.resultId;
+    const dropdown = document.getElementById('book-suggestions-' + resultId);
+    
+    if (query.length < 2) {
+        dropdown.classList.remove('show');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/ocr/api/suggest/book', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query: query })
+        });
+        
+        const data = await response.json();
+        
+        if (data.suggestions && data.suggestions.length > 0) {
+            dropdown.innerHTML = data.suggestions.map(s => `
+                <div class="suggestion-item" onclick="selectBook(${resultId}, '${s.id}')">
+                    <span class="confidence ${s.confidence >= 0.8 ? 'high' : ''}">${Math.round(s.confidence * 100)}%</span>
+                    <span class="id">${s.id}</span>
+                    <div class="name">${s.title || ''}</div>
+                </div>
+            `).join('');
+            dropdown.classList.add('show');
+        } else {
+            dropdown.classList.remove('show');
+        }
+    } catch (err) {
+        console.error('Error fetching book suggestions:', err);
+    }
+}
+
+// Select member from dropdown
+function selectMember(resultId, memberId) {
+    document.getElementById('member-' + resultId).value = memberId;
+    document.getElementById('member-suggestions-' + resultId).classList.remove('show');
+}
+
+// Select book from dropdown
+function selectBook(resultId, bookId) {
+    document.getElementById('book-' + resultId).value = bookId;
+    document.getElementById('book-suggestions-' + resultId).classList.remove('show');
+}
+
+// Save result
+async function saveResult(resultId, isValid) {
+    const memberId = document.getElementById('member-' + resultId).value;
+    const bookId = document.getElementById('book-' + resultId).value;
+    const dateVal = document.getElementById('date-' + resultId).value;
+    
+    const formData = new FormData();
+    formData.append('is_valid', isValid ? 'true' : 'false');
+    formData.append('member_id', memberId);
+    formData.append('book_id', bookId);
+    formData.append('date', dateVal);
+    
+    try {
+        const response = await fetch('/ocr/result/' + resultId + '/update', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const row = document.getElementById('row-' + resultId);
+            row.classList.remove('table-success', 'table-danger');
+            row.classList.add(isValid ? 'table-success' : 'table-danger');
+            
+            // Update status badge
+            const statusCell = row.querySelector('td:nth-child(7)');
+            statusCell.innerHTML = isValid 
+                ? '<span class="badge bg-success">Valid</span>'
+                : '<span class="badge bg-danger">Invalid</span>';
+        }
+    } catch (err) {
+        console.error('Error saving result:', err);
+        alert('Failed to save result');
+    }
+}
+
+// Mark all as valid
+function markAllValid() {
+    if (!confirm('Mark all rows as valid?')) return;
+    
+    document.querySelectorAll('tr[id^="row-"]').forEach(row => {
+        const resultId = row.id.replace('row-', '');
+        saveResult(parseInt(resultId), true);
+    });
+}
+
+// Initialize event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Member input listeners
+    document.querySelectorAll('.member-input').forEach(input => {
+        input.addEventListener('input', debounce(function() {
+            fetchMemberSuggestions(this);
+        }, 300));
+        
+        input.addEventListener('focus', function() {
+            if (this.value.length >= 2) {
+                fetchMemberSuggestions(this);
+            }
+        });
+    });
+    
+    // Book input listeners
+    document.querySelectorAll('.book-input').forEach(input => {
+        input.addEventListener('input', debounce(function() {
+            fetchBookSuggestions(this);
+        }, 300));
+        
+        input.addEventListener('focus', function() {
+            if (this.value.length >= 2) {
+                fetchBookSuggestions(this);
+            }
+        });
+    });
+    
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.position-relative')) {
+            hideAllSuggestions();
+        }
+    });
+});
 </script>
 {% endblock %}

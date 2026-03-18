@@ -195,6 +195,25 @@ class OCRResult(db.Model):
     catatan_corrected = db.Column(db.Text)
     
     # ============================================
+    # Circulation Ledger Fields (Loan/Return records)
+    # ============================================
+    
+    # Member/Borrower information
+    member_id_extracted = db.Column(db.String(64))
+    member_name_extracted = db.Column(db.String(256))
+    reviewed_member_id = db.Column(db.String(64))
+    
+    # Book information (for circulation)
+    book_id_extracted = db.Column(db.String(64))
+    book_title_extracted = db.Column(db.String(512))
+    reviewed_book_id = db.Column(db.String(64))
+    
+    # Transaction details
+    transaction_type = db.Column(db.String(32))  # 'loan', 'return'
+    date_extracted = db.Column(db.String(64))
+    parsed_date = db.Column(db.Date)
+    
+    # ============================================
     # Confidence scores (0.0 - 1.0)
     # ============================================
     confidence_overall = db.Column(db.Float, default=0.0)
