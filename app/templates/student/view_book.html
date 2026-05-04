@@ -7,8 +7,8 @@
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{{ url_for('student.index') }}">Portal Pelajar</a></li>
-            <li class="breadcrumb-item"><a href="{{ url_for('student.search_books') }}">Cari Buku</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('student.index') }}">{{ t('student_portal') }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('student.search_books') }}">{{ t('search_books') }}</a></li>
             <li class="breadcrumb-item active">{{ book.title[:30] }}...</li>
         </ol>
     </nav>
@@ -36,30 +36,30 @@
                                     <strong>{{ book.isbn or '-' }}</strong>
                                 </div>
                                 <div class="col-6 col-md-4 mb-2">
-                                    <small class="text-muted d-block">Kategori</small>
+                                    <small class="text-muted d-block">{{ t('category') }}</small>
                                     <span class="badge bg-secondary">{{ book.category or 'General' }}</span>
                                 </div>
                                 <div class="col-6 col-md-4 mb-2">
-                                    <small class="text-muted d-block">Bahasa</small>
+                                    <small class="text-muted d-block">{{ t('language') }}</small>
                                     <strong>{{ book.language or 'Malay' }}</strong>
                                 </div>
                                 <div class="col-6 col-md-4 mb-2">
-                                    <small class="text-muted d-block">Penerbit</small>
+                                    <small class="text-muted d-block">{{ t('publisher') }}</small>
                                     <strong>{{ book.publisher or '-' }}</strong>
                                 </div>
                                 <div class="col-6 col-md-4 mb-2">
-                                    <small class="text-muted d-block">Tahun</small>
+                                    <small class="text-muted d-block">{{ t('year') }}</small>
                                     <strong>{{ book.publication_year or '-' }}</strong>
                                 </div>
                                 <div class="col-6 col-md-4 mb-2">
-                                    <small class="text-muted d-block">No. Panggilan</small>
+                                    <small class="text-muted d-block">{{ t('call_number') }}</small>
                                     <strong class="text-primary">{{ book.call_number or '-' }}</strong>
                                 </div>
                             </div>
 
                             {% if book.description %}
                             <div class="mt-3">
-                                <small class="text-muted d-block mb-1">Sinopsis</small>
+                                <small class="text-muted d-block mb-1">{{ t('synopsis') }}</small>
                                 <p>{{ book.description }}</p>
                             </div>
                             {% endif %}
@@ -74,7 +74,7 @@
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white">
                     <h5 class="mb-0">
-                        <i class="bi bi-geo-alt me-2"></i>Ketersediaan
+                        <i class="bi bi-geo-alt me-2"></i>{{ t('availability') }}
                     </h5>
                 </div>
                 <div class="card-body">
@@ -82,16 +82,16 @@
                         <div class="display-4 {{ 'text-success' if available_copies else 'text-danger' }}">
                             {{ available_copies|length }}
                         </div>
-                        <p class="mb-0">daripada {{ total_copies }} naskhah tersedia</p>
+                        <p class="mb-0">{{ t('out_of_copies') }} {{ total_copies }}</p>
                     </div>
 
                     {% if available_copies %}
                     <div class="alert alert-success d-flex align-items-center" role="alert">
                         <i class="bi bi-check-circle-fill me-2"></i>
-                        <div>Buku ini tersedia untuk dipinjam!</div>
+                        <div>{{ t('available_to_borrow') }}</div>
                     </div>
 
-                    <h6 class="mb-3">Lokasi Naskhah:</h6>
+                    <h6 class="mb-3">{{ t('copy_location') }}</h6>
                     <ul class="list-group list-group-flush">
                         {% for copy in available_copies %}
                         <li class="list-group-item d-flex justify-content-between align-items-start px-0">
@@ -99,7 +99,7 @@
                                 <strong>{{ copy.accession_number }}</strong>
                                 <br>
                                 <small class="text-muted">
-                                    <i class="bi bi-geo me-1"></i>{{ copy.location or 'Rak Umum' }}
+                                    <i class="bi bi-geo me-1"></i>{{ copy.location or t('general_shelf') }}
                                 </small>
                             </div>
                             <span class="badge bg-{{ 'success' if copy.condition == 'Good' else 'warning' }}">
@@ -111,7 +111,7 @@
                     {% else %}
                     <div class="alert alert-warning d-flex align-items-center" role="alert">
                         <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                        <div>Semua naskhah sedang dipinjam. Sila semak kemudian.</div>
+                        <div>{{ t('all_copies_borrowed') }}</div>
                     </div>
                     {% endif %}
                 </div>
@@ -121,15 +121,15 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white">
                     <h6 class="mb-0">
-                        <i class="bi bi-info-circle me-2"></i>Cara Meminjam
+                        <i class="bi bi-info-circle me-2"></i>{{ t('how_to_borrow') }}
                     </h6>
                 </div>
                 <div class="card-body">
                     <ol class="mb-0 ps-3">
-                        <li class="mb-2">Cari buku di rak mengikut No. Panggilan</li>
-                        <li class="mb-2">Bawa ke kaunter perpustakaan</li>
-                        <li class="mb-2">Tunjukkan kad pelajar</li>
-                        <li>Pustakawan akan proses pinjaman</li>
+                        <li class="mb-2">{{ t('find_book_by_call_number') }}</li>
+                        <li class="mb-2">{{ t('bring_to_counter') }}</li>
+                        <li class="mb-2">{{ t('show_student_card') }}</li>
+                        <li>{{ t('librarian_will_process') }}</li>
                     </ol>
                 </div>
             </div>

@@ -175,18 +175,13 @@
         </div>
         
         <ul class="nav flex-column">
-            <li class="nav-item">
-                <a class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
-                    <i class="bi bi-speedometer2"></i> {{ t('dashboard') }}
-                </a>
-            </li>
-            
             {% if current_user.role and current_user.role.name == 'Student' %}
-            <!-- Student Portal - Only for students -->
-            <li class="sidebar-section">{{ t('my_loans') if current_language == 'en' else 'Portal Pelajar' }}</li>
+            <!-- ====== STUDENT PORTAL ====== -->
+            <!-- Student Portal - Only for students, NO dashboard -->
+            <li class="sidebar-section">{{ t('student_portal') }}</li>
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'student.index' %}active{% endif %}" href="{{ url_for('student.index') }}">
-                    <i class="bi bi-house"></i> {{ 'Home' if current_language == 'en' else 'Portal Utama' }}
+                    <i class="bi bi-house"></i> {{ t('home') }}
                 </a>
             </li>
             <li class="nav-item">
@@ -204,10 +199,18 @@
                     <i class="bi bi-trophy"></i> {{ t('leaderboard') }}
                 </a>
             </li>
-            {% endif %}
+            
+            {% else %}
+            <!-- ====== STAFF DASHBOARD ====== -->
+            <!-- Staff/Librarian - Show dashboard and staff sections -->
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
+                    <i class="bi bi-speedometer2"></i> {{ t('dashboard') }}
+                </a>
+            </li>
             
             {% if current_user.can(1) or current_user.can(2) %}
-            <!-- Staff sections - Catalog, Circulation, etc -->
+            <!-- Catalog & Circulation sections -->
             <li class="sidebar-section">{{ t('catalog') }}</li>
             <li class="nav-item">
                 <a class="nav-link {% if 'catalog' in request.endpoint %}active{% endif %}" href="{{ url_for('catalog.index') }}">
@@ -234,7 +237,7 @@
             {% endif %}
             
             {% if current_user.can(512) %}
-            <li class="sidebar-section">{{ 'Digitization' if current_language == 'en' else 'Pendigitalan' }}</li>
+            <li class="sidebar-section">{{ t('digitization') }}</li>
             <li class="nav-item">
                 <a class="nav-link {% if 'ocr' in request.endpoint %}active{% endif %}" href="{{ url_for('ocr.index') }}">
                     <i class="bi bi-file-earmark-text"></i> {{ t('ocr_digitization') }}
@@ -243,7 +246,7 @@
             {% endif %}
             
             {% if current_user.can(128) %}
-            <li class="sidebar-section">{{ 'Management' if current_language == 'en' else 'Pengurusan' }}</li>
+            <li class="sidebar-section">{{ t('management') }}</li>
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'users.member_list' %}active{% endif %}" href="{{ url_for('users.member_list') }}">
                     <i class="bi bi-people"></i> {{ t('members') }}
@@ -257,6 +260,7 @@
                     <i class="bi bi-person-badge"></i> {{ t('staff') }}
                 </a>
             </li>
+            {% endif %}
             {% endif %}
         </ul>
     </nav>

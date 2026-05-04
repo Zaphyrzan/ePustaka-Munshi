@@ -592,6 +592,355 @@ TRANSLATIONS = {
         'en': 'Notes',
         'ms': 'Catatan'
     },
+    'student_portal': {
+        'en': 'Student Portal',
+        'ms': 'Portal Pelajar'
+    },
+    'home': {
+        'en': 'Home',
+        'ms': 'Portal Utama'
+    },
+    'digitization': {
+        'en': 'Digitization',
+        'ms': 'Pendigitalan'
+    },
+    'management': {
+        'en': 'Management',
+        'ms': 'Pengurusan'
+    },
+    # ========== Student Portal ==========
+    'welcome_to_epustaka': {
+        'en': 'Welcome to ePustaka!',
+        'ms': 'Selamat Datang ke ePustaka!'
+    },
+    'books_read': {
+        'en': 'books read',
+        'ms': 'buku dibaca'
+    },
+    'attention': {
+        'en': 'Attention!',
+        'ms': 'Perhatian!'
+    },
+    'overdue_warning': {
+        'en': 'You have overdue books that must be returned immediately.',
+        'ms': 'Anda mempunyai buku yang telah tamat tempoh. Sila pulangkan segera.'
+    },
+    'view_books': {
+        'en': 'View books',
+        'ms': 'Lihat buku'
+    },
+    'warning': {
+        'en': 'Warning:',
+        'ms': 'Peringatan:'
+    },
+    'due_in_3_days': {
+        'en': 'books need to be returned in 3 days',
+        'ms': 'buku perlu dipulangkan dalam 3 hari'
+    },
+    'total_books': {
+        'en': 'Total Books',
+        'ms': 'Jumlah Buku'
+    },
+    'available': {
+        'en': 'Available',
+        'ms': 'Tersedia'
+    },
+    'books_borrowed': {
+        'en': 'Books Borrowed',
+        'ms': 'Buku Dipinjam'
+    },
+    'quick_access': {
+        'en': 'Quick Access',
+        'ms': 'Akses Pantas'
+    },
+    'search_books': {
+        'en': 'Search Books',
+        'ms': 'Cari Buku'
+    },
+    'my_loans': {
+        'en': 'My Loans',
+        'ms': 'Pinjaman Saya'
+    },
+    'borrowing_leaderboard': {
+        'en': 'Borrowing Leaderboard',
+        'ms': 'Papan Peminjam'
+    },
+    'available_books': {
+        'en': 'Available Books',
+        'ms': 'Buku Tersedia'
+    },
+    'books_borrowed_now': {
+        'en': 'Books Borrowed Now',
+        'ms': 'Buku Dipinjam Sekarang'
+    },
+    'book': {
+        'en': 'Book',
+        'ms': 'Buku'
+    },
+    'loan_date': {
+        'en': 'Loan Date',
+        'ms': 'Tarikh Pinjam'
+    },
+    'return_date': {
+        'en': 'Return Date',
+        'ms': 'Tarikh Pulang'
+    },
+    'status': {
+        'en': 'Status',
+        'ms': 'Status'
+    },
+    'overdue': {
+        'en': 'Overdue',
+        'ms': 'Tamat Tempoh'
+    },
+    'due_soon': {
+        'en': 'Due Soon',
+        'ms': 'Hampir Tamat'
+    },
+    'active': {
+        'en': 'Active',
+        'ms': 'Aktif'
+    },
+    'all_forms': {
+        'en': 'All Forms',
+        'ms': 'Semua Tingkatan'
+    },
+    'form': {
+        'en': 'Form',
+        'ms': 'Tingkatan'
+    },
+    'best_borrowers': {
+        'en': 'Best Borrowers by Form',
+        'ms': 'Peminjam Terbaik Mengikut Tingkatan'
+    },
+    'class': {
+        'en': 'Class',
+        'ms': 'Kelas'
+    },
+    'books_borrowed_count': {
+        'en': 'Books Borrowed',
+        'ms': 'Buku Dipinjam'
+    },
+    'no_borrowing_data': {
+        'en': 'No borrowing data',
+        'ms': 'Tiada data peminjaman'
+    },
+    'be_first_borrower': {
+        'en': 'Be among the top borrowers!',
+        'ms': 'Jadilah peminjam utama!'
+    },
+    'statistics_by_form': {
+        'en': 'Statistics by Form',
+        'ms': 'Statistik Mengikut Tingkatan'
+    },
+    'students': {
+        'en': 'students',
+        'ms': 'pelajar'
+    },
+    'average': {
+        'en': 'Average',
+        'ms': 'Purata'
+    },
+    'no_statistics': {
+        'en': 'No statistics',
+        'ms': 'Tiada statistik'
+    },
+    'view_current_loans': {
+        'en': 'View current loans and loan history',
+        'ms': 'Lihat buku yang sedang dipinjam dan sejarah pinjaman'
+    },
+    'not_linked_to_member': {
+        'en': 'Your account is not linked to a library member record',
+        'ms': 'Akaun anda tidak dikaitkan dengan rekod ahli perpustakaan'
+    },
+    'contact_librarian': {
+        'en': 'Please contact the librarian for registration',
+        'ms': 'Sila hubungi pustakawan untuk pendaftaran'
+    },
+    'currently_borrowed': {
+        'en': 'Currently Borrowed',
+        'ms': 'Sedang Dipinjam'
+    },
+    'accession_number': {
+        'en': 'Accession Number',
+        'ms': 'No. Akses'
+    },
+    'days_remaining': {
+        'en': 'Days Remaining',
+        'ms': 'Baki Hari'
+    },
+    'no_books_borrowed': {
+        'en': 'No books borrowed',
+        'ms': 'Tiada buku dipinjam'
+    },
+    'borrow_books_now': {
+        'en': 'Borrow books from the library!',
+        'ms': 'Jom pinjam buku dari perpustakaan!'
+    },
+    'loan_history': {
+        'en': 'Loan History',
+        'ms': 'Sejarah Pinjaman'
+    },
+    'last_20_loans': {
+        'en': 'Last 20 loans',
+        'ms': '20 pinjaman terakhir'
+    },
+    'returned': {
+        'en': 'Returned',
+        'ms': 'Dipulangkan'
+    },
+    'no_loan_history': {
+        'en': 'No loan history',
+        'ms': 'Tiada sejarah pinjaman'
+    },
+    'search_for_books': {
+        'en': 'Search for books you want from the library collection',
+        'ms': 'Cari buku yang anda inginkan dari koleksi perpustakaan'
+    },
+    'search_title_author': {
+        'en': 'Search title, author, ISBN...',
+        'ms': 'Cari tajuk, penulis, ISBN...'
+    },
+    'all_categories': {
+        'en': 'All Categories',
+        'ms': 'Semua Kategori'
+    },
+    'available_only': {
+        'en': 'Available only',
+        'ms': 'Tersedia sahaja'
+    },
+    'not_available': {
+        'en': 'Not available',
+        'ms': 'Tiada'
+    },
+    'view_details': {
+        'en': 'View Details',
+        'ms': 'Lihat Butiran'
+    },
+    'no_books_found': {
+        'en': 'No books found',
+        'ms': 'Tiada buku dijumpai'
+    },
+    'try_different_search': {
+        'en': 'Try searching with different keywords',
+        'ms': 'Cuba cari dengan kata kunci yang lain'
+    },
+    'previous': {
+        'en': 'Previous',
+        'ms': 'Sebelum'
+    },
+    'next': {
+        'en': 'Next',
+        'ms': 'Seterusnya'
+    },
+    'category': {
+        'en': 'Category',
+        'ms': 'Kategori'
+    },
+    'language': {
+        'en': 'Language',
+        'ms': 'Bahasa'
+    },
+    'publisher': {
+        'en': 'Publisher',
+        'ms': 'Penerbit'
+    },
+    'year': {
+        'en': 'Year',
+        'ms': 'Tahun'
+    },
+    'call_number': {
+        'en': 'Call Number',
+        'ms': 'No. Panggilan'
+    },
+    'synopsis': {
+        'en': 'Synopsis',
+        'ms': 'Sinopsis'
+    },
+    'availability': {
+        'en': 'Availability',
+        'ms': 'Ketersediaan'
+    },
+    'out_of_copies': {
+        'en': 'out of copies available',
+        'ms': 'daripada naskhah tersedia'
+    },
+    'available_to_borrow': {
+        'en': 'This book is available to borrow!',
+        'ms': 'Buku ini tersedia untuk dipinjam!'
+    },
+    'copy_location': {
+        'en': 'Copy Location:',
+        'ms': 'Lokasi Naskhah:'
+    },
+    'general_shelf': {
+        'en': 'General Shelf',
+        'ms': 'Rak Umum'
+    },
+    'all_copies_borrowed': {
+        'en': 'All copies are currently borrowed. Please check later.',
+        'ms': 'Semua naskhah sedang dipinjam. Sila semak kemudian.'
+    },
+    'how_to_borrow': {
+        'en': 'How to Borrow',
+        'ms': 'Cara Meminjam'
+    },
+    'find_book_by_call_number': {
+        'en': 'Find book on shelf by Call Number',
+        'ms': 'Cari buku di rak mengikut No. Panggilan'
+    },
+    'bring_to_counter': {
+        'en': 'Bring to library counter',
+        'ms': 'Bawa ke kaunter perpustakaan'
+    },
+    'show_student_card': {
+        'en': 'Show student card',
+        'ms': 'Tunjukkan kad pelajar'
+    },
+    'librarian_will_process': {
+        'en': 'Librarian will process the loan',
+        'ms': 'Pustakawan akan proses pinjaman'
+    },
+    'filter_by_form': {
+        'en': 'Filter by Form',
+        'ms': 'Tapis mengikut Tingkatan'
+    },
+    'filter_by_class': {
+        'en': 'Filter by Class',
+        'ms': 'Tapis mengikut Kelas'
+    },
+    'all_classes': {
+        'en': 'All Classes',
+        'ms': 'Semua Kelas'
+    },
+    'clear_filters': {
+        'en': 'Clear Filters',
+        'ms': 'Padam Penapis'
+    },
+    'name': {
+        'en': 'Name',
+        'ms': 'Nama'
+    },
+    'total': {
+        'en': 'Total',
+        'ms': 'Jumlah'
+    },
+    'view_all': {
+        'en': 'View All',
+        'ms': 'Lihat Semua'
+    },
+    'filters': {
+        'en': 'Filters',
+        'ms': 'Penapis'
+    },
+    'books': {
+        'en': 'books',
+        'ms': 'buku'
+    },
+    'synopsis': {
+        'en': 'Synopsis',
+        'ms': 'Sinopsis'
+    },
 }
 
 
@@ -643,6 +992,12 @@ t = get_text
 
 def register_i18n(app):
     """Register i18n functions with Flask app for use in templates."""
+    
+    @app.before_request
+    def init_language():
+        """Initialize language to English if not set in session."""
+        if 'language' not in session:
+            session['language'] = DEFAULT_LANGUAGE
     
     @app.context_processor
     def inject_i18n():

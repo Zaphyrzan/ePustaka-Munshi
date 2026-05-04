@@ -161,48 +161,80 @@ def my_loans():
 @student_bp.route('/leaderboard')
 @login_required
 def leaderboard():
-    """NILAM reading leaderboard by student year"""
-    selected_year = request.args.get('year', type=int)
+    """Borrowing leaderboard grouped by Form/Tingkatan and Class"""
+    selected_form = request.args.get('form', type=int)
+    selected_class = request.args.get('class', '')
     
-    # Get all years that have students
-    years = db.session.query(Member.student_year).distinct().filter(
-        Member.student_year.isnot(None),
-        Member.member_type == 'Student'
-    ).order_by(Member.student_year).all()
-    years = [y[0] for y in years if y[0]]
-    
-    # Base query for leaderboard
-    leaderboard_query = Member.query.filter(
+    # Get all forms that have students
+    forms = db.session.query(Member.form_level).distinct().filter(
+        Member.form_level.isnot(None),
         Member.member_type == 'Student',
-        Member.is_active == True,
-        Member.total_books_read > 0
-    )
+        Member.is_active == True
+    ).order_by(Member.form_level).all()
+    forms = [f[0] for f in forms if f[0]]
     
-    if selected_year:
-        leaderboard_query = leaderboard_query.filter(Member.student_year == selected_year)
+    # Get classes for selected form
+    classes_in_form = []
+    if selected_form:
+        classes_in_form = db.session.query(Member.class_group).distinct().filter(
+            Member.form_level == selected_form,
+            Member.member_type == 'Student',
+            Member.is_active == True,
+            Member.class_group.isnot(None)
+        ).order_by(Member.class_group).all()
+        classes_in_form = [c[0] for c in classes_in_form if c[0]]
     
-    # Get top readers
-    top_readers = leaderboard_query.order_by(
-        desc(Member.total_books_read)
-    ).limit(50).all()
-    
-    # Get stats by year
-    year_stats = db.session.query(
-        Member.student_year,
-        func.count(Member.id).label('student_count'),
-        func.sum(Member.total_books_read).label('total_read'),
-        func.avg(Member.total_books_read).label('avg_read')
+    # Build leaderboard query - count loans per member
+    member_borrow_counts = db.session.query(
+        Member.id,
+        Member.member_id,
+        Member.full_name,
+        Member.form_level,
+        Member.class_group,
+        func.count(Loan.id).label('borrow_count')
+    ).outerjoin(Loan, 
+        db.and_(Loan.member_id == Member.id, Loan.status.in_([LoanStatus.ACTIVE.value, LoanStatus.RETURNED.value, LoanStatus.OVERDUE.value]))
     ).filter(
         Member.member_type == 'Student',
-        Member.student_year.isnot(None),
         Member.is_active == True
-    ).group_by(Member.student_year).order_by(Member.student_year).all()
+    )
+    
+    # Apply filters
+    if selected_form:
+        member_borrow_counts = member_borrow_counts.filter(Member.form_level == selected_form)
+        if selected_class:
+            member_borrow_counts = member_borrow_counts.filter(Member.class_group == selected_class)
+    
+    member_borrow_counts = member_borrow_counts.group_by(
+        Member.id, Member.member_id, Member.full_name, Member.form_level, Member.class_group
+    ).order_by(func.count(Loan.id).desc(), Member.full_name).limit(100).all()
+    
+    # Get stats by form - simplified to avoid nested aggregates
+    form_stats = db.session.query(
+        Member.form_level,
+        func.count(Member.id).label('student_count'),
+        func.count(Loan.id).label('total_borrowed')
+    ).outerjoin(Loan,
+        db.and_(Loan.member_id == Member.id, Loan.status.in_([LoanStatus.ACTIVE.value, LoanStatus.RETURNED.value, LoanStatus.OVERDUE.value]))
+    ).filter(
+        Member.member_type == 'Student',
+        Member.form_level.isnot(None),
+        Member.is_active == True
+    ).group_by(Member.form_level).order_by(Member.form_level).all()
+    
+    # Calculate average in Python
+    form_stats_with_avg = []
+    for form_level, student_count, total_borrowed in form_stats:
+        avg_borrowed = total_borrowed / student_count if student_count > 0 else 0
+        form_stats_with_avg.append((form_level, student_count, total_borrowed, avg_borrowed))
     
     return render_template('student/leaderboard.html',
-                          years=years,
-                          selected_year=selected_year,
-                          top_readers=top_readers,
-                          year_stats=year_stats)
+                          forms=forms,
+                          selected_form=selected_form,
+                          classes_in_form=classes_in_form,
+                          selected_class=selected_class,
+                          leaderboard=member_borrow_counts,
+                          form_stats=form_stats_with_avg)
 
 
 # API for student portal

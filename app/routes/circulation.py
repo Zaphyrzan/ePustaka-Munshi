@@ -26,8 +26,9 @@ def permission_required(perm):
 
 @circulation_bp.route('/')
 @login_required
+@permission_required(Permission.CHECKOUT)
 def index():
-    """Circulation main page"""
+    """Circulation main page - requires checkout permission"""
     return render_template('circulation/index.html')
 
 

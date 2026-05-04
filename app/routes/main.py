@@ -20,7 +20,11 @@ def index():
 @main_bp.route('/dashboard')
 @login_required
 def dashboard():
-    """Main dashboard with statistics"""
+    """Main dashboard with statistics - Staff/Librarian only"""
+    # Redirect students to their portal
+    if current_user.role and current_user.role.name == 'Student':
+        return redirect(url_for('student.index'))
+    
     stats = {
         'total_books': Book.query.count(),
         'total_copies': BookCopy.query.count(),
