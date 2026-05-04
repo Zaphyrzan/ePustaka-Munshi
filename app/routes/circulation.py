@@ -38,7 +38,7 @@ def checkout():
     """Process book checkout"""
     if request.method == 'POST':
         member_id = request.form.get('member_id', '').strip()
-        accession = request.form.get('accession_number', '').strip()
+        barcode = request.form.get('barcode', '').strip()
         
         # Find member
         member = Member.query.filter_by(member_id=member_id).first()
@@ -55,14 +55,21 @@ def checkout():
                 flash('Member has reached maximum loan limit', 'error')
             return render_template('circulation/checkout.html', member=member)
         
-        # Find copy
-        copy = BookCopy.query.filter_by(accession_number=accession).first()
+        # Find copy by barcode (scanner input)
+        copy = BookCopy.query.filter_by(barcode=barcode).first()
         if not copy:
             flash('Book copy not found', 'error')
             return render_template('circulation/checkout.html', member=member)
         
         if not copy.is_available:
-            flash(f'Book copy is not available (Status: {copy.status})', 'error')
+            if copy.status == CopyStatus.ON_LOAN.value:
+                loan = copy.current_loan
+                if loan:
+                    flash(f'Book is currently on loan to {loan.member.full_name} until {loan.due_date.strftime("%d/%m/%Y")}', 'error')
+                else:
+                    flash('Book is currently on loan', 'error')
+            else:
+                flash(f'Book copy is not available (Status: {copy.status})', 'error')
             return render_template('circulation/checkout.html', member=member)
         
         # Create loan
@@ -73,7 +80,7 @@ def checkout():
         )
         db.session.commit()
         
-        flash(f'Book checked out successfully. Due date: {loan.due_date.strftime("%d/%m/%Y")}', 'success')
+        flash(f'{member.full_name} has successfully borrowed "{copy.book.title}". Due back: {loan.due_date.strftime("%d/%m/%Y")}', 'success')
         return redirect(url_for('circulation.checkout'))
     
     return render_template('circulation/checkout.html')
@@ -85,10 +92,10 @@ def checkout():
 def return_book():
     """Process book return"""
     if request.method == 'POST':
-        accession = request.form.get('accession_number', '').strip()
+        barcode = request.form.get('barcode', '').strip()
         
-        # Find copy
-        copy = BookCopy.query.filter_by(accession_number=accession).first()
+        # Find copy by barcode (scanner input)
+        copy = BookCopy.query.filter_by(barcode=barcode).first()
         if not copy:
             flash('Book copy not found', 'error')
             return render_template('circulation/return.html')
@@ -107,9 +114,9 @@ def return_book():
         db.session.commit()
         
         if was_overdue:
-            flash(f'Book returned (was {days_overdue} days overdue)', 'warning')
+            flash(f'Book "{loan.copy.book.title}" returned by {loan.member.full_name} ({days_overdue} days overdue)', 'warning')
         else:
-            flash('Book returned successfully', 'success')
+            flash(f'Book "{loan.copy.book.title}" successfully returned by {loan.member.full_name}', 'success')
         
         return redirect(url_for('circulation.return_book'))
     
@@ -142,12 +149,34 @@ def renew(loan_id):
 def active_loans():
     """List all active loans"""
     page = request.args.get('page', 1, type=int)
+    view = request.args.get('view', 'active')  # active, overdue, history
     
-    loans = Loan.query.filter(
-        Loan.status.in_([LoanStatus.ACTIVE.value, LoanStatus.OVERDUE.value])
-    ).order_by(Loan.due_date).paginate(page=page, per_page=20)
+    query = Loan.query
     
-    return render_template('circulation/active_loans.html', loans=loans)
+    # Apply filters based on view
+    if view == 'active':
+        loans = query.filter(
+            Loan.status.in_([LoanStatus.ACTIVE.value, LoanStatus.OVERDUE.value])
+        ).order_by(Loan.due_date).paginate(page=page, per_page=20)
+    elif view == 'overdue':
+        loans = query.filter(
+            Loan.status == LoanStatus.OVERDUE.value
+        ).order_by(Loan.due_date).paginate(page=page, per_page=20)
+    else:  # history
+        # Apply history filters
+        member_id = request.args.get('member', '')
+        if member_id:
+            member = Member.query.filter_by(member_id=member_id).first()
+            if member:
+                query = query.filter(Loan.member_id == member.id)
+        
+        status = request.args.get('status', '')
+        if status:
+            query = query.filter(Loan.status == status)
+        
+        loans = query.order_by(Loan.checkout_date.desc()).paginate(page=page, per_page=20)
+    
+    return render_template('circulation/active_loans.html', loans=loans, current_view=view)
 
 
 @circulation_bp.route('/overdue')
@@ -232,11 +261,11 @@ def api_get_member(member_id):
     return jsonify({'error': 'Member not found'}), 404
 
 
-@circulation_bp.route('/api/copy/<accession>/loan')
+@circulation_bp.route('/api/copy/<barcode>/loan')
 @login_required
-def api_get_copy_loan(accession):
+def api_get_copy_loan(barcode):
     """Get copy and current loan info for return form"""
-    copy = BookCopy.query.filter_by(accession_number=accession).first()
+    copy = BookCopy.query.filter_by(barcode=barcode).first()
     if not copy:
         return jsonify({'error': 'Copy not found'}), 404
     

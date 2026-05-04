@@ -1,59 +1,126 @@
 {% extends "base.html" %}
 
-{% block title %}Add Member - ePustaka Munshi{% endblock %}
-{% block page_title %}Add New Member{% endblock %}
+{% block title %}{{ t('add_member') if current_language == 'en' else 'Tambah Ahli' }} - ePustaka Munshi{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-6">
-        <div class="card table-card">
-            <div class="card-header bg-transparent">
-                <h5 class="mb-0"><i class="bi bi-person-plus text-primary"></i> Add New Member</h5>
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-person-plus text-primary"></i> {{ t('add_member') }}</h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body p-4">
+                    <form method="POST" id="addMemberForm">
+                        <!-- Auto-generated Member ID Info -->
+                        <div class="alert alert-info" role="alert">
+                            <i class="bi bi-info-circle"></i>
+                            {{ 'Member ID will be automatically generated' if current_language == 'en' else 'ID Ahli akan dijana secara automatik' }}
+                        </div>
+
+                        <!-- Full Name -->
+                        <div class="mb-3">
+                            <label for="full_name" class="form-label">
+                                {{ t('name') }} <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="full_name" name="full_name" required>
+                        </div>
+
+                        <div class="row">
+                            <!-- Email -->
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">{{ t('email') }}</label>
+                                <input type="email" class="form-control" id="email" name="email">
+                            </div>
+
+                            <!-- Phone -->
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">{{ t('phone') }}</label>
+                                <input type="tel" class="form-control" id="phone" name="phone">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Member Type -->
+                            <div class="col-md-4 mb-3">
+                                <label for="member_type" class="form-label">
+                                    {{ 'Member Type' if current_language == 'en' else 'Jenis Ahli' }}
+                                </label>
+                                <select class="form-select" id="member_type" name="member_type">
+                                    <option value="Student">{{ 'Student' if current_language == 'en' else 'Pelajar' }}</option>
+                                    <option value="Staff">{{ t('staff') }}</option>
+                                    <option value="External">{{ 'External' if current_language == 'en' else 'Luaran' }}</option>
+                                </select>
+                            </div>
+
+                            <!-- Form Level -->
+                            <div class="col-md-4 mb-3">
+                                <label for="form_level" class="form-label">{{ t('form_level') }}</label>
+                                <select class="form-select" id="form_level" name="form_level">
+                                    <option value="1">{{ t('form1') }}</option>
+                                    <option value="2">{{ t('form2') }}</option>
+                                    <option value="3">{{ t('form3') }}</option>
+                                    <option value="4">{{ t('form4') }}</option>
+                                    <option value="5">{{ t('form5') }}</option>
+                                    <option value="6">{{ t('graduated') }}</option>
+                                </select>
+                            </div>
+
+                            <!-- Class Group -->
+                            <div class="col-md-4 mb-3">
+                                <label for="class_group" class="form-label">{{ t('class_group') }}</label>
+                                <select class="form-select" id="class_group" name="class_group">
+                                    <option value="">{{ '-- Select Class --' if current_language == 'en' else '-- Pilih Kelas --' }}</option>
+                                    <option value="Science 1">Science 1</option>
+                                    <option value="Science 2">Science 2</option>
+                                    <option value="Arts 1">Arts 1</option>
+                                    <option value="Arts 2">Arts 2</option>
+                                    <option value="Commerce">Commerce</option>
+                                    <option value="Technical">Technical</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> {{ t('add') }}
+                            </button>
+                            <a href="{{ url_for('users.member_list') }}" class="btn btn-outline-secondary">
+                                {{ t('cancel') }}
+                            </a>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <div class="card-body">
-                <form method="POST">
-                    <div class="mb-3">
-                        <label for="member_id" class="form-label">Member ID <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="member_id" name="member_id" required placeholder="e.g., STU001">
-                        <div class="form-text">Student card number or staff ID</div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="full_name" class="form-label">Full Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="full_name" name="full_name" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
-                        <input type="email" class="form-control" id="email" name="email">
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="phone" class="form-label">Phone</label>
-                        <input type="tel" class="form-control" id="phone" name="phone">
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="member_type" class="form-label">Member Type</label>
-                            <select class="form-select" id="member_type" name="member_type">
-                                <option value="Student">Student</option>
-                                <option value="Staff">Staff</option>
-                                <option value="External">External</option>
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="class_group" class="form-label">Class / Department</label>
-                            <input type="text" class="form-control" id="class_group" name="class_group" placeholder="e.g., Form 5 Science 1">
-                        </div>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-plus-circle"></i> Add Member
-                    </button>
-                    <a href="{{ url_for('users.member_list') }}" class="btn btn-outline-secondary">Cancel</a>
-                </form>
+        </div>
+
+        <!-- Help Panel -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-question-circle"></i> {{ t('instructions') if current_language == 'en' else 'Arahan' }}</h6>
+                </div>
+                <div class="card-body small">
+                    <p><strong>{{ 'Form Levels:' if current_language == 'en' else 'Tahap Tingkatan:' }}</strong></p>
+                    <ul class="list-unstyled mb-3">
+                        <li><code>1-5</code> - {{ 'Secondary students' if current_language == 'en' else 'Pelajar Menengah' }}</li>
+                        <li><code>6</code> - {{ 'Graduated' if current_language == 'en' else 'Tamat Belajar' }}</li>
+                    </ul>
+
+                    <p><strong>{{ 'Class Groups:' if current_language == 'en' else 'Kumpulan Kelas:' }}</strong></p>
+                    <ul class="list-unstyled">
+                        <li>Science 1, Science 2</li>
+                        <li>Arts 1, Arts 2</li>
+                        <li>Commerce</li>
+                        <li>Technical</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>

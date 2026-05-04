@@ -31,7 +31,8 @@ class Config:
     SCANNER_DEFAULT_FORMAT = 'PNG'
     
     # Circulation defaults
-    DEFAULT_LOAN_DAYS = 14
+    DEFAULT_LOAN_DAYS = 7  # 1 week loan period
+    RENEWAL_LOAN_DAYS = 7  # 1 week renewal period
     MAX_RENEWALS = 2
     MAX_LOANS_PER_MEMBER = 5
 

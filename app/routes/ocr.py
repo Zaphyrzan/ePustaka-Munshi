@@ -10,6 +10,7 @@ from werkzeug.utils import secure_filename
 from app import db
 from app.models import OCRJob, OCRResult, OCRJobStatus, Loan, Member, BookCopy, Permission
 from app.services import ScannerServiceFactory, OCRService, OCRCorrectionService
+from app.utils.excel_import import import_ocr_ledger_data, save_upload_file, read_excel_file
 
 ocr_bp = Blueprint('ocr', __name__)
 
@@ -429,3 +430,50 @@ def autocomplete():
     suggestions = correction_service.get_all_suggestions(query, field_type)
     
     return jsonify({'suggestions': suggestions})
+
+
+# ============ Excel Ledger Import ============
+
+@ocr_bp.route('/import-ledger', methods=['GET', 'POST'])
+@login_required
+@permission_required(Permission.ADMIN)
+def import_ledger():
+    """Import book ledger data from Excel file"""
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('No file selected', 'error')
+            return render_template('ocr/import_ledger.html')
+        
+        file = request.files['file']
+        filepath, error = save_upload_file(file)
+        
+        if error:
+            flash(f'Upload error: {error}', 'error')
+            return render_template('ocr/import_ledger.html')
+        
+        # Preview mode - show what will be imported
+        preview = request.form.get('preview')
+        if preview == 'on':
+            rows, error = read_excel_file(filepath)
+            if error:
+                flash(f'Error reading file: {error}', 'error')
+            else:
+                return render_template('ocr/import_ledger_preview.html', 
+                                     rows=rows, 
+                                     filepath=filepath)
+        
+        # Actual import
+        success_count, errors, imported = import_ocr_ledger_data(filepath)
+        
+        if success_count > 0:
+            flash(f'Successfully imported {success_count} book records', 'success')
+        
+        if errors:
+            for error in errors[:5]:  # Show first 5 errors
+                flash(f'Import error: {error}', 'warning')
+            if len(errors) > 5:
+                flash(f'... and {len(errors) - 5} more errors', 'warning')
+        
+        return redirect(url_for('ocr.index'))
+    
+    return render_template('ocr/import_ledger.html')

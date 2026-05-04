@@ -13,9 +13,13 @@ pytesseract==0.3.10
 Pillow==10.1.0
 pdf2image==1.16.3
 
+# Excel import/export
+openpyxl==3.1.5
+
 # Utilities
 python-dotenv==1.0.0
 python-dateutil==2.8.2
+python-barcode==0.15.1
 
 # Future scanner integration (placeholder)
 # pyinsane2  # SANE-based scanners (Linux/Mac)

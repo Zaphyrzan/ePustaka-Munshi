@@ -5,52 +5,86 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-lg-6">
+    <div class="col-lg-8">
         <div class="card table-card">
             <div class="card-header bg-transparent">
                 <h5 class="mb-0"><i class="bi bi-box-arrow-right text-primary"></i> Checkout Book</h5>
             </div>
             <div class="card-body">
                 <form method="POST" id="checkoutForm">
-                    <div class="mb-3">
-                        <label for="member_id" class="form-label">Member ID / Card Number</label>
+                    <!-- Member Section -->
+                    <div class="mb-4">
+                        <label for="member_id" class="form-label fw-bold">Member ID / Card Number</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-person-badge"></i></span>
                             <input type="text" class="form-control" id="member_id" name="member_id" 
-                                   placeholder="Enter member ID (e.g., STU001)" required autofocus>
+                                   placeholder="Enter member ID (e.g., STU001)" required>
                             <button type="button" class="btn btn-outline-secondary" id="lookupMember">
                                 <i class="bi bi-search"></i>
                             </button>
                         </div>
                     </div>
                     
-                    <div id="memberInfo" class="alert alert-info d-none mb-3">
-                        <strong id="memberName"></strong><br>
-                        <small>
-                            Type: <span id="memberType"></span> | 
-                            Active Loans: <span id="activeLoans"></span> |
-                            Status: <span id="memberStatus"></span>
-                        </small>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="accession_number" class="form-label">Book Accession Number / Barcode</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-upc-scan"></i></span>
-                            <input type="text" class="form-control" id="accession_number" name="accession_number" 
-                                   placeholder="Scan or enter accession number" required>
-                            <button type="button" class="btn btn-outline-secondary" id="lookupBook">
-                                <i class="bi bi-search"></i>
-                            </button>
+                    <!-- Member Info Card -->
+                    <div id="memberInfoCard" class="card border-start border-primary border-5 d-none mb-4">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col">
+                                    <h6 class="text-muted mb-1">Member</h6>
+                                    <h5 class="mb-3" id="memberName"></h5>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <small class="text-muted d-block">Type</small>
+                                            <span id="memberType" class="badge bg-info"></span>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <small class="text-muted d-block">Active Loans</small>
+                                            <span id="activeLoans" class="badge bg-secondary"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <div class="text-center">
+                                        <small class="text-muted d-block">Status</small>
+                                        <div id="memberStatus"></div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
-                    <div id="bookInfo" class="alert alert-info d-none mb-3">
-                        <strong id="bookTitle"></strong><br>
-                        <small>
-                            Accession: <span id="bookAccession"></span> | 
-                            Status: <span id="bookStatus"></span>
+                    <!-- Book Section -->
+                    <div class="mb-4">
+                        <label for="barcode" class="form-label fw-bold">Book Barcode (Scanner Input)</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-upc-scan"></i></span>
+                            <input type="text" class="form-control" id="barcode" name="barcode" 
+                                   placeholder="Scan book barcode" required disabled>
+                            <button type="button" class="btn btn-outline-secondary" id="lookupBook" disabled>
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted d-block mt-1">
+                            <em>Please enter and verify a member first.</em>
                         </small>
+                    </div>
+                    
+                    <!-- Book Info Card -->
+                    <div id="bookInfoCard" class="card border-start border-success border-5 d-none mb-4">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-1">Book</h6>
+                            <h5 class="mb-3" id="bookTitle"></h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">Accession Number</small>
+                                    <span id="bookAccession" class="font-monospace"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">Status</small>
+                                    <span id="bookStatus" class="badge bg-success"></span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <button type="submit" class="btn btn-primary btn-lg w-100">
@@ -61,7 +95,7 @@
         </div>
     </div>
     
-    <div class="col-lg-6">
+    <div class="col-lg-4">
         <div class="card table-card">
             <div class="card-header bg-transparent">
                 <h5 class="mb-0"><i class="bi bi-info-circle"></i> Instructions</h5>
@@ -70,7 +104,7 @@
                 <ol class="mb-0">
                     <li class="mb-2">Enter or scan the member's <strong>Member ID</strong> (student card number)</li>
                     <li class="mb-2">Verify the member information displayed</li>
-                    <li class="mb-2">Enter or scan the book's <strong>Accession Number</strong> or barcode</li>
+                    <li class="mb-2">Scan the book's <strong>barcode</strong> using your 1D scanner</li>
                     <li class="mb-2">Verify the book information</li>
                     <li>Click <strong>Process Checkout</strong> to complete</li>
                 </ol>
@@ -85,65 +119,185 @@
         </div>
     </div>
 </div>
+
+<!-- Checkout Confirmation Modal -->
+<div class="modal fade" id="checkoutConfirmModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title"><i class="bi bi-check-circle-fill text-primary"></i> Confirm Checkout</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body">
+                                <h6 class="text-muted mb-2">Member</h6>
+                                <h5 id="confirmMemberName" class="mb-0"></h5>
+                                <small class="text-muted d-block mt-2">
+                                    <span id="confirmMemberType"></span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body">
+                                <h6 class="text-muted mb-2">Book</h6>
+                                <h5 id="confirmBookTitle" class="mb-0"></h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="alert alert-info mt-3 mb-0">
+                    <i class="bi bi-info-circle-fill"></i> 
+                    <span id="dueDate"></span>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmCheckoutBtn">
+                    <i class="bi bi-check-circle"></i> Confirm Checkout
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
+// Set initial focus on page load
+window.addEventListener('load', function() {
+    document.getElementById('member_id').focus();
+});
+
 document.getElementById('lookupMember').addEventListener('click', function() {
-    const memberId = document.getElementById('member_id').value;
+    const memberId = document.getElementById('member_id').value.trim();
     if (!memberId) return;
     
     fetch(`/circulation/api/member/${memberId}`)
         .then(response => response.json())
         .then(data => {
             if (data.error) {
-                document.getElementById('memberInfo').className = 'alert alert-danger mb-3';
-                document.getElementById('memberInfo').innerHTML = '<strong>Member not found</strong>';
+                document.getElementById('memberInfoCard').classList.add('d-none');
+                // Disable barcode field if member not found
+                document.getElementById('barcode').disabled = true;
+                document.getElementById('lookupBook').disabled = true;
+                document.getElementById('barcode').value = '';
             } else {
-                document.getElementById('memberInfo').className = 'alert alert-info mb-3';
                 document.getElementById('memberName').textContent = data.full_name;
                 document.getElementById('memberType').textContent = data.member_type;
                 document.getElementById('activeLoans').textContent = data.active_loans;
-                document.getElementById('memberStatus').textContent = data.can_borrow ? '✓ Can Borrow' : '✗ Cannot Borrow';
-                document.getElementById('memberStatus').className = data.can_borrow ? 'text-success' : 'text-danger';
+                
+                const memberStatusEl = document.getElementById('memberStatus');
+                if (data.can_borrow) {
+                    memberStatusEl.innerHTML = '<span class="badge bg-success">✓ Can Borrow</span>';
+                } else {
+                    memberStatusEl.innerHTML = '<span class="badge bg-danger">✗ Cannot Borrow</span>';
+                }
+                
+                document.getElementById('memberInfoCard').classList.remove('d-none');
+                
+                // Enable barcode field only if member can borrow
+                if (data.can_borrow) {
+                    document.getElementById('barcode').disabled = false;
+                    document.getElementById('lookupBook').disabled = false;
+                    document.getElementById('barcode').value = '';
+                    document.getElementById('barcode').focus();
+                } else {
+                    document.getElementById('barcode').disabled = true;
+                    document.getElementById('lookupBook').disabled = true;
+                    document.getElementById('barcode').value = '';
+                }
             }
-            document.getElementById('memberInfo').classList.remove('d-none');
+        })
+        .catch(err => {
+            document.getElementById('barcode').disabled = true;
+            document.getElementById('lookupBook').disabled = true;
+            console.error('Error:', err);
         });
 });
 
 document.getElementById('lookupBook').addEventListener('click', function() {
-    const accession = document.getElementById('accession_number').value;
-    if (!accession) return;
+    const barcode = document.getElementById('barcode').value.trim();
+    if (!barcode) return;
     
-    fetch(`/catalog/api/copy/${accession}`)
+    fetch(`/catalog/api/copy/${barcode}`)
         .then(response => response.json())
         .then(data => {
             if (data.error) {
-                document.getElementById('bookInfo').className = 'alert alert-danger mb-3';
-                document.getElementById('bookInfo').innerHTML = '<strong>Book copy not found</strong>';
+                document.getElementById('bookInfoCard').classList.add('d-none');
             } else {
-                document.getElementById('bookInfo').className = data.is_available ? 'alert alert-success mb-3' : 'alert alert-warning mb-3';
                 document.getElementById('bookTitle').textContent = data.book_title;
                 document.getElementById('bookAccession').textContent = data.accession_number;
-                document.getElementById('bookStatus').textContent = data.is_available ? '✓ Available' : `✗ ${data.status}`;
+                
+                const statusEl = document.getElementById('bookStatus');
+                if (data.is_available) {
+                    statusEl.className = 'badge bg-success';
+                    statusEl.textContent = '✓ Available';
+                } else {
+                    statusEl.className = 'badge bg-warning';
+                    statusEl.textContent = '✗ ' + data.status;
+                }
+                
+                document.getElementById('bookInfoCard').classList.remove('d-none');
             }
-            document.getElementById('bookInfo').classList.remove('d-none');
         });
 });
 
-// Auto-lookup on Enter key
+// Handle Enter key on member_id field
 document.getElementById('member_id').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
         e.preventDefault();
         document.getElementById('lookupMember').click();
-        document.getElementById('accession_number').focus();
     }
 });
 
-document.getElementById('accession_number').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
+// Handle Enter key on barcode field (only when enabled)
+document.getElementById('barcode').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !this.disabled) {
+        e.preventDefault();
         document.getElementById('lookupBook').click();
     }
+});
+
+// Handle form submission - show modal confirmation
+document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const memberName = document.getElementById('memberName').textContent;
+    const bookTitle = document.getElementById('bookTitle').textContent;
+    
+    if (!memberName || !bookTitle) {
+        alert('Please verify both member and book information before proceeding');
+        return false;
+    }
+    
+    // Populate modal
+    document.getElementById('confirmMemberName').textContent = memberName;
+    document.getElementById('confirmMemberType').textContent = document.getElementById('memberType').textContent;
+    document.getElementById('confirmBookTitle').textContent = bookTitle;
+    
+    // Calculate due date (7 days from today)
+    const today = new Date();
+    const dueDate = new Date(today);
+    dueDate.setDate(dueDate.getDate() + 7);
+    document.getElementById('dueDate').textContent = 'Due date: ' + dueDate.toLocaleDateString();
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('checkoutConfirmModal'));
+    modal.show();
+});
+
+// Handle confirmation button in modal
+document.getElementById('confirmCheckoutBtn').addEventListener('click', function() {
+    // Submit the form normally - this will show flash messages
+    document.getElementById('checkoutForm').submit();
 });
 </script>
 {% endblock %}

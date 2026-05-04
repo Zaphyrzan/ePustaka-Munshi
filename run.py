@@ -61,11 +61,11 @@ def seed_demo():
         db.session.add(user)
         click.echo('Created librarian user (librarian / lib123)')
     
-    # Create demo student user (linked to member STU001)
+    # Create demo student user (linked to member STU0001)
     student_role = Role.query.filter_by(name='Student').first()
-    if not User.query.filter_by(username='STU001').first():
+    if not User.query.filter_by(username='STU0001').first():
         user = User(
-            username='STU001',
+            username='STU0001',
             email='ahmad@student.epustaka.local',
             full_name='Ahmad bin Abdullah',
             role=student_role,
@@ -73,20 +73,20 @@ def seed_demo():
         )
         user.set_password('student123')
         db.session.add(user)
-        click.echo('Created student user (STU001 / student123)')
+        click.echo('Created student user (STU0001 / student123)')
     
     # Create demo members with student years for NILAM leaderboard
     demo_members = [
-        ('STU001', 'Ahmad bin Abdullah', 'Student', 'Form 5 Science 1', 5, 25),
-        ('STU002', 'Siti binti Aminah', 'Student', 'Form 5 Science 2', 5, 32),
-        ('STU003', 'Raj a/l Kumar', 'Student', 'Form 4 Arts 1', 4, 18),
-        ('STU004', 'Lee Wei Ming', 'Student', 'Form 4 Science 1', 4, 22),
-        ('STU005', 'Nurul Izzah', 'Student', 'Form 3 Science 1', 3, 15),
-        ('STU006', 'Muhammad Hafiz', 'Student', 'Form 3 Science 2', 3, 28),
-        ('STU007', 'Priya a/p Rajan', 'Student', 'Form 2 Arts 1', 2, 12),
-        ('STU008', 'Tan Mei Ling', 'Student', 'Form 2 Science 1', 2, 20),
-        ('STU009', 'Ali bin Hassan', 'Student', 'Form 1 Science 1', 1, 8),
-        ('STU010', 'Fatimah Zahra', 'Student', 'Form 1 Science 2', 1, 14),
+        ('STU0001', 'Ahmad bin Abdullah', 'Student', 'Science 1', 5, 25),
+        ('STU0002', 'Siti binti Aminah', 'Student', 'Science 2', 5, 32),
+        ('STU0003', 'Raj a/l Kumar', 'Student', 'Arts 1', 4, 18),
+        ('STU0004', 'Lee Wei Ming', 'Student', 'Science 1', 4, 22),
+        ('STU0005', 'Nurul Izzah', 'Student', 'Science 1', 3, 15),
+        ('STU0006', 'Muhammad Hafiz', 'Student', 'Science 2', 3, 28),
+        ('STU0007', 'Priya a/p Rajan', 'Student', 'Arts 1', 2, 12),
+        ('STU0008', 'Tan Mei Ling', 'Student', 'Science 1', 2, 20),
+        ('STU0009', 'Ali bin Hassan', 'Student', 'Science 1', 1, 8),
+        ('STU0010', 'Fatimah Zahra', 'Student', 'Science 2', 1, 14),
         ('TCH001', 'Encik Teacher', 'Staff', None, None, 0),
     ]
     
@@ -143,7 +143,10 @@ def seed_demo():
     
     db.session.commit()
     click.echo('\nDemo data seeded successfully!')
-    click.echo('Login with: admin / admin123  OR  librarian / lib123')
+    click.echo('Login with:')
+    click.echo('  - admin / admin123 (Administrator)')
+    click.echo('  - librarian / lib123 (Librarian)')
+    click.echo('  - STU0001 / student123 (Student)')
 
 
 @app.cli.command('seed-loans')

@@ -87,7 +87,7 @@ class Loan(db.Model):
             return False
         
         if days is None:
-            days = current_app.config.get('DEFAULT_LOAN_DAYS', 14)
+            days = current_app.config.get('RENEWAL_LOAN_DAYS', 7)
         
         self.due_date = self.due_date + timedelta(days=days)
         self.renewal_count += 1
@@ -116,7 +116,7 @@ class Loan(db.Model):
         from app.models.catalog import BookCopy, CopyStatus
         
         if loan_days is None:
-            loan_days = current_app.config.get('DEFAULT_LOAN_DAYS', 14)
+            loan_days = current_app.config.get('DEFAULT_LOAN_DAYS', 7)
         
         checkout_date = datetime.utcnow()
         due_date = checkout_date + timedelta(days=loan_days)

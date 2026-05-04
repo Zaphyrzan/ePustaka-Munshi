@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Loan History - ePustaka Munshi{% endblock %}
+{% block page_title %}Loan History{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card table-card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="bi bi-clock-history text-primary"></i> Loan History</h5>
+            </div>
+            <div class="card-body">
+                <!-- Filter Form -->
+                <form method="GET" class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label for="member" class="form-label">Member ID</label>
+                        <input type="text" class="form-control" id="member" name="member" 
+                               placeholder="Enter member ID" value="{{ request.args.get('member', '') }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="">All Statuses</option>
+                            <option value="active" {% if request.args.get('status') == 'active' %}selected{% endif %}>Active</option>
+                            <option value="returned" {% if request.args.get('status') == 'returned' %}selected{% endif %}>Returned</option>
+                            <option value="overdue" {% if request.args.get('status') == 'overdue' %}selected{% endif %}>Overdue</option>
+                            <option value="lost" {% if request.args.get('status') == 'lost' %}selected{% endif %}>Lost</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Search
+                        </button>
+                        <a href="{{ url_for('circulation.loan_history') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card table-card">
+            <div class="card-body p-0">
+                {% if loans.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Book Title</th>
+                                <th>Member</th>
+                                <th>Checked Out</th>
+                                <th>Due Date</th>
+                                <th>Returned</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for loan in loans.items %}
+                            <tr>
+                                <td>
+                                    <strong>{{ loan.copy.book.title }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ loan.copy.accession_number }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ loan.member.full_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ loan.member.member_id }}</small>
+                                </td>
+                                <td>{{ loan.checkout_date.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ loan.due_date.strftime('%d/%m/%Y') }}</td>
+                                <td>
+                                    {% if loan.return_date %}
+                                        {{ loan.return_date.strftime('%d/%m/%Y') }}
+                                    {% else %}
+                                        <span class="badge bg-secondary">Not Returned</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if loan.status == 'active' %}
+                                        <span class="badge bg-info">Active</span>
+                                    {% elif loan.status == 'returned' %}
+                                        <span class="badge bg-success">Returned</span>
+                                    {% elif loan.status == 'overdue' %}
+                                        <span class="badge bg-danger">Overdue</span>
+                                    {% elif loan.status == 'lost' %}
+                                        <span class="badge bg-dark">Lost</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ loan.status }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if loans.pages > 1 %}
+                <nav class="p-3 border-top">
+                    <ul class="pagination mb-0 justify-content-center">
+                        {% if loans.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('circulation.loan_history', page=1, member=request.args.get('member', ''), status=request.args.get('status', '')) }}">First</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('circulation.loan_history', page=loans.prev_num, member=request.args.get('member', ''), status=request.args.get('status', '')) }}">Previous</a>
+                        </li>
+                        {% endif %}
+
+                        {% for page_num in loans.iter_pages(left_edge=1, left_margin=1, right_margin=1, right_edge=1) %}
+                            {% if page_num %}
+                                {% if page_num == loans.page %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('circulation.loan_history', page=page_num, member=request.args.get('member', ''), status=request.args.get('status', '')) }}">{{ page_num }}</a>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if loans.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('circulation.loan_history', page=loans.next_num, member=request.args.get('member', ''), status=request.args.get('status', '')) }}">Next</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('circulation.loan_history', page=loans.pages, member=request.args.get('member', ''), status=request.args.get('status', '')) }}">Last</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                {% else %}
+                <div class="p-4 text-center text-muted">
+                    <i class="bi bi-inbox" style="font-size: 3rem; opacity: 0.3;"></i>
+                    <p class="mt-3 mb-0">No loans found matching your filters.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

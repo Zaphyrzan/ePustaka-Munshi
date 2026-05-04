@@ -470,6 +470,128 @@ TRANSLATIONS = {
         'en': 'Search Books',
         'ms': 'Cari Buku'
     },
+    
+    # ========== Excel Import ==========
+    'import_students': {
+        'en': 'Import Students',
+        'ms': 'Import Pelajar'
+    },
+    'import_ledger': {
+        'en': 'Import Ledger',
+        'ms': 'Import Lejar'
+    },
+    'upload_excel': {
+        'en': 'Upload Excel File',
+        'ms': 'Muat Naik Fail Excel'
+    },
+    'choose_file': {
+        'en': 'Choose File',
+        'ms': 'Pilih Fail'
+    },
+    'supported_formats': {
+        'en': 'Supported: XLSX, XLS, CSV',
+        'ms': 'Disokong: XLSX, XLS, CSV'
+    },
+    'file_size_limit': {
+        'en': 'Max file size: 10MB',
+        'ms': 'Saiz fail maksimum: 10MB'
+    },
+    'import_preview': {
+        'en': 'Import Preview',
+        'ms': 'Pratonton Import'
+    },
+    'rows_to_import': {
+        'en': 'Rows to Import',
+        'ms': 'Baris untuk Import'
+    },
+    'import_complete': {
+        'en': 'Import Complete',
+        'ms': 'Import Selesai'
+    },
+    'rows_imported': {
+        'en': 'Rows Imported',
+        'ms': 'Baris Diimport'
+    },
+    'import_errors': {
+        'en': 'Import Errors',
+        'ms': 'Ralat Import'
+    },
+    'no_errors': {
+        'en': 'No errors',
+        'ms': 'Tiada ralat'
+    },
+    'download_template': {
+        'en': 'Download Template',
+        'ms': 'Muat Turun Templat'
+    },
+    'form_level': {
+        'en': 'Form Level',
+        'ms': 'Tahap Tingkatan'
+    },
+    'class_group': {
+        'en': 'Class Group',
+        'ms': 'Kumpulan Kelas'
+    },
+    'form1': {
+        'en': 'Form 1',
+        'ms': 'Tingkatan 1'
+    },
+    'form2': {
+        'en': 'Form 2',
+        'ms': 'Tingkatan 2'
+    },
+    'form3': {
+        'en': 'Form 3',
+        'ms': 'Tingkatan 3'
+    },
+    'form4': {
+        'en': 'Form 4',
+        'ms': 'Tingkatan 4'
+    },
+    'form5': {
+        'en': 'Form 5',
+        'ms': 'Tingkatan 5'
+    },
+    'graduated': {
+        'en': 'Graduated',
+        'ms': 'Tamat Belajar'
+    },
+    'student_management': {
+        'en': 'Student Management',
+        'ms': 'Pengurusan Pelajar'
+    },
+    'active_students': {
+        'en': 'Active Students',
+        'ms': 'Pelajar Aktif'
+    },
+    'graduation_management': {
+        'en': 'Graduation Management',
+        'ms': 'Pengurusan Kelulusan'
+    },
+    'mark_for_deletion': {
+        'en': 'Mark for Deletion',
+        'ms': 'Tandakan untuk Pemadaman'
+    },
+    'last_login': {
+        'en': 'Last Login',
+        'ms': 'Log Masuk Terakhir'
+    },
+    'never_logged_in': {
+        'en': 'Never logged in',
+        'ms': 'Tidak pernah log masuk'
+    },
+    'inactive_warning': {
+        'en': 'No login activity',
+        'ms': 'Tiada aktiviti log masuk'
+    },
+    'instructions': {
+        'en': 'Instructions',
+        'ms': 'Arahan'
+    },
+    'notes': {
+        'en': 'Notes',
+        'ms': 'Catatan'
+    },
 }
 
 

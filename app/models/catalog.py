@@ -41,6 +41,7 @@ class Book(db.Model):
     description = db.Column(db.Text)
     page_count = db.Column(db.Integer)
     cover_image = db.Column(db.String(256))  # Path to cover image
+    price = db.Column(db.Float)  # Book price for replacement/loss scenarios
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -79,6 +80,7 @@ class Book(db.Model):
             'category': self.category,
             'call_number': self.call_number,
             'language': self.language,
+            'price': self.price,
             'total_copies': self.total_copies,
             'available_copies': self.available_copies,
             'is_available': self.is_available

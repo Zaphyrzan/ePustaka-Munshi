@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Print Barcodes - {{ book.title }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background: white;
+        }
+        
+        @page {
+            size: A4;
+            margin: 0.5in;
+        }
+        
+        .barcode-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            padding: 1rem;
+        }
+        
+        .barcode-item {
+            border: 1px solid #ddd;
+            padding: 1rem;
+            background: white;
+            page-break-inside: avoid;
+            text-align: center;
+        }
+        
+        .barcode-item h6 {
+            font-size: 12px;
+            margin-bottom: 0.5rem;
+            word-break: break-word;
+        }
+        
+        .barcode-item .accession {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            font-size: 11px;
+        }
+        
+        .barcode-item img {
+            max-width: 100%;
+            height: auto;
+            margin: 0.5rem 0;
+        }
+        
+        .barcode-item .barcode-text {
+            font-size: 10px;
+            font-family: monospace;
+            color: #666;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border-bottom: 2px solid #333;
+        }
+        
+        .header h2 {
+            font-size: 16px;
+            margin-bottom: 0.25rem;
+        }
+        
+        .header p {
+            font-size: 12px;
+            color: #666;
+            margin: 0;
+        }
+        
+        .print-hint {
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+            margin-bottom: 1rem;
+            padding: 0 1rem;
+        }
+        
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            
+            .print-hint {
+                display: none;
+            }
+            
+            .barcode-grid {
+                gap: 0.5rem;
+                padding: 0;
+            }
+            
+            .barcode-item {
+                border: 1px solid #ccc;
+                padding: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-hint">
+        <i class="bi bi-info-circle"></i> 
+        Press Ctrl+P to print this page. Select "Print to PDF" to save, or your printer to print directly.
+    </div>
+    
+    <div class="header">
+        <h2>{{ book.title }}</h2>
+        <p>Author: {{ book.author or 'N/A' }}</p>
+        <p>Total Barcodes: {{ copies|length }}</p>
+    </div>
+    
+    <div class="barcode-grid">
+        {% for copy in copies %}
+        <div class="barcode-item">
+            <h6>{{ book.title[:30] }}</h6>
+            <div class="accession">{{ copy.accession_number }}</div>
+            <img src="{{ url_for('catalog.api_barcode_image', barcode_value=copy.barcode) }}" alt="Barcode">
+            <div class="barcode-text">{{ copy.barcode }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <script>
+        // Auto-open print dialog on load
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                window.print();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

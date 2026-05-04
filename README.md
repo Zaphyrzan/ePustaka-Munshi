@@ -70,7 +70,7 @@ Open http://localhost:5000 in your browser.
 |----------|----------|------|
 | admin | admin123 | Administrator |
 | librarian | lib123 | Librarian |
-| STU001 | student123 | Student |
+| STU0001 | student123 | Student |
 
 ### Customization
 

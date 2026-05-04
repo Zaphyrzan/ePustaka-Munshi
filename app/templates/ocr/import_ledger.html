@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ t('import_ledger') if current_language == 'en' else 'Import Lejar' }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-file-earmark-spreadsheet"></i> {{ t('import_ledger') }}</h2>
+            <small class="text-muted">{{ 'Import book records from ledger spreadsheet' if current_language == 'en' else 'Import rekod buku dari fail lejar' }}</small>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Instructions -->
+            <div class="card mb-4 border-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> {{ t('instructions') if current_language == 'en' else 'Arahan' }}</h5>
+                </div>
+                <div class="card-body">
+                    <h6>{{ 'Required Columns:' if current_language == 'en' else 'Kolom Diperlukan:' }}</h6>
+                    <ul>
+                        <li><code>title</code> or <code>tajuk_buku</code> - {{ 'Book Title' if current_language == 'en' else 'Tajuk Buku' }}</li>
+                    </ul>
+                    
+                    <h6>{{ 'Optional Columns:' if current_language == 'en' else 'Kolom Pilihan:' }}</h6>
+                    <ul>
+                        <li><code>author</code> or <code>pengarang</code> - {{ t('author') }}</li>
+                        <li><code>publisher</code> or <code>penerbit</code> - {{ t('publisher') }}</li>
+                        <li><code>year</code> or <code>tahun_penerbit</code> - {{ t('year') }}</li>
+                        <li><code>isbn</code> - ISBN</li>
+                        <li><code>price_rm</code> or <code>harga_rm</code> - {{ 'Price (RM)' if current_language == 'en' else 'Harga (RM)' }}</li>
+                        <li><code>accession_number</code> or <code>no_perolehan</code> - {{ t('no_perolehan') }}</li>
+                        <li><code>call_number</code> or <code>no_panggilan</code> - {{ t('no_panggilan') }}</li>
+                        <li><code>location</code> - {{ 'Location' if current_language == 'en' else 'Lokasi' }}</li>
+                        <li><code>category</code> or <code>kategori</code> - {{ t('category') }}</li>
+                        <li><code>notes</code> or <code>catatan</code> - {{ t('catatan') }}</li>
+                    </ul>
+
+                    <p class="text-muted mt-3">
+                        {{ 'Supported formats: XLSX, XLS, CSV' if current_language == 'en' else 'Format Disokong: XLSX, XLS, CSV' }}<br>
+                        {{ 'Max file size: 10MB' if current_language == 'en' else 'Saiz Fail Maksimum: 10MB' }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Upload Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-cloud-arrow-up"></i> {{ t('upload_excel') }}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="file" class="form-label">{{ t('choose_file') }}</label>
+                            <input type="file" class="form-control" id="file" name="file" 
+                                   accept=".xlsx,.xls,.csv" required>
+                            <small class="form-text text-muted">
+                                {{ 'Supported: XLSX, XLS, CSV' if current_language == 'en' else 'Disokong: XLSX, XLS, CSV' }}
+                            </small>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="preview" name="preview" value="on">
+                            <label class="form-check-label" for="preview">
+                                {{ 'Preview before importing' if current_language == 'en' else 'Pratonton Sebelum Import' }}
+                            </label>
+                        </div>
+
+                        <div class="btn-group" role="group">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-upload"></i> {{ t('upload') }}
+                            </button>
+                            <a href="{{ url_for('ocr.index') }}" class="btn btn-secondary">
+                                {{ t('cancel') }}
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Sample Format -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-file-text"></i> {{ 'Sample Format' if current_language == 'en' else 'Format Contoh' }}</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm text-nowrap">
+                        <thead>
+                            <tr>
+                                <th>title</th>
+                                <th>author</th>
+                                <th>year</th>
+                                <th>price_rm</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Buku Sains</td>
+                                <td>Ahmad Shah</td>
+                                <td>2020</td>
+                                <td>45.00</td>
+                            </tr>
+                            <tr>
+                                <td>Matematik Asas</td>
+                                <td>Nur Aisyah</td>
+                                <td>2021</td>
+                                <td>52.50</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    code {
+        background-color: #f4f4f4;
+        padding: 2px 6px;
+        border-radius: 3px;
+        color: #d63384;
+    }
+</style>
+{% endblock %}

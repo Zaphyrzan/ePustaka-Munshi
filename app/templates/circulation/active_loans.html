@@ -1,103 +1,282 @@
 {% extends "base.html" %}
 
 {% block title %}Active Loans - ePustaka Munshi{% endblock %}
-{% block page_title %}Active Loans{% endblock %}
+{% block page_title %}Loan Management{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <a href="{{ url_for('circulation.active_loans') }}" class="btn btn-primary btn-sm me-1">All Active</a>
-        <a href="{{ url_for('circulation.overdue_loans') }}" class="btn btn-outline-danger btn-sm me-1">Overdue Only</a>
-        <a href="{{ url_for('circulation.loan_history') }}" class="btn btn-outline-secondary btn-sm">History</a>
-    </div>
-    <form method="POST" action="{{ url_for('circulation.update_overdue') }}" class="d-inline">
-        <button type="submit" class="btn btn-sm btn-outline-warning">
-            <i class="bi bi-arrow-clockwise"></i> Update Overdue Status
-        </button>
-    </form>
-</div>
+<div class="row">
+    <div class="col-12">
+        <div class="card table-card">
+            <div class="card-header bg-transparent">
+                <!-- Tab Navigation -->
+                <ul class="nav nav-tabs border-0">
+                    <li class="nav-item">
+                        <a class="nav-link {% if current_view == 'active' %}active{% endif %}" 
+                           href="{{ url_for('circulation.active_loans', view='active', page=1) }}">
+                            <i class="bi bi-list-check"></i> Active Loans
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if current_view == 'overdue' %}active{% endif %}" 
+                           href="{{ url_for('circulation.active_loans', view='overdue', page=1) }}">
+                            <i class="bi bi-exclamation-triangle"></i> Overdue Only
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if current_view == 'history' %}active{% endif %}" 
+                           href="{{ url_for('circulation.active_loans', view='history', page=1) }}">
+                            <i class="bi bi-clock-history"></i> History
+                        </a>
+                    </li>
+                </ul>
+            </div>
 
-<div class="card table-card">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Book</th>
-                        <th>Accession</th>
-                        <th>Member</th>
-                        <th>Checkout</th>
-                        <th>Due Date</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for loan in loans.items %}
-                    <tr class="{% if loan.is_overdue %}table-danger{% endif %}">
-                        <td>{{ loan.copy.book.title[:40] }}{% if loan.copy.book.title|length > 40 %}...{% endif %}</td>
-                        <td><code>{{ loan.copy.accession_number }}</code></td>
-                        <td>
-                            <a href="{{ url_for('users.view_member', member_id=loan.member.id) }}">
-                                {{ loan.member.full_name }}
-                            </a>
-                            <br><small class="text-muted">{{ loan.member.member_id }}</small>
-                        </td>
-                        <td>{{ loan.checkout_date.strftime('%d/%m/%Y') }}</td>
-                        <td>
-                            {{ loan.due_date.strftime('%d/%m/%Y') }}
-                            {% if loan.is_overdue %}
-                            <br><small class="text-danger">{{ loan.days_overdue }} days overdue</small>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if loan.is_overdue %}
-                                <span class="badge bg-danger">Overdue</span>
+            <div class="card-body p-0">
+                <!-- Active Loans Tab -->
+                {% if current_view == 'active' %}
+                {% if loans.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Book Title</th>
+                                <th>Member</th>
+                                <th>Checked Out</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for loan in loans.items %}
+                            <tr {% if loan.is_overdue %}class="table-danger"{% endif %}>
+                                <td>
+                                    <strong>{{ loan.copy.book.title }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ loan.copy.accession_number }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ loan.member.full_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ loan.member.member_id }}</small>
+                                </td>
+                                <td>{{ loan.checkout_date.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ loan.due_date.strftime('%d/%m/%Y') }}</td>
+                                <td>
+                                    {% if loan.is_overdue %}
+                                        <span class="badge bg-danger">⚠ OVERDUE ({{ loan.days_overdue }} days)</span>
+                                    {% else %}
+                                        <span class="badge bg-info">✓ Active</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if loan.can_renew %}
+                                    <form method="POST" action="{{ url_for('circulation.renew', loan_id=loan.id) }}" style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-outline-info" title="Renew this loan">
+                                            <i class="bi bi-arrow-clockwise"></i> Renew
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                    <a href="{{ url_for('circulation.return_book') }}" class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-box-arrow-in-left"></i> Return
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-4 text-center text-muted">
+                    <i class="bi bi-inbox" style="font-size: 3rem; opacity: 0.3;"></i>
+                    <p class="mt-3 mb-0">No active loans found.</p>
+                </div>
+                {% endif %}
+
+                <!-- Overdue Loans Tab -->
+                {% elif current_view == 'overdue' %}
+                {% if loans.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Book Title</th>
+                                <th>Member</th>
+                                <th>Due Date</th>
+                                <th>Days Overdue</th>
+                                <th>Checked Out</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for loan in loans.items %}
+                            <tr class="table-danger">
+                                <td>
+                                    <strong>{{ loan.copy.book.title }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ loan.copy.accession_number }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ loan.member.full_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ loan.member.member_id }}</small>
+                                </td>
+                                <td>{{ loan.due_date.strftime('%d/%m/%Y') }}</td>
+                                <td>
+                                    <span class="badge bg-danger">{{ loan.days_overdue }} days</span>
+                                </td>
+                                <td>{{ loan.checkout_date.strftime('%d/%m/%Y') }}</td>
+                                <td>
+                                    <a href="{{ url_for('circulation.return_book') }}" class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-box-arrow-in-left"></i> Return
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-4 text-center text-muted">
+                    <i class="bi bi-check-circle" style="font-size: 3rem; opacity: 0.3;"></i>
+                    <p class="mt-3 mb-0">No overdue loans found!</p>
+                </div>
+                {% endif %}
+
+                <!-- History Tab -->
+                {% elif current_view == 'history' %}
+                <!-- Filter Form -->
+                <div class="p-3 border-bottom bg-light">
+                    <form method="GET" class="row g-2 align-items-end">
+                        <input type="hidden" name="view" value="history">
+                        <div class="col-auto">
+                            <label for="member" class="form-label mb-2">Member ID</label>
+                            <input type="text" class="form-control form-control-sm" id="member" name="member" 
+                                   placeholder="Search..." value="{{ request.args.get('member', '') }}">
+                        </div>
+                        <div class="col-auto">
+                            <label for="status" class="form-label mb-2">Status</label>
+                            <select class="form-select form-select-sm" id="status" name="status">
+                                <option value="">All</option>
+                                <option value="active" {% if request.args.get('status') == 'active' %}selected{% endif %}>Active</option>
+                                <option value="returned" {% if request.args.get('status') == 'returned' %}selected{% endif %}>Returned</option>
+                                <option value="overdue" {% if request.args.get('status') == 'overdue' %}selected{% endif %}>Overdue</option>
+                                <option value="lost" {% if request.args.get('status') == 'lost' %}selected{% endif %}>Lost</option>
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="bi bi-search"></i> Search
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                {% if loans.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Book Title</th>
+                                <th>Member</th>
+                                <th>Checked Out</th>
+                                <th>Due Date</th>
+                                <th>Returned</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for loan in loans.items %}
+                            <tr>
+                                <td>
+                                    <strong>{{ loan.copy.book.title }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ loan.copy.accession_number }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ loan.member.full_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ loan.member.member_id }}</small>
+                                </td>
+                                <td>{{ loan.checkout_date.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ loan.due_date.strftime('%d/%m/%Y') }}</td>
+                                <td>
+                                    {% if loan.return_date %}
+                                        {{ loan.return_date.strftime('%d/%m/%Y') }}
+                                    {% else %}
+                                        <span class="badge bg-secondary">Not Returned</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if loan.status == 'active' %}
+                                        <span class="badge bg-info">Active</span>
+                                    {% elif loan.status == 'returned' %}
+                                        <span class="badge bg-success">Returned</span>
+                                    {% elif loan.status == 'overdue' %}
+                                        <span class="badge bg-danger">Overdue</span>
+                                    {% elif loan.status == 'lost' %}
+                                        <span class="badge bg-dark">Lost</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ loan.status }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-4 text-center text-muted">
+                    <i class="bi bi-inbox" style="font-size: 3rem; opacity: 0.3;"></i>
+                    <p class="mt-3 mb-0">No loans found.</p>
+                </div>
+                {% endif %}
+                {% endif %}
+
+                <!-- Pagination (for all views) -->
+                {% if loans.pages > 1 %}
+                <nav class="p-3 border-top">
+                    <ul class="pagination mb-0 justify-content-center">
+                        {% if loans.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('circulation.active_loans', view=current_view, page=1, member=request.args.get('member', ''), status=request.args.get('status', '')) }}">First</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('circulation.active_loans', view=current_view, page=loans.prev_num, member=request.args.get('member', ''), status=request.args.get('status', '')) }}">Previous</a>
+                        </li>
+                        {% endif %}
+
+                        {% for page_num in loans.iter_pages(left_edge=1, left_margin=1, right_margin=1, right_edge=1) %}
+                            {% if page_num %}
+                                {% if page_num == loans.page %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('circulation.active_loans', view=current_view, page=page_num, member=request.args.get('member', ''), status=request.args.get('status', '')) }}">{{ page_num }}</a>
+                                </li>
+                                {% endif %}
                             {% else %}
-                                <span class="badge bg-primary">Active</span>
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
                             {% endif %}
-                            {% if loan.renewal_count > 0 %}
-                                <span class="badge bg-info">Renewed x{{ loan.renewal_count }}</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if loan.can_renew %}
-                            <form method="POST" action="{{ url_for('circulation.renew', loan_id=loan.id) }}" class="d-inline">
-                                <button type="submit" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-arrow-repeat"></i> Renew
-                                </button>
-                            </form>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="7" class="text-center text-muted py-4">No active loans</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                        {% endfor %}
+
+                        {% if loans.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('circulation.active_loans', view=current_view, page=loans.next_num, member=request.args.get('member', ''), status=request.args.get('status', '')) }}">Next</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('circulation.active_loans', view=current_view, page=loans.pages, member=request.args.get('member', ''), status=request.args.get('status', '')) }}">Last</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
-
-{% if loans.pages > 1 %}
-<nav class="mt-4">
-    <ul class="pagination justify-content-center">
-        {% if loans.has_prev %}
-        <li class="page-item"><a class="page-link" href="{{ url_for('circulation.active_loans', page=loans.prev_num) }}">Previous</a></li>
-        {% endif %}
-        {% for page_num in loans.iter_pages() %}
-            {% if page_num %}
-            <li class="page-item {% if page_num == loans.page %}active{% endif %}">
-                <a class="page-link" href="{{ url_for('circulation.active_loans', page=page_num) }}">{{ page_num }}</a>
-            </li>
-            {% endif %}
-        {% endfor %}
-        {% if loans.has_next %}
-        <li class="page-item"><a class="page-link" href="{{ url_for('circulation.active_loans', page=loans.next_num) }}">Next</a></li>
-        {% endif %}
-    </ul>
-</nav>
-{% endif %}
 {% endblock %}

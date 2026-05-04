@@ -1,68 +1,234 @@
 {% extends "base.html" %}
 
-{% block title %}Edit Member - ePustaka Munshi{% endblock %}
-{% block page_title %}Edit Member{% endblock %}
+{% block title %}{{ t('edit') }} {{ member.full_name }} - ePustaka Munshi{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-6">
-        <div class="card table-card">
-            <div class="card-header bg-transparent">
-                <h5 class="mb-0">Edit: {{ member.full_name }}</h5>
-            </div>
-            <div class="card-body">
-                <form method="POST">
-                    <div class="mb-3">
-                        <label class="form-label">Member ID</label>
-                        <input type="text" class="form-control" value="{{ member.member_id }}" readonly disabled>
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>{{ t('edit') }} {{ member.full_name }}</h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <form method="POST">
+                <!-- Basic Information -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">{{ 'Basic Information' if current_language == 'en' else 'Maklumat Asas' }}</h6>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label for="full_name" class="form-label">Full Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="full_name" name="full_name" value="{{ member.full_name }}" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
-                        <input type="email" class="form-control" id="email" name="email" value="{{ member.email or '' }}">
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="phone" class="form-label">Phone</label>
-                        <input type="tel" class="form-control" id="phone" name="phone" value="{{ member.phone or '' }}">
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="member_type" class="form-label">Member Type</label>
-                            <select class="form-select" id="member_type" name="member_type">
-                                <option value="Student" {% if member.member_type == 'Student' %}selected{% endif %}>Student</option>
-                                <option value="Staff" {% if member.member_type == 'Staff' %}selected{% endif %}>Staff</option>
-                                <option value="External" {% if member.member_type == 'External' %}selected{% endif %}>External</option>
-                            </select>
+                    <div class="card-body">
+                        <!-- Member ID (Read-only) -->
+                        <div class="mb-3">
+                            <label class="form-label">{{ t('member_id') }}</label>
+                            <input type="text" class="form-control" value="{{ member.member_id }}" readonly disabled>
+                            <small class="form-text text-muted">{{ 'Auto-generated (cannot be changed)' if current_language == 'en' else 'Dijana Secara Automatik (tidak boleh diubah)' }}</small>
                         </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="class_group" class="form-label">Class / Department</label>
-                            <input type="text" class="form-control" id="class_group" name="class_group" value="{{ member.class_group or '' }}">
+
+                        <!-- Full Name -->
+                        <div class="mb-3">
+                            <label for="full_name" class="form-label">
+                                {{ t('name') }} <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="full_name" name="full_name" value="{{ member.full_name }}" required>
+                        </div>
+
+                        <div class="row">
+                            <!-- Email -->
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">{{ t('email') }}</label>
+                                <input type="email" class="form-control" id="email" name="email" value="{{ member.email or '' }}">
+                            </div>
+
+                            <!-- Phone -->
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">{{ t('phone') }}</label>
+                                <input type="tel" class="form-control" id="phone" name="phone" value="{{ member.phone or '' }}">
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label for="notes" class="form-label">Notes</label>
-                        <textarea class="form-control" id="notes" name="notes" rows="2">{{ member.notes or '' }}</textarea>
+                </div>
+
+                <!-- Student Classification -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">{{ 'Student Classification' if current_language == 'en' else 'Klasifikasi Pelajar' }}</h6>
                     </div>
-                    
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="is_active" name="is_active" {% if member.is_active %}checked{% endif %}>
-                        <label class="form-check-label" for="is_active">Active (can borrow books)</label>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Member Type -->
+                            <div class="col-md-4 mb-3">
+                                <label for="member_type" class="form-label">
+                                    {{ 'Member Type' if current_language == 'en' else 'Jenis Ahli' }}
+                                </label>
+                                <select class="form-select" id="member_type" name="member_type">
+                                    <option value="Student" {% if member.member_type == 'Student' %}selected{% endif %}>
+                                        {{ 'Student' if current_language == 'en' else 'Pelajar' }}
+                                    </option>
+                                    <option value="Staff" {% if member.member_type == 'Staff' %}selected{% endif %}>{{ t('staff') }}</option>
+                                    <option value="External" {% if member.member_type == 'External' %}selected{% endif %}>
+                                        {{ 'External' if current_language == 'en' else 'Luaran' }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- Form Level -->
+                            <div class="col-md-4 mb-3">
+                                <label for="form_level" class="form-label">{{ t('form_level') }}</label>
+                                <select class="form-select" id="form_level" name="form_level">
+                                    <option value="1" {% if member.form_level == 1 %}selected{% endif %}>{{ t('form1') }}</option>
+                                    <option value="2" {% if member.form_level == 2 %}selected{% endif %}>{{ t('form2') }}</option>
+                                    <option value="3" {% if member.form_level == 3 %}selected{% endif %}>{{ t('form3') }}</option>
+                                    <option value="4" {% if member.form_level == 4 %}selected{% endif %}>{{ t('form4') }}</option>
+                                    <option value="5" {% if member.form_level == 5 %}selected{% endif %}>{{ t('form5') }}</option>
+                                    <option value="6" {% if member.form_level >= 6 %}selected{% endif %}>{{ t('graduated') }}</option>
+                                </select>
+                            </div>
+
+                            <!-- Class Group -->
+                            <div class="col-md-4 mb-3">
+                                <label for="class_group" class="form-label">{{ t('class_group') }}</label>
+                                <select class="form-select" id="class_group" name="class_group">
+                                    <option value="">{{ '-- Select Class --' if current_language == 'en' else '-- Pilih Kelas --' }}</option>
+                                    <option value="Science 1" {% if member.class_group == 'Science 1' %}selected{% endif %}>Science 1</option>
+                                    <option value="Science 2" {% if member.class_group == 'Science 2' %}selected{% endif %}>Science 2</option>
+                                    <option value="Arts 1" {% if member.class_group == 'Arts 1' %}selected{% endif %}>Arts 1</option>
+                                    <option value="Arts 2" {% if member.class_group == 'Arts 2' %}selected{% endif %}>Arts 2</option>
+                                    <option value="Commerce" {% if member.class_group == 'Commerce' %}selected{% endif %}>Commerce</option>
+                                    <option value="Technical" {% if member.class_group == 'Technical' %}selected{% endif %}>Technical</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
-                    
+                </div>
+
+                <!-- Status & Deletion -->
+                {% if member.member_type == 'Student' %}
+                <div class="card mb-3 border-warning">
+                    <div class="card-header bg-warning bg-opacity-10">
+                        <h6 class="mb-0"><i class="bi bi-exclamation-triangle"></i> 
+                            {{ 'Account Management' if current_language == 'en' else 'Pengurusan Akaun' }}
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                            {{ 'Use this section only for students marked for graduation or deletion.' if current_language == 'en' else 'Gunakan bahagian ini hanya untuk pelajar yang ditandakan untuk kelulusan atau pemadaman.' }}
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="mark_graduated" name="mark_graduated" value="on"
+                                   {% if member.form_level >= 6 %}checked{% endif %}>
+                            <label class="form-check-label" for="mark_graduated">
+                                <strong>{{ 'Mark as Graduated' if current_language == 'en' else 'Tandakan Sebagai Tamat Belajar' }}</strong>
+                            </label>
+                            <small class="d-block text-muted mt-1">
+                                {{ 'Sets form level to Graduated (6) and records graduation date' if current_language == 'en' else 'Menetapkan tahap tingkatan ke Tamat Belajar (6) dan merekod tarikh kelulusan' }}
+                            </small>
+                        </div>
+
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="mark_for_deletion" name="mark_for_deletion" value="on"
+                                   {% if member.mark_for_deletion %}checked{% endif %}>
+                            <label class="form-check-label text-danger" for="mark_for_deletion">
+                                <strong>{{ 'Mark for Deletion' if current_language == 'en' else 'Tandakan untuk Pemadaman' }}</strong>
+                            </label>
+                            <small class="d-block text-muted mt-1">
+                                {{ 'Flag for admin deletion (requires active loans check)' if current_language == 'en' else 'Tandakan untuk pemadaman oleh pentadbir (memerlukan semakan pinjaman aktif)' }}
+                            </small>
+                        </div>
+
+                        {% if member.graduation_date %}
+                        <div class="mt-3 pt-3 border-top">
+                            <small class="text-muted">
+                                {{ 'Graduation Date:' if current_language == 'en' else 'Tarikh Kelulusan:' }} <strong>{{ member.graduation_date.strftime('%d %B %Y') }}</strong>
+                            </small>
+                        </div>
+                        {% endif %}
+
+                        {% if member.last_login %}
+                        <small class="d-block text-muted mt-2">
+                            {{ 'Last Login:' if current_language == 'en' else 'Log Masuk Terakhir:' }} <strong>{{ member.last_login.strftime('%d %B %Y %H:%M') }}</strong>
+                        </small>
+                        {% else %}
+                        <small class="d-block text-muted mt-2">
+                            {{ 'Last Login: Never' if current_language == 'en' else 'Log Masuk Terakhir: Tidak pernah' }}
+                        </small>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Notes -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">{{ t('notes') if current_language == 'en' else 'Catatan' }}</h6>
+                    </div>
+                    <div class="card-body">
+                        <textarea class="form-control" id="notes" name="notes" rows="3">{{ member.notes or '' }}</textarea>
+                    </div>
+                </div>
+
+                <!-- Status -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">{{ t('status') }}</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if member.is_active %}checked{% endif %}>
+                            <label class="form-check-label" for="is_active">
+                                {{ 'Active (can borrow books)' if current_language == 'en' else 'Aktif (boleh meminjam buku)' }}
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-circle"></i> Save Changes
+                        <i class="bi bi-check-circle"></i> {{ t('save') }}
                     </button>
-                    <a href="{{ url_for('users.view_member', member_id=member.id) }}" class="btn btn-outline-secondary">Cancel</a>
-                </form>
+                    <a href="{{ url_for('users.view_member', member_id=member.id) }}" class="btn btn-outline-secondary">
+                        {{ t('cancel') }}
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Side Panel -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-info-circle"></i> {{ 'Member Info' if current_language == 'en' else 'Maklumat Ahli' }}</h6>
+                </div>
+                <div class="card-body small">
+                    <dl>
+                        <dt>{{ 'Member ID' if current_language == 'en' else 'ID Ahli' }}</dt>
+                        <dd>{{ member.member_id }}</dd>
+
+                        <dt>{{ 'Status' if current_language == 'en' else 'Status' }}</dt>
+                        <dd>
+                            {% if member.is_active %}
+                            <span class="badge bg-success">{{ 'Active' if current_language == 'en' else 'Aktif' }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ 'Inactive' if current_language == 'en' else 'Tidak Aktif' }}</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt>{{ 'Form Level' if current_language == 'en' else 'Tahap Tingkatan' }}</dt>
+                        <dd>{{ member.form_name }}</dd>
+
+                        <dt>{{ 'Class' if current_language == 'en' else 'Kelas' }}</dt>
+                        <dd>{{ member.class_group or '(None)' }}</dd>
+
+                        <dt>{{ 'Created' if current_language == 'en' else 'Dicipta' }}</dt>
+                        <dd>{{ member.created_at.strftime('%d %b %Y') }}</dd>
+
+                        <dt>{{ 'Updated' if current_language == 'en' else 'Dikemas Kini' }}</dt>
+                        <dd>{{ member.updated_at.strftime('%d %b %Y %H:%M') }}</dd>
+                    </dl>
+                </div>
             </div>
         </div>
     </div>

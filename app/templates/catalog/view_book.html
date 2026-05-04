@@ -26,6 +26,9 @@
                     <tr><th>Category</th><td>{{ book.category or '-' }}</td></tr>
                     <tr><th>Call Number</th><td><code>{{ book.call_number or '-' }}</code></td></tr>
                     <tr><th>Language</th><td>{{ book.language or '-' }}</td></tr>
+                    {% if book.price %}
+                    <tr><th>Price</th><td><strong class="text-success">RM {{ "%.2f"|format(book.price) }}</strong></td></tr>
+                    {% endif %}
                     {% if book.description %}
                     <tr><th>Description</th><td>{{ book.description }}</td></tr>
                     {% endif %}
@@ -37,11 +40,18 @@
         <div class="card table-card">
             <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Copies ({{ book.total_copies }})</h5>
-                {% if current_user.can(16) %}
-                <a href="{{ url_for('catalog.add_copy', book_id=book.id) }}" class="btn btn-sm btn-primary">
-                    <i class="bi bi-plus"></i> Add Copy
-                </a>
-                {% endif %}
+                <div class="btn-group" role="group">
+                    {% if current_user.can(16) %}
+                    {% if book.total_copies > 0 %}
+                    <a href="{{ url_for('catalog.print_barcodes', book_id=book.id) }}" class="btn btn-sm btn-info">
+                        <i class="bi bi-printer"></i> Print Barcodes
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('catalog.add_copy', book_id=book.id) }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-plus"></i> Add Copy
+                    </a>
+                    {% endif %}
+                </div>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">

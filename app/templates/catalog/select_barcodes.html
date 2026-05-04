@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Print Barcodes - ePustaka Munshi{% endblock %}
+{% block page_title %}Print Barcodes: {{ book.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card table-card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="bi bi-printer"></i> Select Copies to Print</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('catalog.print_barcodes', book_id=book.id) }}">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th width="40">
+                                        <input type="checkbox" id="selectAll" class="form-check-input">
+                                    </th>
+                                    <th>Accession #</th>
+                                    <th>Barcode</th>
+                                    <th>Status</th>
+                                    <th>Condition</th>
+                                    <th>Location</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if copies %}
+                                    {% for copy in copies %}
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" name="copy_ids" value="{{ copy.id }}" class="form-check-input copy-checkbox">
+                                        </td>
+                                        <td><strong>{{ copy.accession_number }}</strong></td>
+                                        <td><code>{{ copy.barcode }}</code></td>
+                                        <td>
+                                            <span class="badge 
+                                                {% if copy.status == 'available' %}bg-success
+                                                {% elif copy.status == 'on_loan' %}bg-warning
+                                                {% elif copy.status == 'lost' %}bg-danger
+                                                {% elif copy.status == 'damaged' %}bg-danger
+                                                {% else %}bg-secondary{% endif %}">
+                                                {{ copy.status|title }}
+                                            </span>
+                                        </td>
+                                        <td>{{ copy.condition }}</td>
+                                        <td>{{ copy.location or '-' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">
+                                            <i class="bi bi-inbox"></i> No copies added yet
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    {% if copies %}
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-printer"></i> Print Selected (<span id="selectedCount">0</span>)
+                        </button>
+                        <a href="{{ url_for('catalog.view_book', book_id=book.id) }}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                    </div>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('selectAll').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.copy-checkbox');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+    updateSelectedCount();
+});
+
+document.querySelectorAll('.copy-checkbox').forEach(cb => {
+    cb.addEventListener('change', updateSelectedCount);
+});
+
+function updateSelectedCount() {
+    const count = document.querySelectorAll('.copy-checkbox:checked').length;
+    document.getElementById('selectedCount').textContent = count;
+}
+
+updateSelectedCount();
+</script>
+{% endblock %}

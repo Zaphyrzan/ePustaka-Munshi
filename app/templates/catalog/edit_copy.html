@@ -20,8 +20,9 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="barcode" class="form-label">Barcode</label>
-                        <input type="text" class="form-control" id="barcode" name="barcode" value="{{ copy.barcode or '' }}">
+                        <label for="barcode" class="form-label">Barcode (Scanner Value)</label>
+                        <input type="text" class="form-control" id="barcode" value="{{ copy.barcode or '' }}" readonly disabled>
+                        <div class="form-text">Read-only. This value is scanned by the 1D scanner during checkout/return.</div>
                     </div>
                     
                     <div class="mb-3">

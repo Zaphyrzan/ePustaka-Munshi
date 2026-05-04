@@ -5,27 +5,56 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-lg-6">
+    <div class="col-lg-8">
         <div class="card table-card">
             <div class="card-header bg-transparent">
                 <h5 class="mb-0"><i class="bi bi-box-arrow-in-left text-success"></i> Return Book</h5>
             </div>
             <div class="card-body">
-                <form method="POST">
-                    <div class="mb-3">
-                        <label for="accession_number" class="form-label">Book Accession Number / Barcode</label>
+                <form method="POST" id="returnForm">
+                    <div class="mb-4">
+                        <label for="barcode" class="form-label fw-bold">Book Barcode (Scanner Input)</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-upc-scan"></i></span>
-                            <input type="text" class="form-control form-control-lg" id="accession_number" name="accession_number" 
-                                   placeholder="Scan or enter accession number" required autofocus>
+                            <input type="text" class="form-control form-control-lg" id="barcode" name="barcode" 
+                                   placeholder="Scan book barcode" required>
                             <button type="button" class="btn btn-outline-secondary" id="lookupCopy">
                                 <i class="bi bi-search"></i>
                             </button>
                         </div>
                     </div>
                     
-                    <div id="loanInfo" class="d-none mb-3">
-                        <!-- Filled by JS -->
+                    <!-- Loan Info Cards -->
+                    <div id="loanInfoCard" class="card border-start border-info border-5 d-none mb-4">
+                        <div class="card-body">
+                            <h6 class="text-muted mb-3">Book Information</h6>
+                            <h5 id="loanBookTitle" class="mb-3"></h5>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block mb-1">Member</small>
+                                    <strong id="loanMemberName"></strong>
+                                    <small class="text-muted d-block" id="loanMemberCard"></small>
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block mb-1">Status</small>
+                                    <div id="loanStatus"></div>
+                                </div>
+                            </div>
+                            
+                            <hr>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block mb-1">Checkout Date</small>
+                                    <span id="checkoutDate" class="d-block"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block mb-1">Due Date</small>
+                                    <span id="dueDate" class="d-block"></span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <button type="submit" class="btn btn-success btn-lg w-100">
@@ -36,64 +65,173 @@
         </div>
     </div>
     
-    <div class="col-lg-6">
+    <div class="col-lg-4">
         <div class="card table-card">
             <div class="card-header bg-transparent">
                 <h5 class="mb-0"><i class="bi bi-info-circle"></i> Instructions</h5>
             </div>
             <div class="card-body">
                 <ol class="mb-0">
-                    <li class="mb-2">Scan or enter the book's <strong>Accession Number</strong> or barcode</li>
+                    <li class="mb-2">Scan the book's <strong>barcode</strong> using your 1D scanner</li>
                     <li class="mb-2">Verify the loan information displayed</li>
                     <li class="mb-2">Check the book condition</li>
                     <li>Click <strong>Process Return</strong> to complete</li>
                 </ol>
+                
+                <hr>
+                
+                <p class="text-muted small mb-0">
+                    <i class="bi bi-info-circle"></i> 
+                    If a book is overdue, you'll see a warning message.
+                </p>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Return Confirmation Modal -->
+<div class="modal fade" id="returnConfirmModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title"><i class="bi bi-check-circle-fill text-success"></i> Confirm Return</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="card border-0 bg-light mb-3">
+                    <div class="card-body">
+                        <h6 class="text-muted mb-2">Book</h6>
+                        <h5 id="confirmReturnBookTitle" class="mb-0"></h5>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body">
+                                <h6 class="text-muted mb-2">Returned by</h6>
+                                <h5 id="confirmReturnMemberName" class="mb-0"></h5>
+                                <small class="text-muted d-block" id="confirmReturnMemberCard"></small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body">
+                                <h6 class="text-muted mb-2">Status</h6>
+                                <div id="confirmReturnStatus"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="overdueWarning" class="alert alert-warning d-none" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <strong>This book is overdue!</strong>
+                    <span id="overdueMessage"></span>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-success" id="confirmReturnBtn">
+                    <i class="bi bi-check-circle"></i> Confirm Return
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
+// Set initial focus on page load
+window.addEventListener('load', function() {
+    document.getElementById('barcode').focus();
+});
+
 document.getElementById('lookupCopy').addEventListener('click', function() {
-    const accession = document.getElementById('accession_number').value;
-    if (!accession) return;
+    const barcode = document.getElementById('barcode').value.trim();
+    if (!barcode) return;
     
-    fetch(`/circulation/api/copy/${accession}/loan`)
+    fetch(`/circulation/api/copy/${barcode}/loan`)
         .then(response => response.json())
         .then(data => {
-            const infoDiv = document.getElementById('loanInfo');
-            
-            if (data.error) {
-                infoDiv.className = 'alert alert-danger mb-3';
-                infoDiv.innerHTML = '<strong>Book copy not found</strong>';
-            } else if (!data.current_loan) {
-                infoDiv.className = 'alert alert-warning mb-3';
-                infoDiv.innerHTML = `<strong>${data.book_title}</strong><br><small>This book is not currently on loan</small>`;
+            if (data.error || !data.current_loan) {
+                document.getElementById('loanInfoCard').classList.add('d-none');
             } else {
                 const loan = data.current_loan;
-                const isOverdue = loan.is_overdue;
-                infoDiv.className = isOverdue ? 'alert alert-danger mb-3' : 'alert alert-info mb-3';
-                infoDiv.innerHTML = `
-                    <strong>${data.book_title}</strong><br>
-                    <table class="table table-sm table-borderless mb-0 mt-2">
-                        <tr><td width="120">Member:</td><td><strong>${loan.member_name}</strong> (${loan.member_card})</td></tr>
-                        <tr><td>Checkout:</td><td>${new Date(loan.checkout_date).toLocaleDateString()}</td></tr>
-                        <tr><td>Due Date:</td><td>${new Date(loan.due_date).toLocaleDateString()}</td></tr>
-                        ${isOverdue ? `<tr><td>Status:</td><td class="text-danger"><strong>OVERDUE (${loan.days_overdue} days)</strong></td></tr>` : ''}
-                    </table>
-                `;
+                
+                document.getElementById('loanBookTitle').textContent = data.book_title;
+                document.getElementById('loanMemberName').textContent = loan.member_name;
+                document.getElementById('loanMemberCard').textContent = `(${loan.member_card})`;
+                
+                const statusEl = document.getElementById('loanStatus');
+                if (loan.is_overdue) {
+                    statusEl.innerHTML = `<span class="badge bg-danger">⚠ OVERDUE (${loan.days_overdue} days)</span>`;
+                } else {
+                    statusEl.innerHTML = '<span class="badge bg-info">✓ On Loan</span>';
+                }
+                
+                document.getElementById('checkoutDate').textContent = new Date(loan.checkout_date).toLocaleDateString();
+                document.getElementById('dueDate').textContent = new Date(loan.due_date).toLocaleDateString();
+                
+                document.getElementById('loanInfoCard').classList.remove('d-none');
             }
-            infoDiv.classList.remove('d-none');
+            
+            // Keep focus on barcode field for potential next scan
+            document.getElementById('barcode').focus();
         });
 });
 
-document.getElementById('accession_number').addEventListener('keypress', function(e) {
+// Handle Enter key on barcode field
+document.getElementById('barcode').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
         e.preventDefault();
         document.getElementById('lookupCopy').click();
     }
+});
+
+// Handle form submission - show modal confirmation
+document.getElementById('returnForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const loanCard = document.getElementById('loanInfoCard');
+    
+    if (loanCard.classList.contains('d-none')) {
+        alert('Please verify book information before proceeding');
+        return false;
+    }
+    
+    // Populate modal
+    document.getElementById('confirmReturnBookTitle').textContent = document.getElementById('loanBookTitle').textContent;
+    document.getElementById('confirmReturnMemberName').textContent = document.getElementById('loanMemberName').textContent;
+    document.getElementById('confirmReturnMemberCard').textContent = document.getElementById('loanMemberCard').textContent;
+    
+    const statusHTML = document.getElementById('loanStatus').innerHTML;
+    document.getElementById('confirmReturnStatus').innerHTML = statusHTML;
+    
+    // Show overdue warning in modal if applicable
+    const statusText = document.getElementById('loanStatus').textContent;
+    if (statusText.includes('OVERDUE')) {
+        const daysOverdue = statusText.match(/\d+/)[0];
+        document.getElementById('overdueWarning').classList.remove('d-none');
+        document.getElementById('overdueMessage').textContent = ` This book is ${daysOverdue} days overdue. Please note this when processing the return.`;
+    } else {
+        document.getElementById('overdueWarning').classList.add('d-none');
+    }
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('returnConfirmModal'));
+    modal.show();
+});
+
+// Handle confirmation button in modal
+document.getElementById('confirmReturnBtn').addEventListener('click', function() {
+    // Submit the form normally - this will show flash messages
+    document.getElementById('returnForm').submit();
 });
 </script>
 {% endblock %}

@@ -1,10 +1,16 @@
 """
 User management routes
 """
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from app import db
 from app.models import User, Role, Member, Permission
+from app.models.member import generate_member_id
+from app.utils.excel_import import (
+    import_student_data, save_upload_file, get_class_groups, 
+    get_form_levels, read_excel_file
+)
+from datetime import datetime
 
 users_bp = Blueprint('users', __name__)
 
@@ -140,11 +146,8 @@ def member_list():
 def add_member():
     """Add a library member"""
     if request.method == 'POST':
-        member_id = request.form.get('member_id', '').strip()
-        
-        if Member.query.filter_by(member_id=member_id).first():
-            flash('Member ID already exists', 'error')
-            return render_template('users/add_member.html')
+        # Auto-generate member_id (don't accept manual input)
+        member_id = generate_member_id()
         
         member = Member(
             member_id=member_id,
@@ -152,15 +155,17 @@ def add_member():
             email=request.form.get('email', '').strip() or None,
             phone=request.form.get('phone', '').strip() or None,
             member_type=request.form.get('member_type', 'Student'),
+            form_level=request.form.get('form_level', type=int, default=1),
             class_group=request.form.get('class_group', '').strip() or None,
+            student_year=datetime.now().year,
             is_active=True
         )
         
         db.session.add(member)
         db.session.commit()
         
-        flash(f'Member "{member.full_name}" created successfully', 'success')
-        return redirect(url_for('users.member_list'))
+        flash(f'Member "{member.full_name}" created successfully (ID: {member.member_id})', 'success')
+        return redirect(url_for('users.view_member', member_id=member.id))
     
     return render_template('users/add_member.html')
 
@@ -185,9 +190,16 @@ def edit_member(member_id):
         member.email = request.form.get('email', '').strip() or None
         member.phone = request.form.get('phone', '').strip() or None
         member.member_type = request.form.get('member_type', 'Student')
+        member.form_level = request.form.get('form_level', type=int, default=1)
         member.class_group = request.form.get('class_group', '').strip() or None
         member.is_active = request.form.get('is_active') == 'on'
+        member.mark_for_deletion = request.form.get('mark_for_deletion') == 'on'
         member.notes = request.form.get('notes', '').strip() or None
+        
+        # If marking as graduated, set form_level to 6
+        if request.form.get('mark_graduated') == 'on':
+            member.form_level = 6
+            member.graduation_date = datetime.now()
         
         db.session.commit()
         
@@ -195,3 +207,235 @@ def edit_member(member_id):
         return redirect(url_for('users.view_member', member_id=member.id))
     
     return render_template('users/edit_member.html', member=member)
+
+
+# ============ Student Administration ============
+
+@users_bp.route('/students/active')
+@login_required
+@permission_required(Permission.ADMIN)
+def active_students():
+    """List active students based on login activity"""
+    page = request.args.get('page', 1, type=int)
+    
+    # Students ordered by last login (active first)
+    students = Member.query.filter_by(member_type='Student', is_active=True)\
+        .order_by(Member.last_login.desc()).paginate(page=page, per_page=50)
+    
+    return render_template('users/active_students.html', students=students)
+
+
+@users_bp.route('/students/graduation-list')
+@login_required
+@permission_required(Permission.ADMIN)
+def graduation_list():
+    """List students marked for graduation (Form 5) or deletion"""
+    page = request.args.get('page', 1, type=int)
+    filter_type = request.args.get('filter', 'all')  # all, graduated, marked_deletion
+    
+    query = Member.query.filter_by(member_type='Student')
+    
+    if filter_type == 'graduated':
+        query = query.filter(Member.form_level >= 6)
+    elif filter_type == 'marked_deletion':
+        query = query.filter(Member.mark_for_deletion == True)
+    elif filter_type == 'form5':
+        query = query.filter(Member.form_level == 5)
+    
+    students = query.order_by(Member.form_level.desc(), Member.full_name)\
+        .paginate(page=page, per_page=50)
+    
+    return render_template('users/graduation_list.html', students=students, filter_type=filter_type)
+
+
+@users_bp.route('/students/<int:member_id>/mark-for-deletion', methods=['POST'])
+@login_required
+@permission_required(Permission.ADMIN)
+def mark_for_deletion(member_id):
+    """Mark student for deletion"""
+    member = Member.query.get_or_404(member_id)
+    member.mark_for_deletion = True
+    db.session.commit()
+    flash(f'{member.full_name} marked for deletion', 'warning')
+    return redirect(request.referrer or url_for('users.graduation_list'))
+
+
+@users_bp.route('/students/<int:member_id>/unmark-deletion', methods=['POST'])
+@login_required
+@permission_required(Permission.ADMIN)
+def unmark_for_deletion(member_id):
+    """Unmark student for deletion"""
+    member = Member.query.get_or_404(member_id)
+    member.mark_for_deletion = False
+    db.session.commit()
+    flash(f'{member.full_name} unmarked for deletion', 'success')
+    return redirect(request.referrer or url_for('users.graduation_list'))
+
+
+@users_bp.route('/students/<int:member_id>/delete', methods=['POST'])
+@login_required
+@permission_required(Permission.ADMIN)
+def delete_student(member_id):
+    """Delete a marked student"""
+    member = Member.query.get_or_404(member_id)
+    
+    if not member.mark_for_deletion:
+        flash('Student is not marked for deletion', 'error')
+        return redirect(request.referrer or url_for('users.graduation_list'))
+    
+    # Don't delete if has active loans
+    if member.active_loans_count > 0:
+        flash('Cannot delete: Student has active loans', 'error')
+        return redirect(request.referrer)
+    
+    full_name = member.full_name
+    db.session.delete(member)
+    db.session.commit()
+    flash(f'Student "{full_name}" deleted successfully', 'success')
+    return redirect(url_for('users.graduation_list', filter='marked_deletion'))
+
+
+@users_bp.route('/admin/promote-students', methods=['GET', 'POST'])
+@login_required
+@permission_required(Permission.ADMIN)
+def promote_students():
+    """Promote all students to next form (yearly operation)"""
+    if request.method == 'POST':
+        # Confirm button was clicked
+        action = request.form.get('action')
+        
+        if action == 'promote':
+            # Get all active Form 1-4 students and promote them
+            students_to_promote = Member.query.filter(
+                Member.member_type == 'Student',
+                Member.form_level.between(1, 4),
+                Member.is_active == True
+            ).all()
+            
+            promoted_count = 0
+            for student in students_to_promote:
+                student.form_level += 1
+                promoted_count += 1
+            
+            # Mark Form 5 students as graduated
+            form5_students = Member.query.filter(
+                Member.member_type == 'Student',
+                Member.form_level == 5,
+                Member.is_active == True
+            ).all()
+            
+            graduated_count = 0
+            for student in form5_students:
+                student.form_level = 6
+                student.graduation_date = datetime.now()
+                graduated_count += 1
+            
+            db.session.commit()
+            flash(f'Promoted {promoted_count} students. Graduated {graduated_count} Form 5 students', 'success')
+            return redirect(url_for('users.graduation_list', filter='graduated'))
+        
+        # Show confirmation page
+        form1_count = Member.query.filter(Member.form_level == 1, Member.member_type == 'Student', Member.is_active == True).count()
+        form2_count = Member.query.filter(Member.form_level == 2, Member.member_type == 'Student', Member.is_active == True).count()
+        form3_count = Member.query.filter(Member.form_level == 3, Member.member_type == 'Student', Member.is_active == True).count()
+        form4_count = Member.query.filter(Member.form_level == 4, Member.member_type == 'Student', Member.is_active == True).count()
+        form5_count = Member.query.filter(Member.form_level == 5, Member.member_type == 'Student', Member.is_active == True).count()
+        
+        stats = {
+            'form1': form1_count,
+            'form2': form2_count,
+            'form3': form3_count,
+            'form4': form4_count,
+            'form5': form5_count
+        }
+        
+        return render_template('users/promote_students.html', stats=stats)
+    
+    # GET - show confirmation form
+    form1_count = Member.query.filter(Member.form_level == 1, Member.member_type == 'Student', Member.is_active == True).count()
+    form2_count = Member.query.filter(Member.form_level == 2, Member.member_type == 'Student', Member.is_active == True).count()
+    form3_count = Member.query.filter(Member.form_level == 3, Member.member_type == 'Student', Member.is_active == True).count()
+    form4_count = Member.query.filter(Member.form_level == 4, Member.member_type == 'Student', Member.is_active == True).count()
+    form5_count = Member.query.filter(Member.form_level == 5, Member.member_type == 'Student', Member.is_active == True).count()
+    
+    stats = {
+        'form1': form1_count,
+        'form2': form2_count,
+        'form3': form3_count,
+        'form4': form4_count,
+        'form5': form5_count
+    }
+    
+    return render_template('users/promote_students.html', stats=stats)
+
+
+# ============ Excel Import ============
+
+@users_bp.route('/students/import', methods=['GET', 'POST'])
+@login_required
+@permission_required(Permission.ADMIN)
+def import_students():
+    """Import students from Excel file"""
+    class_groups = get_class_groups()
+    form_levels = get_form_levels()
+    
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('No file selected', 'error')
+            return render_template('users/import_students.html', 
+                                 class_groups=class_groups, 
+                                 form_levels=form_levels)
+        
+        file = request.files['file']
+        filepath, error = save_upload_file(file)
+        
+        if error:
+            flash(f'Upload error: {error}', 'error')
+            return render_template('users/import_students.html', 
+                                 class_groups=class_groups, 
+                                 form_levels=form_levels)
+        
+        # Preview mode - show what will be imported
+        preview = request.form.get('preview')
+        if preview == 'on':
+            rows, error = read_excel_file(filepath)
+            if error:
+                flash(f'Error reading file: {error}', 'error')
+            else:
+                return render_template('users/import_students_preview.html', 
+                                     rows=rows, 
+                                     filepath=filepath,
+                                     class_groups=class_groups,
+                                     form_levels=form_levels)
+        
+        # Actual import
+        success_count, errors, imported = import_student_data(filepath)
+        
+        if success_count > 0:
+            flash(f'Successfully imported {success_count} students', 'success')
+        
+        if errors:
+            for error in errors[:5]:  # Show first 5 errors
+                flash(f'Import error: {error}', 'warning')
+            if len(errors) > 5:
+                flash(f'... and {len(errors) - 5} more errors', 'warning')
+        
+        return redirect(url_for('users.member_list'))
+    
+    return render_template('users/import_students.html', 
+                         class_groups=class_groups, 
+                         form_levels=form_levels)
+
+
+@users_bp.route('/api/class-groups')
+@login_required
+def api_class_groups():
+    """API endpoint to get class groups"""
+    return jsonify(get_class_groups())
+
+
+@users_bp.route('/api/form-levels')
+@login_required
+def api_form_levels():
+    """API endpoint to get form levels"""
+    return jsonify(get_form_levels())
