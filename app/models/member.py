@@ -2,6 +2,8 @@
 Member model - Library members (students/borrowers)
 """
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import UserMixin
 from app import db
 
 
@@ -20,7 +22,7 @@ def generate_member_id():
     return f'STU{next_number:04d}'  # Format: STU0001, STU0002, etc.
 
 
-class Member(db.Model):
+class Member(UserMixin, db.Model):
     """Library members who can borrow books"""
     __tablename__ = 'members'
     
@@ -29,6 +31,7 @@ class Member(db.Model):
     full_name = db.Column(db.String(128), nullable=False)
     email = db.Column(db.String(120), index=True)
     phone = db.Column(db.String(20))
+    password_hash = db.Column(db.String(256))  # Password for member login
     
     # Member classification
     member_type = db.Column(db.String(32), default='Student')  # Student, Staff, External
@@ -92,6 +95,41 @@ class Member(db.Model):
         from flask import current_app
         max_loans = current_app.config.get('MAX_LOANS_PER_MEMBER', 5)
         return self.is_active and self.active_loans_count < max_loans and self.overdue_loans_count == 0
+    
+    def set_password(self, password):
+        """Hash and set the password"""
+        self.password_hash = generate_password_hash(password)
+    
+    def check_password(self, password):
+        """Verify password against hash"""
+        return check_password_hash(self.password_hash, password) if self.password_hash else False
+    
+    def get_id(self):
+        """Return user ID for Flask-Login (prefixed with 'member_')"""
+        return f'member_{self.id}'
+    
+    def can(self, perm):
+        """Check if member can perform an action"""
+        from app.models.user import Permission
+        # Regular students have no special permissions
+        if self.member_type == 'Student':
+            return False
+        # Staff members can do checkout/return/view catalog/search
+        if self.member_type in ['Staff', 'Student Assistant', 'Librarian', 'Teacher']:
+            return perm in [Permission.CHECKOUT, Permission.RETURN, Permission.VIEW_CATALOG, Permission.SEARCH]
+        return False
+    
+    @property
+    def role(self):
+        """Return dummy role object for sidebar compatibility"""
+        class DummyRole:
+            def __init__(self, member_type):
+                if member_type == 'Student':
+                    self.name = 'Student'
+                else:
+                    self.name = 'Student Assistant'
+        
+        return DummyRole(self.member_type)
     
     def to_dict(self):
         """Convert to dictionary for API responses"""

@@ -5,14 +5,14 @@ from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db
-from app.models import User
+from app.models import User, Member
 
 auth_bp = Blueprint('auth', __name__)
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    """User login"""
+    """User login - accepts both User (staff) and Member (students)"""
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
     
@@ -21,24 +21,69 @@ def login():
         password = request.form.get('password', '')
         remember = request.form.get('remember', False)
         
+        # Try User login first (staff accounts)
         user = User.query.filter_by(username=username).first()
         
-        if user is None or not user.check_password(password):
+        if user and user.check_password(password):
+            # Staff user found with correct password
+            if user.is_active:
+                # Active staff account - login as staff
+                login_user(user, remember=remember)
+                user.last_login = datetime.utcnow()
+                db.session.commit()
+                
+                next_page = request.args.get('next')
+                if next_page:
+                    return redirect(next_page)
+                return redirect(url_for('main.dashboard'))
+            else:
+                # Staff account is disabled, try Member login instead
+                member = Member.query.filter_by(member_id=username).first()
+                
+                if member and member.check_password(password):
+                    # Member/student found with correct password
+                    if member.is_active:
+                        # Active member account - login as student
+                        login_user(member, remember=remember)
+                        member.last_login = datetime.utcnow()
+                        db.session.commit()
+                        
+                        next_page = request.args.get('next')
+                        if next_page:
+                            return redirect(next_page)
+                        return redirect(url_for('main.dashboard'))
+                    else:
+                        # Member account is also disabled
+                        flash('Your account is disabled', 'error')
+                        return render_template('auth/login.html')
+                else:
+                    # No valid Member account
+                    flash('Your staff account is disabled. Contact administrator.', 'error')
+                    return render_template('auth/login.html')
+        
+        # Try Member login (students with member_id)
+        member = Member.query.filter_by(member_id=username).first()
+        
+        if member and member.check_password(password):
+            # Member/student found with correct password
+            if member.is_active:
+                # Active member account - login as student
+                login_user(member, remember=remember)
+                member.last_login = datetime.utcnow()
+                db.session.commit()
+                
+                next_page = request.args.get('next')
+                if next_page:
+                    return redirect(next_page)
+                return redirect(url_for('main.dashboard'))
+            else:
+                # Member account is disabled
+                flash('Your account is disabled', 'error')
+                return render_template('auth/login.html')
+        else:
+            # No valid account found, or password incorrect
             flash('Invalid username or password', 'error')
             return render_template('auth/login.html')
-        
-        if not user.is_active:
-            flash('Your account is disabled', 'error')
-            return render_template('auth/login.html')
-        
-        login_user(user, remember=remember)
-        user.last_login = datetime.utcnow()
-        db.session.commit()
-        
-        next_page = request.args.get('next')
-        if next_page:
-            return redirect(next_page)
-        return redirect(url_for('main.dashboard'))
     
     return render_template('auth/login.html')
 

@@ -69,8 +69,19 @@ Open http://localhost:5000 in your browser.
 | Username | Password | Role |
 |----------|----------|------|
 | admin | admin123 | Administrator |
-| librarian | lib123 | Librarian |
-| STU0001 | student123 | Student |
+| librarian | password123 | Librarian |
+| STU0001 | password123 | Student Assistant (Staff) |
+| STU0002 | password123 | Student (Form 1) |
+| STU0003 | password123 | Student (Form 3) |
+
+Member Accounts (Student/Staff):
+
+STU0001 / student123 — Staff Member (sees Circulation tab + dashboard)
+STU0002 / student123 — Student (student portal only)
+STU0003 / student123 — Student (student portal only)
+STU0004 / student123 — Student (student portal only - pure student for testing)
+STU0005 / student123 — Student (student portal only - pure student for testing)
+TCH001 / student123 — Teacher (sees Circulation tab + dashboard)
 
 ### Customization
 

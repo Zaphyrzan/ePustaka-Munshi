@@ -15,8 +15,13 @@ student_bp = Blueprint('student', __name__)
 @login_required
 def index():
     """Student portal dashboard"""
-    # Get member record linked to current user (if exists)
-    member = Member.query.filter_by(member_id=current_user.username).first()
+    # Get member record - handle both Member and User logins
+    if current_user.__class__.__name__ == 'Member':
+        # Already a Member object
+        member = current_user
+    else:
+        # User (staff) - try to find matching Member by username
+        member = Member.query.filter_by(member_id=current_user.username).first()
     
     # Stats for dashboard
     total_books = Book.query.count()

@@ -175,9 +175,17 @@
         </div>
         
         <ul class="nav flex-column">
-            {% if current_user.role and current_user.role.name == 'Student' %}
-            <!-- ====== STUDENT PORTAL ====== -->
-            <!-- Student Portal - Only for students, NO dashboard -->
+            {% set is_member = current_user.__class__.__name__ == 'Member' %}
+            {% if is_member %}
+                {# For Members: check if they have staff member_type #}
+                {% set is_staff = current_user.member_type in ['Staff', 'Student Assistant', 'Librarian', 'Teacher'] %}
+            {% else %}
+                {# For Users: check if role is not Student #}
+                {% set is_staff = current_user.role and current_user.role.name != 'Student' %}
+            {% endif %}
+            
+            {% if is_member and not is_staff %}
+            <!-- ====== STUDENT ONLY (Member without Staff role) ====== -->
             <li class="sidebar-section">{{ t('student_portal') }}</li>
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'student.index' %}active{% endif %}" href="{{ url_for('student.index') }}">
@@ -200,9 +208,59 @@
                 </a>
             </li>
             
-            {% else %}
-            <!-- ====== STAFF DASHBOARD ====== -->
-            <!-- Staff/Librarian - Show dashboard and staff sections -->
+            {% elif is_member and is_staff %}
+            <!-- ====== STAFF MEMBER (Member with staff member_type) - BOTH STUDENT + STAFF ====== -->
+            
+            <!-- Student Portal Section -->
+            <li class="sidebar-section">{{ t('student_portal') }}</li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'student.index' %}active{% endif %}" href="{{ url_for('student.index') }}">
+                    <i class="bi bi-house"></i> {{ t('home') }}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'student.search_books' %}active{% endif %}" href="{{ url_for('student.search_books') }}">
+                    <i class="bi bi-search"></i> {{ t('search_books') }}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'student.my_loans' %}active{% endif %}" href="{{ url_for('student.my_loans') }}">
+                    <i class="bi bi-journal-bookmark"></i> {{ t('my_loans') }}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'student.leaderboard' %}active{% endif %}" href="{{ url_for('student.leaderboard') }}">
+                    <i class="bi bi-trophy"></i> {{ t('leaderboard') }}
+                </a>
+            </li>
+            
+            <!-- Staff Section -->
+            <li class="sidebar-section">{{ t('staff_functions') }}</li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
+                    <i class="bi bi-speedometer2"></i> {{ t('dashboard') }}
+                </a>
+            </li>
+            
+            <li class="sidebar-section">{{ t('circulation') }}</li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'circulation.checkout' %}active{% endif %}" href="{{ url_for('circulation.checkout') }}">
+                    <i class="bi bi-box-arrow-right"></i> {{ t('checkout') }}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'circulation.return_book' %}active{% endif %}" href="{{ url_for('circulation.return_book') }}">
+                    <i class="bi bi-box-arrow-in-left"></i> {{ t('return') }}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'circulation.active_loans' %}active{% endif %}" href="{{ url_for('circulation.active_loans') }}">
+                    <i class="bi bi-list-check"></i> {{ t('active_loans') }}
+                </a>
+            </li>
+            
+            {% elif is_staff %}
+            <!-- ====== STAFF/LIBRARIAN/ADMIN (User with non-Student role) ====== -->
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
                     <i class="bi bi-speedometer2"></i> {{ t('dashboard') }}
@@ -210,7 +268,6 @@
             </li>
             
             {% if current_user.can(1) or current_user.can(2) %}
-            <!-- Catalog & Circulation sections -->
             <li class="sidebar-section">{{ t('catalog') }}</li>
             <li class="nav-item">
                 <a class="nav-link {% if 'catalog' in request.endpoint %}active{% endif %}" href="{{ url_for('catalog.index') }}">

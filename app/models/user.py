@@ -150,6 +150,10 @@ class User(UserMixin, db.Model):
         """Check if user has admin permission"""
         return self.can(Permission.ADMIN)
     
+    def get_id(self):
+        """Return user ID for Flask-Login (prefixed with 'user_')"""
+        return f'user_{self.id}'
+    
     @staticmethod
     def create_admin(username, email, password):
         """Create an admin user"""
@@ -172,5 +176,16 @@ class User(UserMixin, db.Model):
 
 @login_manager.user_loader
 def load_user(user_id):
-    """Flask-Login user loader callback"""
-    return User.query.get(int(user_id))
+    """Flask-Login user loader callback - handles both User and Member"""
+    from app.models import Member
+    
+    # user_id format: "user_123" for User or "member_456" for Member
+    if user_id.startswith('user_'):
+        user_id_num = int(user_id.split('_')[1])
+        return User.query.get(user_id_num)
+    elif user_id.startswith('member_'):
+        user_id_num = int(user_id.split('_')[1])
+        return Member.query.get(user_id_num)
+    else:
+        # Fallback for old-style numeric IDs (assume User)
+        return User.query.get(int(user_id))
