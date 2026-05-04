@@ -58,7 +58,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for loan in member.loans.order_by(loan.checkout_date.desc()).limit(20).all() %}
+                            {% for loan in loans %}
                             <tr>
                                 <td>{{ loan.copy.book.title[:40] }}{% if loan.copy.book.title|length > 40 %}...{% endif %}</td>
                                 <td>{{ loan.checkout_date.strftime('%d/%m/%Y') }}</td>
@@ -93,6 +93,27 @@
             </div>
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-2">
+                    <span>Status</span>
+                    <strong>
+                        {% if member.is_active %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-danger">Inactive</span>
+                        {% endif %}
+                    </strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Can Borrow</span>
+                    <strong>
+                        {% if member.can_borrow %}
+                            <span class="badge bg-success">✓ Yes</span>
+                        {% else %}
+                            <span class="badge bg-danger">✗ No</span>
+                        {% endif %}
+                    </strong>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between mb-2">
                     <span>Active Loans</span>
                     <strong>{{ member.active_loans_count }}</strong>
                 </div>
@@ -104,6 +125,23 @@
                     <span>Total Loans (All Time)</span>
                     <strong>{{ member.loans.count() }}</strong>
                 </div>
+                
+                {% if not member.can_borrow %}
+                <div class="alert alert-warning mt-3 mb-0">
+                    <strong>Why can't borrow?</strong>
+                    <ul class="mb-0 mt-2">
+                        {% if not member.is_active %}
+                        <li>Account is inactive</li>
+                        {% endif %}
+                        {% if member.overdue_loans_count > 0 %}
+                        <li>Has {{ member.overdue_loans_count }} overdue book(s) - must return first</li>
+                        {% endif %}
+                        {% if member.active_loans_count >= 5 %}
+                        <li>Has reached maximum active loans (5 books)</li>
+                        {% endif %}
+                    </ul>
+                </div>
+                {% endif %}
             </div>
         </div>
         

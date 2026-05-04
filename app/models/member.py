@@ -88,11 +88,8 @@ class Member(db.Model):
     
     @property
     def can_borrow(self):
-        """Check if member can borrow more books. Staff cannot borrow."""
+        """Check if member can borrow more books"""
         from flask import current_app
-        # Staff members cannot borrow
-        if self.is_staff:
-            return False
         max_loans = current_app.config.get('MAX_LOANS_PER_MEMBER', 5)
         return self.is_active and self.active_loans_count < max_loans and self.overdue_loans_count == 0
     

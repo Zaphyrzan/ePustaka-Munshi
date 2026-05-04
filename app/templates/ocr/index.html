@@ -12,9 +12,14 @@
         Digitasikan daftar perpustakaan tulisan tangan/cetakan menggunakan OCR
         {% endif %}
     </p>
-    <a href="{{ url_for('ocr.upload') }}" class="btn btn-primary">
-        <i class="bi bi-upload"></i> {{ t('upload') }}
-    </a>
+    <div class="gap-2 d-flex">
+        <a href="{{ url_for('ocr.upload') }}" class="btn btn-primary">
+            <i class="bi bi-upload"></i> {{ t('upload') }}
+        </a>
+        <a href="{{ url_for('ocr.import_ledger') }}" class="btn btn-success">
+            <i class="bi bi-file-earmark-excel"></i> Import Excel
+        </a>
+    </div>
 </div>
 
 <div class="card table-card">

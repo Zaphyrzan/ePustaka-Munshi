@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Import Staff - ePustaka Munshi{% endblock %}
+{% block page_title %}Import Staff Users{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 offset-lg-2">
+        <div class="card table-card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="bi bi-file-earmark-excel text-success"></i> Import Staff Users from Excel</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info mb-4">
+                    <i class="bi bi-info-circle-fill"></i> 
+                    <strong>Excel Format:</strong> Your file should have the following columns (in order):
+                    <ul class="mb-0 mt-2">
+                        <li><strong>Column A:</strong> Username (required, unique)</li>
+                        <li><strong>Column B:</strong> Email (required)</li>
+                        <li><strong>Column C:</strong> Full Name (optional)</li>
+                        <li><strong>Column D:</strong> Role Name (e.g., Librarian, Staff)</li>
+                    </ul>
+                    <p class="mb-0 mt-2 text-muted"><small>Default password will be set to "Password123" - user should change on first login</small></p>
+                </div>
+
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-4">
+                        <label for="file" class="form-label fw-bold">Select Excel File (.xlsx)</label>
+                        <input type="file" class="form-control form-control-lg" id="file" name="file" 
+                               accept=".xlsx,.xls" required>
+                        <small class="text-muted d-block mt-2">
+                            Supported formats: .xlsx, .xls
+                        </small>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" name="preview" value="on" class="btn btn-primary">
+                            <i class="bi bi-eye"></i> Preview
+                        </button>
+                        <a href="{{ url_for('users.staff_list') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Example Table -->
+        <div class="card table-card mt-4">
+            <div class="card-header bg-transparent">
+                <h6 class="mb-0">Example Format</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 20%;">Username</th>
+                                <th style="width: 25%;">Email</th>
+                                <th style="width: 30%;">Full Name</th>
+                                <th style="width: 25%;">Role</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="text-muted">
+                                <td>john_librarian</td>
+                                <td>john@school.edu</td>
+                                <td>John Smith</td>
+                                <td>Librarian</td>
+                            </tr>
+                            <tr class="text-muted">
+                                <td>mary_staff</td>
+                                <td>mary@school.edu</td>
+                                <td>Mary Johnson</td>
+                                <td>Staff</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -84,6 +84,15 @@ def add_staff():
     return render_template('users/add_staff.html', roles=roles)
 
 
+@users_bp.route('/staff/<int:user_id>')
+@login_required
+@permission_required(Permission.MANAGE_USERS)
+def view_staff(user_id):
+    """View staff user details"""
+    user = User.query.get_or_404(user_id)
+    return render_template('users/view_staff.html', user=user)
+
+
 @users_bp.route('/staff/<int:user_id>/edit', methods=['GET', 'POST'])
 @login_required
 @permission_required(Permission.MANAGE_USERS)
@@ -175,7 +184,12 @@ def add_member():
 def view_member(member_id):
     """View member details"""
     member = Member.query.get_or_404(member_id)
-    return render_template('users/view_member.html', member=member)
+    
+    # Get member's loans sorted by checkout date (newest first), limit to 20
+    from app.models import Loan
+    loans = Loan.query.filter_by(member_id=member.id).order_by(Loan.checkout_date.desc()).limit(20).all()
+    
+    return render_template('users/view_member.html', member=member, loans=loans)
 
 
 @users_bp.route('/members/<int:member_id>/edit', methods=['GET', 'POST'])
@@ -425,6 +439,106 @@ def import_students():
     return render_template('users/import_students.html', 
                          class_groups=class_groups, 
                          form_levels=form_levels)
+
+
+@users_bp.route('/staff/import', methods=['GET', 'POST'])
+@login_required
+@permission_required(Permission.ADMIN)
+def import_staff():
+    """Import staff users from Excel file"""
+    roles = Role.query.all()
+    
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('No file selected', 'error')
+            return render_template('users/import_staff.html', roles=roles)
+        
+        file = request.files['file']
+        filepath, error = save_upload_file(file)
+        
+        if error:
+            flash(f'Upload error: {error}', 'error')
+            return render_template('users/import_staff.html', roles=roles)
+        
+        # Read the file
+        rows, error = read_excel_file(filepath)
+        if error:
+            flash(f'Error reading file: {error}', 'error')
+            return render_template('users/import_staff.html', roles=roles)
+        
+        # Preview mode
+        preview = request.form.get('preview')
+        if preview == 'on':
+            return render_template('users/import_staff_preview.html', 
+                                 rows=rows, 
+                                 filepath=filepath,
+                                 roles=roles)
+        
+        # Actual import - process staff data
+        success_count = 0
+        errors = []
+        
+        for idx, row in enumerate(rows, start=2):
+            try:
+                if len(row) < 4:
+                    errors.append(f'Row {idx}: Missing required columns')
+                    continue
+                
+                username = str(row[0] or '').strip()
+                email = str(row[1] or '').strip()
+                full_name = str(row[2] or '').strip()
+                role_name = str(row[3] or '').strip()
+                
+                if not username or not email:
+                    errors.append(f'Row {idx}: Missing username or email')
+                    continue
+                
+                # Check if user exists
+                if User.query.filter_by(username=username).first():
+                    errors.append(f'Row {idx}: Username "{username}" already exists')
+                    continue
+                
+                # Find role
+                role = Role.query.filter_by(name=role_name).first()
+                if not role:
+                    errors.append(f'Row {idx}: Role "{role_name}" not found')
+                    continue
+                
+                # Create user with default password
+                user = User(
+                    username=username,
+                    email=email,
+                    full_name=full_name or username,
+                    role_id=role.id,
+                    is_active=True
+                )
+                user.set_password('Password123')  # Default password - user should change on first login
+                
+                db.session.add(user)
+                success_count += 1
+                
+            except Exception as e:
+                errors.append(f'Row {idx}: {str(e)}')
+        
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Database error: {str(e)}', 'error')
+            return render_template('users/import_staff.html', roles=roles)
+        
+        if success_count > 0:
+            flash(f'Successfully imported {success_count} staff users', 'success')
+        
+        if errors:
+            for error in errors[:5]:
+                flash(f'Import error: {error}', 'warning')
+            if len(errors) > 5:
+                flash(f'... and {len(errors) - 5} more errors', 'warning')
+        
+        return redirect(url_for('users.staff_list'))
+    
+    return render_template('users/import_staff.html', roles=roles)
 
 
 @users_bp.route('/api/class-groups')
