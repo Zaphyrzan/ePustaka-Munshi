@@ -553,3 +553,62 @@ def api_class_groups():
 def api_form_levels():
     """API endpoint to get form levels"""
     return jsonify(get_form_levels())
+
+
+# ============ Promote/Demote Staff ============
+
+@users_bp.route('/members/<int:member_id>/promote-staff', methods=['POST'])
+@login_required
+@permission_required(Permission.MANAGE_USERS)
+def promote_to_staff(member_id):
+    """Promote a member to staff (Student Assistant)"""
+    # Get member
+    member = Member.query.get_or_404(member_id)
+    
+    # Change member type to Staff
+    member.member_type = 'Student Assistant'
+    member.form_level = None  # Staff don't have form level
+    member.class_group = None
+    db.session.commit()
+    
+    flash(f'{member.full_name} promoted to Student Assistant', 'success')
+    return redirect(request.referrer or url_for('users.member_list'))
+
+
+@users_bp.route('/members/<int:member_id>/demote-staff', methods=['POST'])
+@login_required
+@permission_required(Permission.MANAGE_USERS)
+def demote_from_staff(member_id):
+    """Demote a staff member back to regular student"""
+    # Get member
+    member = Member.query.get_or_404(member_id)
+    
+    # Change member type back to Student
+    member.member_type = 'Student'
+    member.form_level = 1  # Default to Form 1
+    db.session.commit()
+    
+    flash(f'{member.full_name} demoted to Student', 'success')
+    return redirect(request.referrer or url_for('users.member_list'))
+
+
+@users_bp.route('/staff/<int:user_id>/delete', methods=['POST'])
+@login_required
+@permission_required(Permission.MANAGE_USERS)
+def delete_staff(user_id):
+    """Delete a staff user account completely"""
+    # Don't allow deleting yourself
+    if user_id == current_user.id:
+        flash('Cannot delete your own staff account', 'error')
+        return redirect(url_for('users.staff_list'))
+    
+    # Get staff user
+    user = User.query.get_or_404(user_id)
+    
+    # Delete the staff user
+    username = user.username
+    db.session.delete(user)
+    db.session.commit()
+    
+    flash(f'Staff account "{username}" deleted', 'success')
+    return redirect(url_for('users.staff_list'))

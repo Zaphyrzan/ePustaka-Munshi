@@ -82,7 +82,7 @@
                                     <option value="3" {% if member.form_level == 3 %}selected{% endif %}>{{ t('form3') }}</option>
                                     <option value="4" {% if member.form_level == 4 %}selected{% endif %}>{{ t('form4') }}</option>
                                     <option value="5" {% if member.form_level == 5 %}selected{% endif %}>{{ t('form5') }}</option>
-                                    <option value="6" {% if member.form_level >= 6 %}selected{% endif %}>{{ t('graduated') }}</option>
+                                    <option value="6" {% if member.form_level and member.form_level >= 6 %}selected{% endif %}>{{ t('graduated') }}</option>
                                 </select>
                             </div>
 

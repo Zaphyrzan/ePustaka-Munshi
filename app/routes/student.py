@@ -135,7 +135,12 @@ def view_book(book_id):
 @login_required
 def my_loans():
     """View my borrowed books"""
-    member = Member.query.filter_by(member_id=current_user.username).first()
+    # Get member - handle both Member and User logins
+    if current_user.__class__.__name__ == 'Member':
+        member = current_user
+    else:
+        # User (staff) - try to find matching Member by username
+        member = Member.query.filter_by(member_id=current_user.username).first()
     
     if not member:
         return render_template('student/my_loans.html',

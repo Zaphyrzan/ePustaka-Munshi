@@ -50,13 +50,21 @@
                             </td>
                             <td>
                                 <a href="{{ url_for('users.view_staff', user_id=user.id) }}" 
-                                   class="btn btn-sm btn-outline-primary">
+                                   class="btn btn-sm btn-outline-primary" title="View">
                                     <i class="bi bi-eye"></i>
                                 </a>
                                 <a href="{{ url_for('users.edit_staff', user_id=user.id) }}" 
-                                   class="btn btn-sm btn-outline-secondary">
+                                   class="btn btn-sm btn-outline-secondary" title="Edit">
                                     <i class="bi bi-pencil"></i>
                                 </a>
+                                {% if user.id != current_user.id %}
+                                    {# Delete button - can't delete own account #}
+                                    <form method="POST" action="{{ url_for('users.delete_staff', user_id=user.id) }}" style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete" onclick="return confirm('Delete staff account {{ user.username }}?')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                {% endif %}
                             </td>
                         </tr>
                         {% else %}
