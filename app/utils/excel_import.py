@@ -3,6 +3,7 @@ Excel import utilities for data import operations.
 Provides reusable functions for importing student data and OCR ledger data.
 """
 import os
+import re
 from datetime import datetime
 from werkzeug.utils import secure_filename
 import openpyxl
@@ -223,19 +224,33 @@ def import_student_data(filepath, class_mapping=None):
 def import_ocr_ledger_data(filepath, book_id=None):
     """
     Import OCR ledger data from Excel file.
-    Creates/updates book records with ledger information.
+    Maps the 7-column Malaysian ledger format to book records.
     
-    Expected columns (case-insensitive):
-    - title or tajuk_buku (required)
-    - author or pengarang (optional)
-    - publisher or penerbit (optional)
-    - year or tahun_penerbit (optional)
+    7 Main Columns (from Malaysian library ledgers):
+    1. NO PEROLEHAN (Accession Number) - unique identifier
+    2. NO PANGGILAN (Call Number) - library classification
+    3. PENGARANG (Author) - book author(s)
+    4. TAJUK BUKU (Title) - book title
+    5. TEMPAT DAN NAMA PENERBIT (Place & Publisher) - publication location & publisher
+    6. TARIKH PENERBIT (Publication Date/Year) - year of publication
+    7. PUNCA (Source/Acquisition) - how book was acquired
+    
+    Optional fields: TARIKH PEROLEHAN (Acquisition Date), BIL NO, HARGA RM/SEN (Price),
+    MUKA SURAT (Page Count), CATATAN (Notes)
+    
+    Expected column names (case-insensitive, supports English and Malay):
+    - title, tajuk_buku, tajuk (required)
+    - author, pengarang (optional)
+    - publisher, penerbit, tempat_dan_nama_penerbit (optional)
+    - year, tarikh_penerbit, publication_year, tahun_penerbit (optional)
     - isbn (optional)
-    - price_rm or harga_rm (optional)
-    - accession_number or no_perolehan (optional)
-    - call_number or no_panggilan (optional)
-    - acquisition_date or tarikh_perolehan (optional)
-    - notes or catatan (optional)
+    - accession_number, no_perolehan (optional - used for book copy)
+    - call_number, no_panggilan (optional)
+    - acquisition_date, tarikh_perolehan (optional)
+    - source, punca (optional)
+    - notes, catatan (optional)
+    - price_rm, harga_rm, price (optional)
+    - page_count, muka_surat (optional)
     
     Returns: (success_count, error_list, imported_books)
     """
@@ -254,61 +269,126 @@ def import_ocr_ledger_data(filepath, book_id=None):
         try:
             row_number = row.pop('_row_number')
             
-            # Validate required fields
-            title = row.get('title') or row.get('tajuk_buku')
+            # ===== REQUIRED: Book Title =====
+            # Check multiple column name variations
+            title = (row.get('title') or row.get('tajuk_buku') or 
+                    row.get('tajuk') or row.get('book title'))
             if not title:
-                errors.append(f"Row {row_number}: Missing 'title' or 'tajuk_buku'")
+                errors.append(f"Row {row_number}: Missing book title (title/tajuk_buku/tajuk)")
                 continue
             
-            # Check for duplicate title (per book)
+            # Check for duplicate title
             existing_book = Book.query.filter_by(title=title.strip()).first()
             if existing_book:
-                # Update existing book
-                book = existing_book
-                is_new = False
-            else:
-                # Create new book
-                book = Book()
-                is_new = True
+                # Could update existing, but for now skip to prevent duplicates
+                errors.append(f"Row {row_number}: Book title '{title[:50]}' already exists")
+                continue
             
-            # Set book fields
+            # ===== Create new book record =====
+            book = Book()
             book.title = title.strip()
-            book.author = (row.get('author') or row.get('pengarang') or '').strip() or None
-            book.publisher = (row.get('publisher') or row.get('penerbit') or '').strip() or None
             
-            # Parse year
-            year_str = row.get('year') or row.get('tahun_penerbit')
+            # ===== COLUMN 3: PENGARANG (Author) =====
+            book.author = (row.get('author') or row.get('pengarang') or 
+                          row.get('authorname') or '').strip() or None
+            
+            # ===== COLUMN 5: PENERBIT (Publisher - Place & Name) =====
+            # Try multiple column name variations
+            publisher = (row.get('publisher') or row.get('penerbit') or
+                        row.get('tempat_dan_nama_penerbit') or row.get('publisher_name') or '').strip()
+            if publisher:
+                book.publisher = publisher
+            
+            # ===== COLUMN 6: TARIKH PENERBIT (Publication Year/Date) =====
+            year_str = (row.get('year') or row.get('tarikh_penerbit') or 
+                       row.get('publication_year') or row.get('tahun_penerbit') or
+                       row.get('pub_year') or '')
             if year_str:
                 try:
-                    book.year = int(year_str)
+                    # Try to extract just the year if it's part of a larger date
+                    year_match = re.search(r'\b(19\d{2}|20\d{2})\b', str(year_str))
+                    if year_match:
+                        book.publication_year = int(year_match.group(1))
+                    else:
+                        book.publication_year = int(year_str)
+                except (ValueError, TypeError, AttributeError):
+                    # Year parsing failed, skip it
+                    pass
+            
+            # ISBN (optional)
+            book.isbn = (row.get('isbn') or row.get('isbn_number') or '').strip() or None
+            
+            # Page count (optional)
+            pages_str = row.get('page_count') or row.get('muka_surat') or row.get('pages')
+            if pages_str:
+                try:
+                    book.page_count = int(pages_str)
                 except (ValueError, TypeError):
                     pass
             
-            book.isbn = (row.get('isbn') or '').strip() or None
+            # Category (default to 'General' if not provided)
+            book.category = (row.get('category') or row.get('kategori') or 
+                            row.get('subject') or 'General').strip()
             
-            # Parse price
-            price_str = row.get('price_rm') or row.get('harga_rm')
+            # Notes/Remarks (optional)
+            description = (row.get('notes') or row.get('catatan') or 
+                          row.get('remarks') or row.get('description') or '').strip()
+            if description:
+                book.description = description
+            
+            # Price (optional)
+            price_str = row.get('price_rm') or row.get('harga_rm') or row.get('price')
             if price_str:
                 try:
-                    book.price = float(price_str)
-                except (ValueError, TypeError):
+                    # Extract numeric price value
+                    price_match = re.search(r'(\d+)[.,]?(\d{0,2})', str(price_str))
+                    if price_match:
+                        book.price = float(f"{price_match.group(1)}.{price_match.group(2) or '0'}")
+                except (ValueError, TypeError, AttributeError):
                     pass
-            
-            book.category = (row.get('category') or row.get('kategori') or '').strip() or 'General'
             
             db.session.add(book)
             db.session.flush()  # Get the book ID
             
-            # Create book copy with accession number
-            accession_num = row.get('accession_number') or row.get('no_perolehan')
+            # ===== Create BookCopy with accession information =====
+            # COLUMN 1: NO PEROLEHAN (Accession Number)
+            accession_num = (row.get('accession_number') or row.get('no_perolehan') or 
+                            row.get('accession_num') or '').strip()
+            
             if accession_num:
+                # COLUMN 2: NO PANGGILAN (Call Number)
+                call_number = (row.get('call_number') or row.get('no_panggilan') or 
+                              row.get('callnumber') or '').strip() or None
+                
+                # COLUMN 7: PUNCA (Source - how acquired)
+                source = (row.get('source') or row.get('punca') or 
+                         row.get('acquisition_source') or '').strip() or 'Purchase'
+                
+                # Tarikh Perolehan (Acquisition Date)
+                acq_date_str = (row.get('acquisition_date') or row.get('tarikh_perolehan') or
+                               row.get('acq_date') or '')
+                acq_date = None
+                if acq_date_str:
+                    try:
+                        # Try to parse various date formats
+                        from datetime import datetime as dt
+                        acq_date = dt.strptime(str(acq_date_str), '%Y-%m-%d').date()
+                    except:
+                        try:
+                            acq_date = dt.strptime(str(acq_date_str), '%d/%m/%Y').date()
+                        except:
+                            pass  # Skip invalid dates
+                
                 copy = BookCopy(
                     book_id=book.id,
-                    accession_number=accession_num.strip(),
-                    barcode=(accession_num.strip()).replace('-', '').replace(' ', ''),
-                    status='Available',
-                    call_number=(row.get('call_number') or row.get('no_panggilan') or '').strip() or None,
-                    location=row.get('location', 'Main Stack').strip() if row.get('location') else 'Main Stack'
+                    accession_number=accession_num,
+                    call_number=call_number,
+                    barcode=accession_num.replace('-', '').replace(' ', '').upper(),
+                    status='available',
+                    acquisition_source=source,
+                    acquisition_date=acq_date,
+                    condition='Good',  # Default condition
+                    location='Main Stack'  # Default location
                 )
                 db.session.add(copy)
             
@@ -316,9 +396,10 @@ def import_ocr_ledger_data(filepath, book_id=None):
             imported_books.append({
                 'title': title,
                 'author': book.author,
+                'publisher': book.publisher,
+                'year': book.publication_year,
                 'isbn': book.isbn,
-                'price': book.price,
-                'is_new': is_new,
+                'accession': accession_num if accession_num else 'N/A',
                 'book_id': book.id
             })
         

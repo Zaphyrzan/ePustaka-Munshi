@@ -260,26 +260,33 @@ class OCRService:
     
     def extract_ledger_rows(self, text: str, words: List[dict]) -> List[LedgerRow]:
         """
-        Parse OCR output to extract Malaysian ledger rows.
-        Attempts to identify table structure and extract fields based on column positions.
+        Parse OCR output to extract Malaysian library ledger rows.
+        Handles the 7-column format:
         
-        The ledger format has these columns:
-        No Perolehan | No Panggilan | Pengarang | Tajuk Buku | Penerbit | 
-        Tarikh Penerbit | Tarikh Perolehan | Bil No | Punca | Harga RM Sen | Muka Surat | Catatan
+        1. NO PEROLEHAN (Accession Number)
+        2. NO PANGGILAN (Call Number)
+        3. PENGARANG (Author)
+        4. TAJUK BUKU (Book Title)
+        5. TEMPAT DAN NAMA PENERBIT (Publisher Place & Name)
+        6. TARIKH PENERBIT (Publication Date/Year)
+        7. PUNCA (Source/Origin)
+        
+        Plus optional fields: Tarikh Perolehan, Bil No, Harga RM/Sen, Muka Surat, Catatan
         """
         rows = []
         lines = text.strip().split('\n')
         
-        # Try to detect table columns by analyzing word positions
+        # Try to detect table structure from word positions
         column_boundaries = self._detect_columns(words)
         
         data_row_num = 0
         for i, line in enumerate(lines, 1):
             line = line.strip()
-            if not line or len(line) < 3:  # Skip very short lines
+            # Skip empty lines or very short lines
+            if not line or len(line) < 3:
                 continue
             
-            # Skip header lines (contain column names)
+            # Skip header lines (contain Malaysian column names or English equivalents)
             if self._is_header_line(line):
                 continue
             
@@ -291,13 +298,17 @@ class OCRService:
                 confidence=0.5  # Default confidence
             )
             
-            # Try to extract fields
-            if column_boundaries:
-                # Use column positions for structured extraction
-                row = self._extract_fields_by_columns(row, words, i, column_boundaries)
-            else:
-                # Fallback to pattern-based extraction
-                row = self._extract_fields_by_patterns(row, words)
+            # Extract fields using the best available method
+            try:
+                if column_boundaries and len(column_boundaries) >= 7:
+                    # Use detected columns for structure-aware extraction
+                    row = self._extract_fields_by_columns(row, words, i, column_boundaries)
+                else:
+                    # Use pattern-based extraction (more robust fallback)
+                    row = self._extract_fields_by_patterns(row, words)
+            except Exception as e:
+                # If extraction fails, at least preserve the raw text
+                print(f"Warning: Field extraction failed for row {data_row_num}: {str(e)}")
             
             rows.append(row)
         
@@ -342,61 +353,160 @@ class OCRService:
     
     def _extract_fields_by_patterns(self, row: LedgerRow, words: List[dict]) -> LedgerRow:
         """
-        Extract structured fields from a row of text using pattern matching.
-        Used when column detection is not available.
+        Extract 7 structured fields from a ledger row using intelligent pattern matching.
+        
+        Column order (7 main columns):
+        1. NO PEROLEHAN (accession number) - pattern: digits/dots
+        2. NO PANGGILAN (call number) - pattern: 3 digits or Dewey-like
+        3. PENGARANG (author) - text name(s)
+        4. TAJUK BUKU (title) - longer text
+        5. PENERBIT (publisher) - location + publisher name
+        6. TARIKH PENERBIT (pub year) - 4-digit year
+        7. PUNCA (source) - text
         """
         text = row.raw_text
-        parts = text.split()
         
-        # No Perolehan (accession number) - typically first, format: XX.YY
+        # ===== FIELD 1: NO PEROLEHAN (Accession Number) =====
+        # Pattern: Numbers with optional dots/dashes (e.g., "40.21", "401.3")
         perolehan_match = re.search(self.no_perolehan_pattern, text)
         if perolehan_match:
             row.no_perolehan = perolehan_match.group()
-            row.confidence_details['no_perolehan'] = 0.8
+            row.confidence_details['no_perolehan'] = 0.85
         
-        # No Panggilan (call number) - typically second, format: XXX or XXX.YYY
-        # Look for it after removing the perolehan number
+        # ===== FIELD 2: NO PANGGILAN (Call Number) =====
+        # Remove the accession number to avoid duplication
         remaining = text
         if row.no_perolehan:
-            remaining = text.replace(row.no_perolehan, '', 1)
+            # Find and skip the accession number
+            remaining = text.replace(row.no_perolehan, '', 1).strip()
         
+        # Look for call numbers (typically 3 digits, can have dots)
         panggilan_matches = re.findall(self.no_panggilan_pattern, remaining)
         if panggilan_matches:
             row.no_panggilan = panggilan_matches[0]
-            row.confidence_details['no_panggilan'] = 0.7
+            row.confidence_details['no_panggilan'] = 0.8
+            # Remove this from remaining text
+            remaining = remaining.replace(row.no_panggilan, '', 1).strip()
         
-        # Try to extract year (Tarikh Penerbit and Tarikh Perolehan)
-        year_matches = re.findall(r'\b(19\d{2}|20\d{2})\b', text)
-        if len(year_matches) >= 2:
-            row.tarikh_penerbit = year_matches[0]
-            row.tarikh_perolehan = year_matches[1]
-        elif len(year_matches) == 1:
-            row.tarikh_penerbit = year_matches[0]
+        # ===== FIELD 6: TARIKH PENERBIT (Publication Year) =====
+        # Extract years early (they help segment the row)
+        year_patterns = re.findall(r'\b(19\d{2}|20\d{2})\b', text)
+        if year_patterns:
+            row.tarikh_penerbit = year_patterns[0]
+            row.confidence_details['tarikh_penerbit'] = 0.9
+            # If there are multiple years, second might be acquisition date
+            if len(year_patterns) >= 2:
+                row.tarikh_perolehan = year_patterns[1]
         
-        # Extract price (Harga) - look for numeric values with RM or at end
+        # ===== FIELD 7: PUNCA (Source) =====
+        # Common sources in Malaysian libraries: Pembelian, Derma, Sumbangan, etc.
+        source_keywords = ['pembelian', 'derma', 'sumbangan', 'hadiah', 'tukar', 'daftar', 
+                          'purchase', 'donation', 'gift', 'book', 'received', 'acquired']
+        for kw in source_keywords:
+            if kw in text.lower():
+                row.punca = kw.capitalize()
+                row.confidence_details['punca'] = 0.7
+                break
+        
+        # ===== FIELDS 3, 4, 5: Text fields (Author, Title, Publisher) =====
+        # These occupy the middle section after numbers are removed
+        self._extract_text_fields_structured(row, text, remaining)
+        
+        # ===== Additional fields from patterns =====
+        # Price (Harga)
         price_match = re.search(r'RM?\s*(\d+)[,.]?(\d{0,2})', text, re.IGNORECASE)
         if price_match:
             row.harga_rm = price_match.group(1)
             row.harga_sen = price_match.group(2) if price_match.group(2) else '0'
+            row.confidence_details['harga_rm'] = 0.8
         
-        # Muka Surat (page count) - typically a number at the end
+        # Page count (Muka Surat)
         page_match = re.search(r'\b(\d{1,4})\s*(?:ms?|pages?|muka)?\s*$', text, re.IGNORECASE)
         if page_match:
             row.muka_surat = page_match.group(1)
+            row.confidence_details['muka_surat'] = 0.75
         
-        # For author and title, we need to look at the middle portion
-        # This is challenging without column detection
-        # We'll extract what appears between the numbers
-        self._extract_text_fields(row, text)
-        
-        # Calculate average confidence from matching words
-        line_words = [w for w in words if str(w.get('line_num', '')) in str(row.row_number)]
-        if line_words:
-            confidences = [w['confidence'] for w in line_words if w.get('confidence', 0) > 0]
-            if confidences:
-                row.confidence = sum(confidences) / len(confidences) / 100.0
+        # Calculate overall confidence
+        if row.confidence_details:
+            confidences = list(row.confidence_details.values())
+            row.confidence = sum(confidences) / len(confidences) if confidences else 0.5
         
         return row
+    
+    def _extract_text_fields_structured(self, row: LedgerRow, full_text: str, remaining_text: str) -> None:
+        """
+        Extract author, title, and publisher from the middle text portion.
+        Uses position heuristics for Malaysian library ledgers.
+        """
+        # Work with remaining text (numbers already removed)
+        text = remaining_text if remaining_text else full_text
+        
+        # Remove known publisher locations to make parsing easier
+        publisher_locations = [
+            'kuala lumpur', 'kl', 'selangor', 'petaling jaya', 'shah alam', 'cyberjaya',
+            'penang', 'pulau pinang', 'johor', 'johor bahru', 'melaka', 'ipoh', 'perak',
+            'kedah', 'perlis', 'terengganu', 'kelantan', 'pahang', 'singapore', 'sg',
+            'london', 'new york', 'oxford', 'cambridge', 'cambridge university',
+            'macmillan', 'penguin', 'oxford university', 'bloomsbury'
+        ]
+        
+        publisher_end = -1
+        text_lower = text.lower()
+        
+        # Find where publisher info likely starts
+        for loc in publisher_locations:
+            match = re.search(r'\b' + re.escape(loc) + r'\b', text_lower)
+            if match:
+                publisher_end = match.start()
+                break
+        
+        if publisher_end > 0:
+            # Extract publisher (from location onwards to end or next known delimiter)
+            pub_text = text[publisher_end:].strip()
+            # Clean up - take first 100 chars or until end punctuation
+            pub_text = re.sub(r'\d{4}\s*$', '', pub_text).strip()  # Remove years at end
+            if len(pub_text) > 150:
+                pub_text = pub_text[:150]
+            row.penerbit = pub_text
+            row.confidence_details['penerbit'] = 0.7
+            
+            # Use text before publisher for author and title
+            text = text[:publisher_end].strip()
+        
+        # Now split remaining text into author and title
+        # Malaysian books often have: Author(s), Title, so look for commas
+        parts = text.split(',')
+        
+        if len(parts) >= 2:
+            # First part before comma = author
+            author_candidate = parts[0].strip()
+            # Second part and onwards = title
+            title_candidate = ','.join(parts[1:]).strip()
+            
+            # Validate: author should be shorter, title should be longer
+            if len(author_candidate) < 50 and len(title_candidate) > len(author_candidate):
+                row.pengarang = author_candidate
+                row.tajuk_buku = title_candidate
+                row.confidence_details['pengarang'] = 0.75
+                row.confidence_details['tajuk_buku'] = 0.75
+            else:
+                # If validation fails, try splitting by length
+                word_list = text.split()
+                if len(word_list) > 4:
+                    # First 2-3 words = author, rest = title
+                    author_end = min(3, len(word_list) // 2)
+                    row.pengarang = ' '.join(word_list[:author_end])
+                    row.tajuk_buku = ' '.join(word_list[author_end:])
+                    row.confidence_details['pengarang'] = 0.65
+                    row.confidence_details['tajuk_buku'] = 0.65
+                elif len(word_list) > 0:
+                    row.tajuk_buku = ' '.join(word_list)
+                    row.confidence_details['tajuk_buku'] = 0.6
+        else:
+            # No comma - assume entire remaining text is title
+            if text:
+                row.tajuk_buku = text.strip()
+                row.confidence_details['tajuk_buku'] = 0.5
     
     def _extract_text_fields(self, row: LedgerRow, text: str) -> None:
         """

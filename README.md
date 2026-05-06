@@ -176,7 +176,7 @@ TESSERACT_CMD=C:\Program Files\Tesseract-OCR\tesseract.exe
 
 ## Tech Stack
 
-- **Backend**: Flask, SQLAlchemy, Flask-Login
+- **Backend**: Flask, SQLAlchemy, Flask-Login, Python
 - **Database**: SQLite (upgradeable to PostgreSQL/MySQL)
 - **Frontend**: Bootstrap 5, Bootstrap Icons
 - **OCR**: Tesseract (pytesseract)

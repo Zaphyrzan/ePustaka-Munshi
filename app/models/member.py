@@ -8,18 +8,40 @@ from app import db
 
 
 def generate_member_id():
-    """Generate a unique member ID (auto-increment style)"""
-    last_member = Member.query.order_by(Member.id.desc()).first()
-    if last_member:
-        # Extract number from last member_id and increment
-        try:
-            last_number = int(last_member.member_id.replace('STU', ''))
-            next_number = last_number + 1
-        except (ValueError, AttributeError):
+    """
+    Generate a unique member ID (auto-increment style).
+    Queries all existing member_ids to find the highest numeric value,
+    then increments it. This ensures no duplicate IDs even if records are deleted.
+    Format: STU0001, STU0002, STU0003, etc.
+    """
+    try:
+        # Fetch all members and their IDs from the database
+        all_members = Member.query.with_entities(Member.member_id).all()
+        
+        if not all_members:
+            # If no members exist, start with 1
             next_number = 1
-    else:
+        else:
+            # Extract numeric part from all member_ids and find the maximum
+            max_number = 0
+            for (member_id,) in all_members:
+                try:
+                    # Remove 'STU' prefix and convert to integer
+                    numeric_part = int(member_id.replace('STU', ''))
+                    max_number = max(max_number, numeric_part)
+                except (ValueError, AttributeError, TypeError):
+                    # Skip invalid member_ids and continue
+                    continue
+            
+            # Increment the maximum found number
+            next_number = max_number + 1
+    except Exception as e:
+        # Fallback: if any error occurs during lookup, start from 1
+        print(f"Error generating member ID: {e}")
         next_number = 1
-    return f'STU{next_number:04d}'  # Format: STU0001, STU0002, etc.
+    
+    # Format the ID as STU followed by 4-digit zero-padded number
+    return f'STU{next_number:04d}'
 
 
 class Member(UserMixin, db.Model):

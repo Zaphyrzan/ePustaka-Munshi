@@ -44,42 +44,127 @@ def staff_list():
 @login_required
 @permission_required(Permission.MANAGE_USERS)
 def add_staff():
-    """Add a staff user"""
+    """
+    Add a staff user with comprehensive validation.
+    Ensures username/email uniqueness and password strength.
+    """
     roles = Role.query.all()
     
     if request.method == 'POST':
-        username = request.form.get('username', '').strip()
-        email = request.form.get('email', '').strip()
-        password = request.form.get('password', '')
-        role_id = request.form.get('role_id', type=int)
+        # ===== INPUT VALIDATION =====
         
-        # Validation
+        # Get and validate username (required)
+        username = request.form.get('username', '').strip()
+        if not username:
+            flash('Username is required', 'error')
+            return render_template('users/add_staff.html', roles=roles)
+        
+        if len(username) < 3:
+            flash('Username must be at least 3 characters', 'error')
+            return render_template('users/add_staff.html', roles=roles)
+        
+        if len(username) > 64:
+            flash('Username cannot exceed 64 characters', 'error')
+            return render_template('users/add_staff.html', roles=roles)
+        
+        # Check if username contains only allowed characters (alphanumeric, underscore, hyphen)
+        if not all(c.isalnum() or c in '_-' for c in username):
+            flash('Username can only contain letters, numbers, underscores, and hyphens', 'error')
+            return render_template('users/add_staff.html', roles=roles)
+        
+        # Check if username already exists
         if User.query.filter_by(username=username).first():
             flash('Username already exists', 'error')
             return render_template('users/add_staff.html', roles=roles)
         
+        # Get and validate email (required)
+        email = request.form.get('email', '').strip()
+        if not email:
+            flash('Email is required', 'error')
+            return render_template('users/add_staff.html', roles=roles)
+        
+        # Validate email format
+        if '@' not in email or '.' not in email.split('@')[-1]:
+            flash('Invalid email format', 'error')
+            return render_template('users/add_staff.html', roles=roles)
+        
+        if len(email) > 120:
+            flash('Email cannot exceed 120 characters', 'error')
+            return render_template('users/add_staff.html', roles=roles)
+        
+        # Check if email already exists
         if User.query.filter_by(email=email).first():
             flash('Email already exists', 'error')
             return render_template('users/add_staff.html', roles=roles)
         
-        if len(password) < 6:
-            flash('Password must be at least 6 characters', 'error')
+        # Get and validate password (optional - use default if not provided)
+        password = request.form.get('password', '').strip()
+        default_password = 'Munshi123'
+        
+        if password:
+            # Only validate if a custom password is provided
+            if len(password) < 6:
+                flash('Password must be at least 6 characters', 'error')
+                return render_template('users/add_staff.html', roles=roles)
+            
+            if len(password) > 128:
+                flash('Password cannot exceed 128 characters', 'error')
+                return render_template('users/add_staff.html', roles=roles)
+        else:
+            # Use default password if none provided
+            password = default_password
+        
+        # Get and validate full_name (required)
+        full_name = request.form.get('full_name', '').strip()
+        if not full_name:
+            flash('Full name is required', 'error')
             return render_template('users/add_staff.html', roles=roles)
         
-        user = User(
-            username=username,
-            email=email,
-            full_name=request.form.get('full_name', '').strip(),
-            role_id=role_id,
-            is_active=True
-        )
-        user.set_password(password)
+        if len(full_name) < 2:
+            flash('Full name must be at least 2 characters', 'error')
+            return render_template('users/add_staff.html', roles=roles)
         
-        db.session.add(user)
-        db.session.commit()
+        if len(full_name) > 128:
+            flash('Full name cannot exceed 128 characters', 'error')
+            return render_template('users/add_staff.html', roles=roles)
         
-        flash(f'Staff user "{username}" created successfully', 'success')
-        return redirect(url_for('users.staff_list'))
+        # Get and validate role_id (required)
+        try:
+            role_id = request.form.get('role_id', type=int)
+            if not role_id:
+                flash('Role is required', 'error')
+                return render_template('users/add_staff.html', roles=roles)
+            
+            # Verify the role exists
+            if not Role.query.get(role_id):
+                flash('Invalid role selected', 'error')
+                return render_template('users/add_staff.html', roles=roles)
+        except (ValueError, TypeError):
+            flash('Invalid role ID', 'error')
+            return render_template('users/add_staff.html', roles=roles)
+        
+        # ===== CREATE NEW STAFF USER =====
+        try:
+            user = User(
+                username=username,
+                email=email,
+                full_name=full_name,
+                role_id=role_id,
+                is_active=True
+            )
+            user.set_password(password)
+            
+            db.session.add(user)
+            db.session.commit()
+            
+            default_msg = f' (Default password: {default_password})' if request.form.get('password', '').strip() == '' else ''
+            flash(f'Staff user "{username}" created successfully{default_msg}', 'success')
+            return redirect(url_for('users.staff_list'))
+        
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating staff user: {str(e)}', 'error')
+            return render_template('users/add_staff.html', roles=roles)
     
     return render_template('users/add_staff.html', roles=roles)
 
@@ -97,27 +182,79 @@ def view_staff(user_id):
 @login_required
 @permission_required(Permission.MANAGE_USERS)
 def edit_staff(user_id):
-    """Edit a staff user"""
+    """
+    Edit a staff user with comprehensive validation.
+    Allows password change and updates full name and role.
+    """
     user = User.query.get_or_404(user_id)
     roles = Role.query.all()
     
     if request.method == 'POST':
-        user.full_name = request.form.get('full_name', '').strip()
-        user.role_id = request.form.get('role_id', type=int)
-        user.is_active = request.form.get('is_active') == 'on'
+        # ===== INPUT VALIDATION =====
         
-        # Change password if provided
+        # Get and validate full_name (required)
+        full_name = request.form.get('full_name', '').strip()
+        if not full_name:
+            flash('Full name is required', 'error')
+            return render_template('users/edit_staff.html', user=user, roles=roles)
+        
+        if len(full_name) < 2:
+            flash('Full name must be at least 2 characters', 'error')
+            return render_template('users/edit_staff.html', user=user, roles=roles)
+        
+        if len(full_name) > 128:
+            flash('Full name cannot exceed 128 characters', 'error')
+            return render_template('users/edit_staff.html', user=user, roles=roles)
+        
+        # Get and validate role_id (required)
+        try:
+            role_id = request.form.get('role_id', type=int)
+            if not role_id:
+                flash('Role is required', 'error')
+                return render_template('users/edit_staff.html', user=user, roles=roles)
+            
+            # Verify the role exists
+            if not Role.query.get(role_id):
+                flash('Invalid role selected', 'error')
+                return render_template('users/edit_staff.html', user=user, roles=roles)
+        except (ValueError, TypeError):
+            flash('Invalid role ID', 'error')
+            return render_template('users/edit_staff.html', user=user, roles=roles)
+        
+        # Get boolean flag for is_active
+        is_active = request.form.get('is_active') == 'on'
+        
+        # Get and validate new password (optional)
         new_password = request.form.get('new_password', '')
         if new_password:
+            # Only validate if a new password is provided
             if len(new_password) < 6:
                 flash('Password must be at least 6 characters', 'error')
                 return render_template('users/edit_staff.html', user=user, roles=roles)
-            user.set_password(new_password)
+            
+            if len(new_password) > 128:
+                flash('Password cannot exceed 128 characters', 'error')
+                return render_template('users/edit_staff.html', user=user, roles=roles)
         
-        db.session.commit()
+        # ===== UPDATE STAFF USER =====
+        try:
+            user.full_name = full_name
+            user.role_id = role_id
+            user.is_active = is_active
+            
+            # Only update password if a new one is provided
+            if new_password:
+                user.set_password(new_password)
+            
+            db.session.commit()
+            
+            flash(f'Staff user "{user.username}" updated successfully', 'success')
+            return redirect(url_for('users.staff_list'))
         
-        flash(f'Staff user "{user.username}" updated successfully', 'success')
-        return redirect(url_for('users.staff_list'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating staff user: {str(e)}', 'error')
+            return render_template('users/edit_staff.html', user=user, roles=roles)
     
     return render_template('users/edit_staff.html', user=user, roles=roles)
 
@@ -153,28 +290,120 @@ def member_list():
 @login_required
 @permission_required(Permission.MANAGE_MEMBERS)
 def add_member():
-    """Add a library member"""
+    """
+    Add a new library member with validation.
+    Auto-generates member_id to ensure uniqueness.
+    """
     if request.method == 'POST':
-        # Auto-generate member_id (don't accept manual input)
+        # ===== INPUT VALIDATION =====
+        
+        # Get and validate full_name (required field)
+        full_name = request.form.get('full_name', '').strip()
+        if not full_name:
+            flash('Full name is required', 'error')
+            return render_template('users/add_member.html')
+        
+        if len(full_name) < 2:
+            flash('Full name must be at least 2 characters', 'error')
+            return render_template('users/add_member.html')
+        
+        if len(full_name) > 128:
+            flash('Full name cannot exceed 128 characters', 'error')
+            return render_template('users/add_member.html')
+        
+        # Get and validate email (optional but must be valid if provided)
+        email = request.form.get('email', '').strip()
+        if email:
+            # Basic email validation (contains @ and .)
+            if '@' not in email or '.' not in email.split('@')[-1]:
+                flash('Invalid email format', 'error')
+                return render_template('users/add_member.html')
+            
+            if len(email) > 120:
+                flash('Email cannot exceed 120 characters', 'error')
+                return render_template('users/add_member.html')
+            
+            # Check if email already exists
+            if Member.query.filter_by(email=email).first():
+                flash('Email already exists in the system', 'error')
+                return render_template('users/add_member.html')
+            email = email or None
+        else:
+            email = None
+        
+        # Get and validate phone (optional)
+        phone = request.form.get('phone', '').strip()
+        if phone:
+            # Allow only digits, spaces, hyphens, and +
+            if not all(c.isdigit() or c in ' +-' for c in phone):
+                flash('Phone number contains invalid characters', 'error')
+                return render_template('users/add_member.html')
+            
+            if len(phone) > 20:
+                flash('Phone number cannot exceed 20 characters', 'error')
+                return render_template('users/add_member.html')
+            phone = phone or None
+        else:
+            phone = None
+        
+        # Get and validate member_type
+        valid_member_types = ['Student', 'Staff', 'Teacher', 'Librarian', 'Admin', 'Student Assistant', 'External']
+        member_type = request.form.get('member_type', 'Student')
+        if member_type not in valid_member_types:
+            flash('Invalid member type', 'error')
+            return render_template('users/add_member.html')
+        
+        # Get and validate form_level (only applicable for students)
+        try:
+            form_level = request.form.get('form_level', type=int, default=1)
+            if form_level < 1 or form_level > 6:
+                flash('Form level must be between 1 and 6', 'error')
+                return render_template('users/add_member.html')
+        except (ValueError, TypeError):
+            flash('Invalid form level', 'error')
+            return render_template('users/add_member.html')
+        
+        # Get and validate class_group (optional)
+        class_group = request.form.get('class_group', '').strip()
+        if class_group and len(class_group) > 64:
+            flash('Class group cannot exceed 64 characters', 'error')
+            return render_template('users/add_member.html')
+        class_group = class_group or None
+        
+        # ===== AUTO-GENERATE MEMBER ID =====
         member_id = generate_member_id()
         
-        member = Member(
-            member_id=member_id,
-            full_name=request.form.get('full_name', '').strip(),
-            email=request.form.get('email', '').strip() or None,
-            phone=request.form.get('phone', '').strip() or None,
-            member_type=request.form.get('member_type', 'Student'),
-            form_level=request.form.get('form_level', type=int, default=1),
-            class_group=request.form.get('class_group', '').strip() or None,
-            student_year=datetime.now().year,
-            is_active=True
-        )
+        # ===== SET DEFAULT PASSWORD =====
+        default_password = 'Munshi123'
         
-        db.session.add(member)
-        db.session.commit()
+        # ===== CREATE NEW MEMBER =====
+        try:
+            member = Member(
+                member_id=member_id,
+                full_name=full_name,
+                email=email,
+                phone=phone,
+                member_type=member_type,
+                form_level=form_level,
+                class_group=class_group,
+                student_year=datetime.now().year,
+                is_active=True
+            )
+            
+            # Set default password for the member
+            # Students and members login with member_id (STU0001, etc.) as username
+            member.set_password(default_password)
+            
+            db.session.add(member)
+            db.session.commit()
+            
+            flash(f'Member "{member.full_name}" created successfully (ID: {member.member_id}, Default password: {default_password})', 'success')
+            return redirect(url_for('users.view_member', member_id=member.id))
         
-        flash(f'Member "{member.full_name}" created successfully (ID: {member.member_id})', 'success')
-        return redirect(url_for('users.view_member', member_id=member.id))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating member: {str(e)}', 'error')
+            return render_template('users/add_member.html')
     
     return render_template('users/add_member.html')
 
@@ -196,31 +425,259 @@ def view_member(member_id):
 @login_required
 @permission_required(Permission.MANAGE_MEMBERS)
 def edit_member(member_id):
-    """Edit a member"""
+    """
+    Edit a library member with comprehensive validation.
+    Prevents duplicate emails and invalid data entry.
+    """
     member = Member.query.get_or_404(member_id)
     
     if request.method == 'POST':
-        member.full_name = request.form.get('full_name', '').strip()
-        member.email = request.form.get('email', '').strip() or None
-        member.phone = request.form.get('phone', '').strip() or None
-        member.member_type = request.form.get('member_type', 'Student')
-        member.form_level = request.form.get('form_level', type=int, default=1)
-        member.class_group = request.form.get('class_group', '').strip() or None
-        member.is_active = request.form.get('is_active') == 'on'
-        member.mark_for_deletion = request.form.get('mark_for_deletion') == 'on'
-        member.notes = request.form.get('notes', '').strip() or None
+        # ===== INPUT VALIDATION =====
         
-        # If marking as graduated, set form_level to 6
-        if request.form.get('mark_graduated') == 'on':
-            member.form_level = 6
-            member.graduation_date = datetime.now()
+        # Get and validate full_name (required field)
+        full_name = request.form.get('full_name', '').strip()
+        if not full_name:
+            flash('Full name is required', 'error')
+            return render_template('users/edit_member.html', member=member)
         
-        db.session.commit()
+        if len(full_name) < 2:
+            flash('Full name must be at least 2 characters', 'error')
+            return render_template('users/edit_member.html', member=member)
         
-        flash(f'Member "{member.full_name}" updated successfully', 'success')
-        return redirect(url_for('users.view_member', member_id=member.id))
+        if len(full_name) > 128:
+            flash('Full name cannot exceed 128 characters', 'error')
+            return render_template('users/edit_member.html', member=member)
+        
+        # Get and validate email (optional but must be valid if provided)
+        email = request.form.get('email', '').strip()
+        if email:
+            # Basic email validation
+            if '@' not in email or '.' not in email.split('@')[-1]:
+                flash('Invalid email format', 'error')
+                return render_template('users/edit_member.html', member=member)
+            
+            if len(email) > 120:
+                flash('Email cannot exceed 120 characters', 'error')
+                return render_template('users/edit_member.html', member=member)
+            
+            # Check if email already exists (but not for the current member)
+            existing_email = Member.query.filter(
+                Member.email == email,
+                Member.id != member.id
+            ).first()
+            
+            if existing_email:
+                flash('Email already exists for another member', 'error')
+                return render_template('users/edit_member.html', member=member)
+            email = email or None
+        else:
+            email = None
+        
+        # Get and validate phone (optional)
+        phone = request.form.get('phone', '').strip()
+        if phone:
+            # Allow only digits, spaces, hyphens, and +
+            if not all(c.isdigit() or c in ' +-' for c in phone):
+                flash('Phone number contains invalid characters', 'error')
+                return render_template('users/edit_member.html', member=member)
+            
+            if len(phone) > 20:
+                flash('Phone number cannot exceed 20 characters', 'error')
+                return render_template('users/edit_member.html', member=member)
+            phone = phone or None
+        else:
+            phone = None
+        
+        # Get and validate member_type
+        valid_member_types = ['Student', 'Staff', 'Teacher', 'Librarian', 'Admin', 'Student Assistant', 'External']
+        member_type = request.form.get('member_type', 'Student')
+        if member_type not in valid_member_types:
+            flash('Invalid member type', 'error')
+            return render_template('users/edit_member.html', member=member)
+        
+        # Get and validate form_level
+        try:
+            form_level = request.form.get('form_level', type=int, default=1)
+            if form_level < 1 or form_level > 6:
+                flash('Form level must be between 1 and 6', 'error')
+                return render_template('users/edit_member.html', member=member)
+        except (ValueError, TypeError):
+            flash('Invalid form level', 'error')
+            return render_template('users/edit_member.html', member=member)
+        
+        # Get and validate class_group (optional)
+        class_group = request.form.get('class_group', '').strip()
+        if class_group and len(class_group) > 64:
+            flash('Class group cannot exceed 64 characters', 'error')
+            return render_template('users/edit_member.html', member=member)
+        class_group = class_group or None
+        
+        # Get and validate notes (optional)
+        notes = request.form.get('notes', '').strip()
+        if notes and len(notes) > 500:
+            flash('Notes cannot exceed 500 characters', 'error')
+            return render_template('users/edit_member.html', member=member)
+        notes = notes or None
+        
+        # Get boolean flags
+        is_active = request.form.get('is_active') == 'on'
+        mark_for_deletion = request.form.get('mark_for_deletion') == 'on'
+        
+        # Get and validate new password (optional)
+        new_password = request.form.get('new_password', '').strip()
+        if new_password:
+            # Only validate if a new password is provided
+            if len(new_password) < 6:
+                flash('Password must be at least 6 characters', 'error')
+                return render_template('users/edit_member.html', member=member)
+            
+            if len(new_password) > 128:
+                flash('Password cannot exceed 128 characters', 'error')
+                return render_template('users/edit_member.html', member=member)
+        
+        # ===== UPDATE MEMBER =====
+        try:
+            member.full_name = full_name
+            member.email = email
+            member.phone = phone
+            member.member_type = member_type
+            member.form_level = form_level
+            member.class_group = class_group
+            member.is_active = is_active
+            member.mark_for_deletion = mark_for_deletion
+            member.notes = notes
+            
+            # Update password if a new one is provided
+            if new_password:
+                member.set_password(new_password)
+            
+            # If marking as graduated, set form_level to 6 and record graduation date
+            if request.form.get('mark_graduated') == 'on':
+                member.form_level = 6
+                member.graduation_date = datetime.now()
+            
+            db.session.commit()
+            
+            flash(f'Member "{member.full_name}" updated successfully', 'success')
+            return redirect(url_for('users.view_member', member_id=member.id))
+        
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating member: {str(e)}', 'error')
+            return render_template('users/edit_member.html', member=member)
     
     return render_template('users/edit_member.html', member=member)
+
+
+@users_bp.route('/members/<int:member_id>/delete-confirm', methods=['GET'])
+@login_required
+@permission_required(Permission.MANAGE_MEMBERS)
+def delete_member_confirm(member_id):
+    """
+    Show confirmation page before deleting a member.
+    Checks for existing loans and provides clear warnings.
+    """
+    from datetime import datetime
+    from app.models import Loan
+    
+    member = Member.query.get_or_404(member_id)
+    
+    # Get all loans (active, overdue, and returned)
+    all_loans = Loan.query.filter_by(member_id=member.id).all()
+    active_loans = [loan for loan in all_loans if loan.status == 'active']
+    overdue_loans = [loan for loan in all_loans if loan.status == 'overdue']
+    active_overdue_count = len(active_loans) + len(overdue_loans)
+    total_loans = len(all_loans)
+    
+    return render_template('users/delete_member_confirm.html', 
+                         member=member, 
+                         all_loans=all_loans,
+                         active_loans=active_loans,
+                         overdue_loans=overdue_loans,
+                         active_overdue_count=active_overdue_count,
+                         total_loans=total_loans,
+                         now=datetime.now())
+
+
+@users_bp.route('/members/<int:member_id>/delete', methods=['POST'])
+@login_required
+@permission_required(Permission.MANAGE_MEMBERS)
+def delete_member(member_id):
+    """
+    Delete a member with multiple safety checks.
+    
+    Safety mechanisms:
+    1. Requires admin confirmation (via delete-confirm page)
+    2. Checks for active loans - cannot delete if member has active/overdue loans
+    3. Logs deletion with reason
+    4. Prevents accidental deletion with password confirmation
+    """
+    member = Member.query.get_or_404(member_id)
+    
+    # ===== SAFETY CHECK 1: Admin verification =====
+    admin_confirmed = request.form.get('admin_confirmed') == 'yes'
+    if not admin_confirmed:
+        flash('Admin confirmation required. Please check the confirmation checkbox.', 'error')
+        return redirect(url_for('users.delete_member_confirm', member_id=member.id))
+    
+    # ===== SAFETY CHECK 2: Check for active loans =====
+    from app.models import Loan
+    active_loans = Loan.query.filter_by(member_id=member.id).filter(
+        Loan.status.in_(['active', 'overdue'])
+    ).all()
+    
+    if active_loans:
+        flash(
+            f'Cannot delete member: {member.full_name} has {len(active_loans)} active/overdue loans. '
+            f'All loans must be returned or marked as lost before deletion.',
+            'error'
+        )
+        return redirect(url_for('users.delete_member_confirm', member_id=member.id))
+    
+    # ===== SAFETY CHECK 3: Verify password (double-check from current user) =====
+    current_password = request.form.get('current_password', '')
+    if not current_user.check_password(current_password):
+        flash('Current password is incorrect. Deletion cancelled for security.', 'error')
+        return redirect(url_for('users.delete_member_confirm', member_id=member.id))
+    
+    # ===== ALL CHECKS PASSED - PROCEED WITH DELETION =====
+    try:
+        full_name = member.full_name
+        member_id_str = member.member_id
+        
+        # Get deletion reason for logging
+        deletion_reason = request.form.get('deletion_reason', 'Admin deletion').strip()
+        if not deletion_reason:
+            deletion_reason = 'Admin deletion'
+        if len(deletion_reason) > 200:
+            deletion_reason = deletion_reason[:200]
+        
+        # Store deletion info in member's notes before deleting (if there are any)
+        total_loans = Loan.query.filter_by(member_id=member.id).count()
+        
+        # Log the deletion
+        print(f"[DELETION LOG] Member deleted: {member_id_str} ({full_name})")
+        print(f"[DELETION LOG] Deleted by: {current_user.username} on {datetime.now()}")
+        print(f"[DELETION LOG] Reason: {deletion_reason}")
+        print(f"[DELETION LOG] Total loans history: {total_loans}")
+        
+        # Delete the member
+        # Note: All related loans will be preserved in the database (cascade not set)
+        # This ensures a complete audit trail of historical transactions
+        db.session.delete(member)
+        db.session.commit()
+        
+        flash(
+            f'Member "{full_name}" ({member_id_str}) has been permanently deleted. '
+            f'Historical loan records have been preserved for audit purposes.',
+            'success'
+        )
+        return redirect(url_for('users.member_list'))
+    
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting member: {str(e)}', 'error')
+        return redirect(url_for('users.delete_member_confirm', member_id=member.id))
 
 
 # ============ Student Administration ============

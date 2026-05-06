@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Delete {{ member.full_name }} - ePustaka Munshi{% endblock %}
+{% block page_title %}Delete Member{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 offset-lg-2">
+        <div class="alert alert-danger" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <strong>WARNING: This action cannot be undone!</strong>
+            <p class="mb-0 mt-2">You are about to permanently delete this member record. All member information will be removed from the system, though loan history will be preserved for audit purposes.</p>
+        </div>
+
+        <div class="card table-card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Member Information</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr>
+                        <th width="200">Member ID</th>
+                        <td><strong>{{ member.member_id }}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>Full Name</th>
+                        <td>{{ member.full_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Type</th>
+                        <td>{{ member.member_type }}</td>
+                    </tr>
+                    <tr>
+                        <th>Email</th>
+                        <td>{{ member.email or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Phone</th>
+                        <td>{{ member.phone or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Joined Date</th>
+                        <td>{{ member.created_at.strftime('%d/%m/%Y') }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Loan Breakdown -->
+        <div class="card table-card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Loan Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div class="alert alert-info mb-0">
+                            <strong>Total Loans (All Time)</strong>
+                            <h4 class="mt-2 mb-0">{{ total_loans }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="alert alert-warning mb-0">
+                            <strong>Active/Overdue Loans</strong>
+                            <h4 class="mt-2 mb-0">{{ active_overdue_count }}</h4>
+                        </div>
+                    </div>
+                </div>
+
+                {% if active_loans or overdue_loans %}
+                <div class="mt-4">
+                    <!-- Active Loans -->
+                    {% if active_loans %}
+                    <h6 class="text-primary mb-3">
+                        <i class="bi bi-info-circle"></i> Active Loans ({{ active_loans|length }})
+                    </h6>
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Book Title</th>
+                                    <th>Checkout Date</th>
+                                    <th>Due Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for loan in active_loans %}
+                                <tr>
+                                    <td>{{ loan.copy.book.title[:50] }}{% if loan.copy.book.title|length > 50 %}...{% endif %}</td>
+                                    <td>{{ loan.checkout_date.strftime('%d/%m/%Y') }}</td>
+                                    <td>{{ loan.due_date.strftime('%d/%m/%Y') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+
+                    <!-- Overdue Loans -->
+                    {% if overdue_loans %}
+                    <h6 class="text-danger mb-3">
+                        <i class="bi bi-exclamation-circle"></i> Overdue Loans ({{ overdue_loans|length }})
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Book Title</th>
+                                    <th>Due Date</th>
+                                    <th>Days Overdue</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for loan in overdue_loans %}
+                                <tr>
+                                    <td>{{ loan.copy.book.title[:50] }}{% if loan.copy.book.title|length > 50 %}...{% endif %}</td>
+                                    <td>{{ loan.due_date.strftime('%d/%m/%Y') }}</td>
+                                    <td>
+                                        <span class="badge bg-danger">
+                                            {{ ((now - loan.due_date).days) }} days
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">This member has no active or overdue loans.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Delete Form -->
+        <div class="card table-card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Confirm Deletion</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('users.delete_member', member_id=member.id) }}">
+                    
+                    <!-- Admin Confirmation Checkbox -->
+                    <div class="mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="admin_confirmed" name="admin_confirmed" value="yes" required>
+                            <label class="form-check-label" for="admin_confirmed">
+                                <strong>I understand this will permanently delete this member record and cannot be undone.</strong>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Password Verification -->
+                    <div class="mb-4">
+                        <label for="current_password" class="form-label">
+                            <strong>Enter your password to confirm:</strong>
+                        </label>
+                        <input type="password" class="form-control" id="current_password" name="current_password" placeholder="Your password" required>
+                        <small class="form-text text-muted">Required as a security measure to prevent accidental deletion.</small>
+                    </div>
+
+                    <!-- Deletion Reason -->
+                    <div class="mb-4">
+                        <label for="deletion_reason" class="form-label">
+                            <strong>Reason for deletion (optional):</strong>
+                        </label>
+                        <select class="form-select" id="deletion_reason" name="deletion_reason">
+                            <option value="">-- Select reason --</option>
+                            <option value="Academic Policy">Academic Policy</option>
+                            <option value="Withdrawal">Withdrawal</option>
+                            <option value="Administrative">Administrative</option>
+                            <option value="Data Cleanup">Data Cleanup</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <!-- Optional Notes -->
+                    <div class="mb-4">
+                        <label for="deletion_notes" class="form-label">
+                            <strong>Additional notes (optional):</strong>
+                        </label>
+                        <textarea class="form-control" id="deletion_notes" name="deletion_notes" rows="3" placeholder="Any additional information about this deletion..."></textarea>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="d-grid gap-2 d-sm-flex gap-sm-2 justify-content-sm-end">
+                        <a href="{{ url_for('users.view_member', member_id=member.id) }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('Are you absolutely sure? This member will be permanently deleted.')">
+                            <i class="bi bi-trash-fill"></i> Delete Member
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Historical Data Notice -->
+        <div class="alert alert-info mt-4">
+            <i class="bi bi-info-circle"></i>
+            <strong>Data Preservation Note:</strong> While this member record will be deleted, all historical loan records will be preserved in the system for audit and compliance purposes. This allows you to maintain complete loan history even after member deletion.
+        </div>
+    </div>
+</div>
+{% endblock %}
