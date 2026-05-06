@@ -196,7 +196,7 @@ def process_job(job_id):
 @login_required
 @permission_required(Permission.OCR_APPROVE)
 def review_job(job_id):
-    """Review and validate OCR results"""
+    """Review Malaysian ledger extraction results"""
     job = OCRJob.query.get_or_404(job_id)
     
     if job.status not in [OCRJobStatus.COMPLETED.value, OCRJobStatus.REVIEWED.value]:
@@ -205,39 +205,33 @@ def review_job(job_id):
     
     results = job.results.order_by(OCRResult.page_number, OCRResult.row_number).all()
     
-    # Get members and copies for validation dropdowns
-    members = Member.query.filter_by(is_active=True).order_by(Member.member_id).all()
-    
-    return render_template('ocr/review_job.html', job=job, results=results, members=members)
+    return render_template('ocr/review_job.html', job=job, results=results)
 
 
 @ocr_bp.route('/result/<int:result_id>/update', methods=['POST'])
 @login_required
 @permission_required(Permission.OCR_APPROVE)
 def update_result(result_id):
-    """Update a single OCR result"""
+    """Update ledger extraction with corrections"""
     result = OCRResult.query.get_or_404(result_id)
     
     is_valid = request.form.get('is_valid') == 'true'
     corrections = {}
     
-    member_id = request.form.get('member_id', '').strip()
-    if member_id:
-        corrections['member_id'] = member_id
+    # Ledger 7-column fields
+    for field in ['no_perolehan', 'no_panggilan', 'pengarang', 'tajuk_buku', 
+                  'penerbit', 'tarikh_penerbit', 'punca']:
+        value = request.form.get(field, '').strip()
+        if value:
+            corrections[field] = value
     
-    book_id = request.form.get('book_id', '').strip()
-    if book_id:
-        corrections['book_id'] = book_id
-    
-    date_str = request.form.get('date', '').strip()
-    if date_str:
-        try:
-            corrections['date'] = datetime.strptime(date_str, '%Y-%m-%d').date()
-        except ValueError:
-            pass
+    # Optional fields
+    for field in ['tarikh_perolehan', 'bil_no', 'harga', 'muka_surat', 'catatan']:
+        value = request.form.get(field, '').strip()
+        if value:
+            corrections[field] = value
     
     notes = request.form.get('notes', '').strip()
-    
     result.mark_reviewed(is_valid, corrections, notes)
     db.session.commit()
     
@@ -252,68 +246,86 @@ def update_result(result_id):
 @login_required
 @permission_required(Permission.OCR_APPROVE)
 def commit_job(job_id):
-    """Commit validated OCR results to loan records"""
+    """Upload reviewed ledger data to database as books"""
+    from app.models import Book, BookCopy
+    
     job = OCRJob.query.get_or_404(job_id)
     
-    # Get valid, reviewed results
-    valid_results = job.results.filter(
-        OCRResult.is_reviewed == True,
-        OCRResult.is_valid == True,
-        OCRResult.committed_loan_id == None
-    ).all()
+    # Check all results reviewed
+    unreviewed = job.results.filter(OCRResult.is_reviewed == False).count()
+    if unreviewed > 0:
+        flash(f'Cannot commit: {unreviewed} results still need review', 'error')
+        return redirect(url_for('ocr.review_job', job_id=job.id))
     
+    # Get valid reviewed results
+    valid_results = job.results.filter(OCRResult.is_valid == True).all()
     if not valid_results:
-        flash('No valid results to commit', 'warning')
-        return redirect(url_for('ocr.view_job', job_id=job.id))
+        flash('No valid results to upload', 'warning')
+        return redirect(url_for('ocr.review_job', job_id=job.id))
     
-    committed = 0
+    count = 0
     errors = []
     
     for result in valid_results:
         try:
-            # Find member
-            member_id = result.final_member_id
-            member = Member.query.filter_by(member_id=member_id).first()
-            if not member:
-                errors.append(f'Row {result.row_number}: Member {member_id} not found')
+            # Get final values (corrected or extracted)
+            title = result.final_tajuk_buku
+            author = result.final_pengarang
+            publisher = result.final_penerbit
+            accession = result.final_no_perolehan
+            call_number = result.final_no_panggilan
+            
+            # Skip if title missing
+            if not title or not accession:
+                errors.append(f'Row {result.row_number}: Missing title or accession number')
                 continue
             
-            # Find copy
-            book_id = result.final_book_id
-            copy = BookCopy.query.filter_by(accession_number=book_id).first()
-            if not copy:
-                errors.append(f'Row {result.row_number}: Book copy {book_id} not found')
+            # Check for duplicate accession
+            existing_copy = BookCopy.query.filter_by(accession_number=accession).first()
+            if existing_copy:
+                errors.append(f'Row {result.row_number}: Accession {accession} already in database')
                 continue
             
-            # Create historical loan record
-            loan = Loan(
-                member_id=member.id,
-                copy_id=copy.id,
-                checkout_date=datetime.combine(result.final_date, datetime.min.time()) if result.final_date else datetime.utcnow(),
-                due_date=datetime.combine(result.final_date, datetime.min.time()) if result.final_date else datetime.utcnow(),
-                status='returned',  # Historical records are marked as returned
-                notes=f'Imported from OCR Job #{job.id}'
+            # Create or find Book
+            book = Book.query.filter_by(title=title, author=author).first()
+            if not book:
+                book = Book(
+                    title=title,
+                    author=author or '',
+                    publisher=publisher or '',
+                    isbn='',
+                    description=result.final_catatan or ''
+                )
+                db.session.add(book)
+                db.session.flush()
+            
+            # Create BookCopy with accession info
+            copy = BookCopy(
+                book_id=book.id,
+                accession_number=accession,
+                call_number=call_number or '',
+                status='available',
+                location='Library',
+                isbn=''
             )
-            db.session.add(loan)
-            db.session.flush()  # Get loan ID
-            
-            result.committed_loan_id = loan.id
-            committed += 1
+            db.session.add(copy)
+            count += 1
         
         except Exception as e:
             errors.append(f'Row {result.row_number}: {str(e)}')
     
-    if committed > 0:
+    if count > 0:
+        db.session.commit()
         job.mark_committed()
+        db.session.commit()
     
-    db.session.commit()
-    
+    # Flash messages
     if errors:
-        flash(f'Committed {committed} records. Errors: {len(errors)}', 'warning')
-        for error in errors[:5]:  # Show first 5 errors
+        flash(f'Uploaded {count} books. Issues with {len(errors)} rows:', 'warning')
+        for error in errors[:5]:
             flash(error, 'error')
     else:
-        flash(f'Successfully committed {committed} records to loan history', 'success')
+        flash(f'Successfully uploaded {count} books to database', 'success')
     
     return redirect(url_for('ocr.view_job', job_id=job.id))
 

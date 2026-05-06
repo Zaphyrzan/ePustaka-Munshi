@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
-{% block title %}Review OCR Job - ePustaka Munshi{% endblock %}
-{% block page_title %}Review OCR Results{% endblock %}
+{% block title %}Review Ledger OCR - ePustaka Munshi{% endblock %}
+{% block page_title %}Review & Correct OCR Extraction{% endblock %}
 
 {% block content %}
 <div class="row mb-3">
@@ -16,411 +16,189 @@
     </div>
 </div>
 
-<!-- Job Info Card -->
+<!-- Header -->
 <div class="card mb-4">
-    <div class="card-body d-flex justify-content-between align-items-center py-2">
+    <div class="card-body d-flex justify-content-between align-items-center">
         <div>
-            <strong>{{ job.job_name }}</strong> 
-            <span class="text-muted ms-3">{{ results|length }} rows to review</span>
+            <h5 class="mb-0">{{ job.job_name }}</h5>
+            <small class="text-muted">{{ results|length }} rows • {{ job.reviewed_count }} reviewed • {{ job.pending_review_count }} pending</small>
         </div>
         <div>
             <a href="{{ url_for('ocr.view_job', job_id=job.id) }}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left"></i> Back
             </a>
-            <button type="button" class="btn btn-success btn-sm ms-2" onclick="markAllValid()">
-                <i class="bi bi-check-all"></i> Mark All Valid
-            </button>
         </div>
     </div>
 </div>
 
-<!-- AI Autofill Info -->
-<div class="alert alert-info d-flex align-items-center mb-4" role="alert">
-    <i class="bi bi-robot fs-4 me-3"></i>
-    <div>
-        <strong>AI Autofill Active</strong> - As you type, the system will suggest matching members and books from the database. 
-        High-confidence matches (80%+) are auto-filled. Click suggestions to apply.
-    </div>
+<!-- Instructions -->
+<div class="alert alert-info mb-4">
+    <i class="bi bi-info-circle"></i>
+    <strong>7-Column Malaysian Ledger Format:</strong> Review each row. Correct OCR errors. Check ✓ when valid.
+    Once all rows reviewed, upload to database.
 </div>
 
-<!-- Results Table -->
+<!-- Review Table -->
 <div class="card table-card">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th width="40">#</th>
-                        <th width="120">Raw Member ID</th>
-                        <th width="200">Corrected Member</th>
-                        <th width="120">Raw Book ID</th>
-                        <th width="200">Corrected Book</th>
-                        <th width="100">Date</th>
-                        <th width="80">Status</th>
-                        <th width="100">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for result in results %}
-                    <tr id="row-{{ result.id }}" class="{% if result.is_reviewed %}{% if result.is_valid %}table-success{% else %}table-danger{% endif %}{% endif %}">
-                        <td>{{ result.row_number }}</td>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 table-sm">
+            <thead class="table-light sticky-top">
+                <tr>
+                    <th width="40">#</th>
+                    <th width="80">No Perolehan<br><small>(Accession)</small></th>
+                    <th width="80">No Panggilan<br><small>(Call #)</small></th>
+                    <th width="130">Pengarang<br><small>(Author)</small></th>
+                    <th width="150">Tajuk Buku<br><small>(Title)</small></th>
+                    <th width="120">Penerbit<br><small>(Publisher)</small></th>
+                    <th width="70">Tarikh<br><small>(Year)</small></th>
+                    <th width="100">Punca<br><small>(Source)</small></th>
+                    <th width="60">Valid</th>
+                    <th width="80">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for result in results %}
+                <tr id="row-{{ result.id }}" 
+                    class="{% if result.is_reviewed %}
+                        {% if result.is_valid %}table-success{% else %}table-danger{% endif %}
+                    {% elif result.confidence_overall < 0.7 %}table-warning{% endif %}">
+                    
+                    <!-- Row Number -->
+                    <td>{{ result.row_number }}</td>
+                    
+                    <!-- Inline Edit Form -->
+                    <form method="POST" action="{{ url_for('ocr.update_result', result_id=result.id) }}" class="row-form" style="display: contents;">
                         
-                        <!-- Raw Member ID -->
+                        <!-- No Perolehan (Accession) -->
                         <td>
-                            <small class="text-muted">{{ result.member_id_extracted or '-' }}</small>
-                            {% if result.review_notes and 'member' in result.review_notes.lower() %}
-                            <br><span class="badge bg-info text-dark" style="font-size: 0.65rem;">AI suggestion</span>
+                            <input type="text" class="form-control form-control-sm" name="no_perolehan" 
+                                   value="{{ result.final_no_perolehan or '' }}" 
+                                   placeholder="{{ result.no_perolehan_extracted or '-' }}"
+                                   required>
+                        </td>
+                        
+                        <!-- No Panggilan (Call Number) -->
+                        <td>
+                            <input type="text" class="form-control form-control-sm" name="no_panggilan" 
+                                   value="{{ result.final_no_panggilan or '' }}" 
+                                   placeholder="{{ result.no_panggilan_extracted or '-' }}">
+                        </td>
+                        
+                        <!-- Pengarang (Author) -->
+                        <td>
+                            <input type="text" class="form-control form-control-sm" name="pengarang" 
+                                   value="{{ result.final_pengarang or '' }}" 
+                                   placeholder="{{ result.pengarang_extracted[:20] if result.pengarang_extracted else '-' }}">
+                        </td>
+                        
+                        <!-- Tajuk Buku (Title) -->
+                        <td>
+                            <input type="text" class="form-control form-control-sm" name="tajuk_buku" 
+                                   value="{{ result.final_tajuk_buku or '' }}" 
+                                   placeholder="{{ result.tajuk_buku_extracted[:30] if result.tajuk_buku_extracted else '-' }}"
+                                   required>
+                        </td>
+                        
+                        <!-- Penerbit (Publisher) -->
+                        <td>
+                            <input type="text" class="form-control form-control-sm" name="penerbit" 
+                                   value="{{ result.final_penerbit or '' }}" 
+                                   placeholder="{{ result.penerbit_extracted[:20] if result.penerbit_extracted else '-' }}">
+                        </td>
+                        
+                        <!-- Tarikh Penerbit (Year) -->
+                        <td>
+                            <input type="text" class="form-control form-control-sm" name="tarikh_penerbit" 
+                                   value="{{ result.final_tarikh_penerbit or '' }}" 
+                                   placeholder="{{ result.tarikh_penerbit_extracted or '-' }}"
+                                   pattern="[0-9]{4}|[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}">
+                        </td>
+                        
+                        <!-- Punca (Source) -->
+                        <td>
+                            <input type="text" class="form-control form-control-sm" name="punca" 
+                                   value="{{ result.final_punca or '' }}" 
+                                   placeholder="{{ result.punca_extracted or '-' }}">
+                        </td>
+                        
+                        <!-- Valid Checkbox -->
+                        <td class="text-center">
+                            <input type="hidden" name="is_valid" value="false">
+                            <input type="checkbox" class="form-check-input" name="is_valid" value="true"
+                                   {% if result.is_valid %}checked{% endif %}>
+                        </td>
+                        
+                        <!-- Save Button -->
+                        <td>
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="bi bi-check"></i> Save
+                            </button>
+                        </td>
+                    </form>
+                </tr>
+                
+                <!-- Confidence/Notes Row -->
+                <tr class="table-light" style="font-size: 0.85rem;">
+                    <td colspan="10" class="py-2">
+                        <small>
+                            {% if result.confidence_overall %}
+                            <strong>Confidence:</strong> {{ "%.0f"|format(result.confidence_overall * 100) }}% 
                             {% endif %}
-                        </td>
-                        
-                        <!-- Corrected Member with AI Autofill -->
-                        <td>
-                            <div class="position-relative">
-                                <input type="text" 
-                                       class="form-control form-control-sm member-input" 
-                                       id="member-{{ result.id }}"
-                                       data-result-id="{{ result.id }}"
-                                       value="{{ result.reviewed_member_id or result.member_id_extracted or '' }}"
-                                       placeholder="Type member ID..."
-                                       autocomplete="off">
-                                <div class="suggestions-dropdown" id="member-suggestions-{{ result.id }}"></div>
-                            </div>
-                        </td>
-                        
-                        <!-- Raw Book ID -->
-                        <td>
-                            <small class="text-muted">{{ result.book_id_extracted or '-' }}</small>
-                            {% if result.review_notes and 'book' in result.review_notes.lower() %}
-                            <br><span class="badge bg-info text-dark" style="font-size: 0.65rem;">AI suggestion</span>
+                            {% if result.review_notes %}
+                            • <strong>Notes:</strong> {{ result.review_notes }}
                             {% endif %}
-                        </td>
-                        
-                        <!-- Corrected Book with AI Autofill -->
-                        <td>
-                            <div class="position-relative">
-                                <input type="text" 
-                                       class="form-control form-control-sm book-input" 
-                                       id="book-{{ result.id }}"
-                                       data-result-id="{{ result.id }}"
-                                       value="{{ result.reviewed_book_id or result.book_id_extracted or '' }}"
-                                       placeholder="Type accession #..."
-                                       autocomplete="off">
-                                <div class="suggestions-dropdown" id="book-suggestions-{{ result.id }}"></div>
-                            </div>
-                        </td>
-                        
-                        <!-- Date -->
-                        <td>
-                            <input type="date" 
-                                   class="form-control form-control-sm date-input" 
-                                   id="date-{{ result.id }}"
-                                   data-result-id="{{ result.id }}"
-                                   value="{{ result.reviewed_date.strftime('%Y-%m-%d') if result.reviewed_date else (result.parsed_date.strftime('%Y-%m-%d') if result.parsed_date else '') }}">
-                        </td>
-                        
-                        <!-- Status -->
-                        <td>
-                            {% if result.is_reviewed %}
-                                {% if result.is_valid %}
-                                <span class="badge bg-success">Valid</span>
-                                {% else %}
-                                <span class="badge bg-danger">Invalid</span>
-                                {% endif %}
-                            {% else %}
-                            <span class="badge bg-secondary">Pending</span>
-                            {% endif %}
-                        </td>
-                        
-                        <!-- Actions -->
-                        <td>
-                            <div class="btn-group btn-group-sm">
-                                <button type="button" class="btn btn-outline-success" 
-                                        onclick="saveResult({{ result.id }}, true)" title="Mark Valid">
-                                    <i class="bi bi-check"></i>
-                                </button>
-                                <button type="button" class="btn btn-outline-danger" 
-                                        onclick="saveResult({{ result.id }}, false)" title="Mark Invalid">
-                                    <i class="bi bi-x"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    {% if result.review_notes %}
-                    <tr class="table-light">
-                        <td></td>
-                        <td colspan="7">
-                            <small class="text-info"><i class="bi bi-robot"></i> {{ result.review_notes }}</small>
-                        </td>
-                    </tr>
-                    {% endif %}
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                        </small>
+                    </td>
+                </tr>
+                
+                {% else %}
+                <tr>
+                    <td colspan="10" class="text-center text-muted py-4">No extracted data</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
-<!-- Action Buttons -->
-<div class="mt-4 d-flex justify-content-between">
-    <a href="{{ url_for('ocr.view_job', job_id=job.id) }}" class="btn btn-secondary">
-        <i class="bi bi-arrow-left"></i> Back to Job
-    </a>
-    <form method="POST" action="{{ url_for('ocr.commit_job', job_id=job.id) }}" class="d-inline">
-        <button type="submit" class="btn btn-warning" onclick="return confirm('Commit all validated records to loan history?')">
-            <i class="bi bi-database-fill-up"></i> Commit Valid Records
-        </button>
-    </form>
+<!-- Footer Actions -->
+<div class="card mt-4">
+    <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+            <small class="text-muted">
+                <i class="bi bi-info-circle"></i>
+                All rows must be reviewed before uploading. Unchecked rows are skipped.
+            </small>
+        </div>
+        <div>
+            {% if job.pending_review_count == 0 %}
+            <form method="POST" action="{{ url_for('ocr.commit_job', job_id=job.id) }}" style="display: inline;">
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-cloud-upload"></i> Upload to Database
+                </button>
+            </form>
+            {% else %}
+            <button class="btn btn-success" disabled title="Complete review first">
+                <i class="bi bi-cloud-upload"></i> Upload ({{ job.pending_review_count }} pending)
+            </button>
+            {% endif %}
+        </div>
+    </div>
 </div>
 
 <style>
-.suggestions-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    z-index: 1000;
-    display: none;
-    max-height: 200px;
-    overflow-y: auto;
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
 }
 
-.suggestions-dropdown.show {
-    display: block;
+thead.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
-.suggestion-item {
-    padding: 8px 12px;
-    cursor: pointer;
-    border-bottom: 1px solid #eee;
-}
-
-.suggestion-item:last-child {
-    border-bottom: none;
-}
-
-.suggestion-item:hover {
-    background: #f0f7ff;
-}
-
-.suggestion-item .confidence {
-    float: right;
-    font-size: 0.75rem;
-    color: #666;
-}
-
-.suggestion-item .confidence.high {
-    color: #28a745;
-    font-weight: bold;
-}
-
-.suggestion-item .id {
-    font-weight: 600;
-    color: #1a3a6e;
-}
-
-.suggestion-item .name {
+.form-control-sm {
     font-size: 0.85rem;
-    color: #666;
 }
 </style>
-{% endblock %}
-
-{% block scripts %}
-<script>
-// Debounce function to limit API calls
-function debounce(func, wait) {
-    let timeout;
-    return function(...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), wait);
-    };
-}
-
-// Hide all suggestions
-function hideAllSuggestions() {
-    document.querySelectorAll('.suggestions-dropdown').forEach(el => {
-        el.classList.remove('show');
-    });
-}
-
-// Show member suggestions
-async function fetchMemberSuggestions(inputEl) {
-    const query = inputEl.value.trim();
-    const resultId = inputEl.dataset.resultId;
-    const dropdown = document.getElementById('member-suggestions-' + resultId);
-    
-    if (query.length < 2) {
-        dropdown.classList.remove('show');
-        return;
-    }
-    
-    try {
-        const response = await fetch('/ocr/api/suggest/member', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ query: query })
-        });
-        
-        const data = await response.json();
-        
-        if (data.suggestions && data.suggestions.length > 0) {
-            dropdown.innerHTML = data.suggestions.map(s => `
-                <div class="suggestion-item" onclick="selectMember(${resultId}, '${s.id}')">
-                    <span class="confidence ${s.confidence >= 0.8 ? 'high' : ''}">${Math.round(s.confidence * 100)}%</span>
-                    <span class="id">${s.id}</span>
-                    <div class="name">${s.name || ''}</div>
-                </div>
-            `).join('');
-            dropdown.classList.add('show');
-        } else {
-            dropdown.classList.remove('show');
-        }
-    } catch (err) {
-        console.error('Error fetching member suggestions:', err);
-    }
-}
-
-// Show book suggestions
-async function fetchBookSuggestions(inputEl) {
-    const query = inputEl.value.trim();
-    const resultId = inputEl.dataset.resultId;
-    const dropdown = document.getElementById('book-suggestions-' + resultId);
-    
-    if (query.length < 2) {
-        dropdown.classList.remove('show');
-        return;
-    }
-    
-    try {
-        const response = await fetch('/ocr/api/suggest/book', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ query: query })
-        });
-        
-        const data = await response.json();
-        
-        if (data.suggestions && data.suggestions.length > 0) {
-            dropdown.innerHTML = data.suggestions.map(s => `
-                <div class="suggestion-item" onclick="selectBook(${resultId}, '${s.id}')">
-                    <span class="confidence ${s.confidence >= 0.8 ? 'high' : ''}">${Math.round(s.confidence * 100)}%</span>
-                    <span class="id">${s.id}</span>
-                    <div class="name">${s.title || ''}</div>
-                </div>
-            `).join('');
-            dropdown.classList.add('show');
-        } else {
-            dropdown.classList.remove('show');
-        }
-    } catch (err) {
-        console.error('Error fetching book suggestions:', err);
-    }
-}
-
-// Select member from dropdown
-function selectMember(resultId, memberId) {
-    document.getElementById('member-' + resultId).value = memberId;
-    document.getElementById('member-suggestions-' + resultId).classList.remove('show');
-}
-
-// Select book from dropdown
-function selectBook(resultId, bookId) {
-    document.getElementById('book-' + resultId).value = bookId;
-    document.getElementById('book-suggestions-' + resultId).classList.remove('show');
-}
-
-// Save result
-async function saveResult(resultId, isValid) {
-    const memberId = document.getElementById('member-' + resultId).value;
-    const bookId = document.getElementById('book-' + resultId).value;
-    const dateVal = document.getElementById('date-' + resultId).value;
-    
-    const formData = new FormData();
-    formData.append('is_valid', isValid ? 'true' : 'false');
-    formData.append('member_id', memberId);
-    formData.append('book_id', bookId);
-    formData.append('date', dateVal);
-    
-    try {
-        const response = await fetch('/ocr/result/' + resultId + '/update', {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: formData
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            const row = document.getElementById('row-' + resultId);
-            row.classList.remove('table-success', 'table-danger');
-            row.classList.add(isValid ? 'table-success' : 'table-danger');
-            
-            // Update status badge
-            const statusCell = row.querySelector('td:nth-child(7)');
-            statusCell.innerHTML = isValid 
-                ? '<span class="badge bg-success">Valid</span>'
-                : '<span class="badge bg-danger">Invalid</span>';
-        }
-    } catch (err) {
-        console.error('Error saving result:', err);
-        alert('Failed to save result');
-    }
-}
-
-// Mark all as valid
-function markAllValid() {
-    if (!confirm('Mark all rows as valid?')) return;
-    
-    document.querySelectorAll('tr[id^="row-"]').forEach(row => {
-        const resultId = row.id.replace('row-', '');
-        saveResult(parseInt(resultId), true);
-    });
-}
-
-// Initialize event listeners
-document.addEventListener('DOMContentLoaded', function() {
-    // Member input listeners
-    document.querySelectorAll('.member-input').forEach(input => {
-        input.addEventListener('input', debounce(function() {
-            fetchMemberSuggestions(this);
-        }, 300));
-        
-        input.addEventListener('focus', function() {
-            if (this.value.length >= 2) {
-                fetchMemberSuggestions(this);
-            }
-        });
-    });
-    
-    // Book input listeners
-    document.querySelectorAll('.book-input').forEach(input => {
-        input.addEventListener('input', debounce(function() {
-            fetchBookSuggestions(this);
-        }, 300));
-        
-        input.addEventListener('focus', function() {
-            if (this.value.length >= 2) {
-                fetchBookSuggestions(this);
-            }
-        });
-    });
-    
-    // Hide suggestions when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('.position-relative')) {
-            hideAllSuggestions();
-        }
-    });
-});
-</script>
 {% endblock %}
