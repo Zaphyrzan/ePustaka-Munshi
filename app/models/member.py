@@ -102,11 +102,14 @@ class Member(UserMixin, db.Model):
     @property
     def is_graduated(self):
         """Check if student has graduated (Form 5 completed or form_level >= 6)"""
-        return self.form_level >= 6
+        return (self.form_level or 0) >= 6
     
     @property
     def form_name(self):
         """Get human-readable form name"""
+        if not self.form_level:
+            return 'Unknown'
+
         if self.form_level == 6:
             return 'Graduated'
         return f'Form {self.form_level}' if self.form_level <= 5 else 'Unknown'
