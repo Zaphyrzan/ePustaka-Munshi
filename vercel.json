@@ -1,8 +1,0 @@
-{
-  "buildCommand": "pip install -r requirements.txt",
-  "functions": {
-    "wsgi.py": {
-      "runtime": "python3.12"
-    }
-  }
-}
