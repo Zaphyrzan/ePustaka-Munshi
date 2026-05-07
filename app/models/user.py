@@ -70,8 +70,7 @@ class Role(db.Model):
                 Permission.VIEW_CATALOG,
                 Permission.SEARCH,
                 Permission.CHECKOUT,
-                Permission.RETURN,
-                Permission.MANAGE_MEMBERS
+                Permission.RETURN
             ],
             'Librarian': [
                 Permission.VIEW_CATALOG,
