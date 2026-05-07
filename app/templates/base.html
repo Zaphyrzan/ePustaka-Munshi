@@ -269,11 +269,14 @@
 <body>
     {% if current_user.is_authenticated %}
     {% set is_member = linked_member is not none %}
+    {% set is_student_assistant = current_user.role and current_user.role.name == 'Student Assistant' %}
     {% if is_member %}
         {% set is_staff = linked_member.member_type in ['Staff', 'Student Assistant', 'Librarian', 'Teacher'] %}
     {% else %}
         {% set is_staff = current_user.role and current_user.role.name != 'Student' %}
     {% endif %}
+    <!-- Allow Student Assistant users to see both student and staff sections -->
+    {% set show_student_section = is_member or is_student_assistant %}
 
     <!-- Sidebar -->
     <nav class="sidebar">
@@ -315,8 +318,8 @@
                 </a>
             </li>
             
-            {% elif is_member and is_staff %}
-            <!-- ====== STAFF MEMBER (Member with staff member_type) - BOTH STUDENT + STAFF ====== -->
+            {% elif (is_member and is_staff) or (is_staff and is_student_assistant and not is_member) %}
+            <!-- ====== STAFF MEMBER (Member with staff member_type) or STUDENT ASSISTANT - BOTH STUDENT + STAFF ====== -->
             
             <!-- Student Portal Section -->
             <li class="sidebar-section">{{ t('student_portal') }}</li>
@@ -513,7 +516,7 @@
             <i class="bi bi-speedometer2"></i>
             <span>{{ t('dashboard') }}</span>
         </a>
-        {% if is_member %}
+        {% if is_member or is_student_assistant %}
         <a class="nav-link {% if 'catalog' in request.endpoint %}active{% endif %}" href="{{ url_for('catalog.index') }}">
             <i class="bi bi-book"></i>
             <span>{{ t('books') }}</span>
