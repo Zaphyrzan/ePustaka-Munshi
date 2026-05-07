@@ -1009,6 +1009,8 @@ def register_i18n(app):
         if current_user.is_authenticated:
             if current_user.__class__.__name__ == 'Member':
                 linked_member = current_user
+            elif getattr(current_user, 'id', None):
+                linked_member = Member.query.get(current_user.id)
             elif getattr(current_user, 'username', None):
                 linked_member = Member.query.filter_by(member_id=current_user.username).first()
 

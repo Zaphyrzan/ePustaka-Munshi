@@ -11,17 +11,28 @@ from app.models import Book, BookCopy, CopyStatus, Member, Loan, LoanStatus
 student_bp = Blueprint('student', __name__)
 
 
+def get_linked_member():
+    """Resolve the member record for the current login."""
+    if current_user.__class__.__name__ == 'Member':
+        return current_user
+
+    if getattr(current_user, 'id', None):
+        member = Member.query.get(current_user.id)
+        if member:
+            return member
+
+    if getattr(current_user, 'username', None):
+        return Member.query.filter_by(member_id=current_user.username).first()
+
+    return None
+
+
 @student_bp.route('/')
 @login_required
 def index():
     """Student portal dashboard"""
     # Get member record - handle both Member and User logins
-    if current_user.__class__.__name__ == 'Member':
-        # Already a Member object
-        member = current_user
-    else:
-        # User (staff) - try to find matching Member by username
-        member = Member.query.filter_by(member_id=current_user.username).first()
+    member = get_linked_member()
     
     # Stats for dashboard
     total_books = Book.query.count()
@@ -136,11 +147,7 @@ def view_book(book_id):
 def my_loans():
     """View my borrowed books"""
     # Get member - handle both Member and User logins
-    if current_user.__class__.__name__ == 'Member':
-        member = current_user
-    else:
-        # User (staff) - try to find matching Member by username
-        member = Member.query.filter_by(member_id=current_user.username).first()
+    member = get_linked_member()
     
     if not member:
         return render_template('student/my_loans.html',
