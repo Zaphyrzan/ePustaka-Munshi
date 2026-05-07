@@ -146,9 +146,19 @@ class Member(UserMixin, db.Model):
         """Return dummy role object for sidebar compatibility"""
         class DummyRole:
             def __init__(self, member_type):
-                if member_type == 'Student':
+                # Map common member_type values to role names used by
+                # the staff `Role` model so templates and permission
+                # checks behave consistently for staff-like members.
+                staff_like = ['Librarian', 'Admin', 'Staff', 'Teacher', 'Student Assistant']
+                if member_type == 'Student' or not member_type:
                     self.name = 'Student'
+                elif member_type in staff_like:
+                    # Preserve the explicit staff type when possible
+                    # (e.g., 'Librarian' -> 'Librarian') so UI/permissions
+                    # match expectations.
+                    self.name = member_type
                 else:
+                    # Fallback: treat unknown types as student assistant
                     self.name = 'Student Assistant'
         
         return DummyRole(self.member_type)
