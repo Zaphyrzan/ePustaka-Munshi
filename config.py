@@ -26,8 +26,15 @@ def _build_database_uri():
     
     # Debug logging for Vercel connection string selection
     if is_vercel:
-        print(f"[CONFIG] VERCEL={is_vercel}, SUPABASE_POOLER_URL={'*' * 10 if pooler_url else 'NOT SET'}", flush=True)
-        print(f"[CONFIG] Using {'POOLER' if pooler_url and (is_vercel and pooler_url) else 'DATABASE'}_URL", flush=True)
+        print(f"[CONFIG] VERCEL={is_vercel}", flush=True)
+        print(f"[CONFIG] SUPABASE_POOLER_URL={'SET' if pooler_url else 'NOT SET'}", flush=True)
+        print(f"[CONFIG] DATABASE_URL={'SET' if os.environ.get('DATABASE_URL') else 'NOT SET'}", flush=True)
+        selected = 'POOLER' if (is_vercel and pooler_url) else 'DATABASE'
+        print(f"[CONFIG] Using {selected}_URL", flush=True)
+        if database_url and 'pooler' in database_url.lower():
+            print(f"[CONFIG] ✓ Successfully using POOLER URL (contains 'pooler')", flush=True)
+        elif database_url and 'db.' in database_url:
+            print(f"[CONFIG] ✗ ERROR: Still using direct DB URL (contains 'db.')", flush=True)
 
     if database_url:
         # SQLAlchemy 1.4+/2.x expects postgresql:// instead of postgres://
