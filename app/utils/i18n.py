@@ -933,10 +933,6 @@ TRANSLATIONS = {
         'en': 'Filters',
         'ms': 'Penapis'
     },
-    'books': {
-        'en': 'books',
-        'ms': 'buku'
-    },
     'synopsis': {
         'en': 'Synopsis',
         'ms': 'Sinopsis'
