@@ -9,6 +9,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
     
     <style>
         :root {
@@ -83,6 +84,10 @@
         .content-wrapper {
             padding: 1.5rem;
         }
+
+        .member-mobile-nav {
+            display: none;
+        }
         
         .stat-card {
             border: none;
@@ -153,12 +158,94 @@
         .sidebar-brand {
             border-bottom-color: rgba(212, 175, 55, 0.3);
         }
+
+        @media (max-width: 991.98px) {
+            .sidebar {
+                display: none;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .top-navbar {
+                position: sticky;
+                top: 0;
+                z-index: 1030;
+                padding: 0.75rem 1rem;
+                gap: 0.75rem;
+                flex-wrap: wrap;
+            }
+
+            .top-navbar > div {
+                width: 100%;
+            }
+
+            .top-navbar .dropdown-toggle {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .content-wrapper {
+                padding: 1rem 1rem 5.75rem;
+            }
+
+            .member-mobile-nav {
+                display: flex;
+            }
+
+            .member-mobile-nav .nav-link {
+                flex: 1;
+                text-align: center;
+                color: var(--primary-color);
+                padding: 0.5rem 0.25rem;
+                border-radius: 0.9rem;
+                font-size: 0.72rem;
+                font-weight: 600;
+            }
+
+            .member-mobile-nav .nav-link i {
+                display: block;
+                font-size: 1.05rem;
+                margin-bottom: 0.2rem;
+            }
+
+            .member-mobile-nav .nav-link.active {
+                background: rgba(26, 58, 110, 0.1);
+                color: var(--primary-dark);
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .content-wrapper {
+                padding: 0.85rem 0.85rem 6rem;
+            }
+
+            .top-navbar {
+                padding: 0.65rem 0.85rem;
+            }
+
+            .top-navbar h5 {
+                font-size: 1rem;
+            }
+
+            .login-card {
+                padding: 1.5rem;
+            }
+        }
     </style>
     
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     {% if current_user.is_authenticated %}
+    {% set is_member = current_user.__class__.__name__ == 'Member' %}
+    {% if is_member %}
+        {% set is_staff = current_user.member_type in ['Staff', 'Student Assistant', 'Librarian', 'Teacher'] %}
+    {% else %}
+        {% set is_staff = current_user.role and current_user.role.name != 'Student' %}
+    {% endif %}
+
     <!-- Sidebar -->
     <nav class="sidebar">
         <div class="sidebar-brand">
@@ -175,15 +262,6 @@
         </div>
         
         <ul class="nav flex-column">
-            {% set is_member = current_user.__class__.__name__ == 'Member' %}
-            {% if is_member %}
-                {# For Members: check if they have staff member_type #}
-                {% set is_staff = current_user.member_type in ['Staff', 'Student Assistant', 'Librarian', 'Teacher'] %}
-            {% else %}
-                {# For Users: check if role is not Student #}
-                {% set is_staff = current_user.role and current_user.role.name != 'Student' %}
-            {% endif %}
-            
             {% if is_member and not is_staff %}
             <!-- ====== STUDENT ONLY (Member without Staff role) ====== -->
             <li class="sidebar-section">{{ t('student_portal') }}</li>
@@ -378,6 +456,27 @@
             {% block content %}{% endblock %}
         </div>
     </div>
+
+    {% if is_member and not is_staff %}
+    <nav class="member-mobile-nav d-lg-none fixed-bottom bg-white border-top shadow-lg px-2 py-2" aria-label="Student navigation">
+        <a class="nav-link {% if request.endpoint == 'student.index' %}active{% endif %}" href="{{ url_for('student.index') }}">
+            <i class="bi bi-house"></i>
+            <span>{{ t('home') }}</span>
+        </a>
+        <a class="nav-link {% if request.endpoint == 'student.search_books' %}active{% endif %}" href="{{ url_for('student.search_books') }}">
+            <i class="bi bi-search"></i>
+            <span>{{ t('search_books') }}</span>
+        </a>
+        <a class="nav-link {% if request.endpoint == 'student.my_loans' %}active{% endif %}" href="{{ url_for('student.my_loans') }}">
+            <i class="bi bi-journal-bookmark"></i>
+            <span>{{ t('my_loans') }}</span>
+        </a>
+        <a class="nav-link {% if request.endpoint == 'student.leaderboard' %}active{% endif %}" href="{{ url_for('student.leaderboard') }}">
+            <i class="bi bi-trophy"></i>
+            <span>{{ t('leaderboard') }}</span>
+        </a>
+    </nav>
+    {% endif %}
     {% else %}
     <!-- Non-authenticated content -->
     {% block public_content %}{% endblock %}
