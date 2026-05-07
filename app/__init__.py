@@ -63,6 +63,44 @@ def _sync_postgres_sequences(app):
     db.session.commit()
 
 
+def _sync_staff_accounts(app):
+    """Create missing staff User rows for promoted members."""
+    from app.models.member import Member
+    from app.models.user import Role, User
+
+    staff_role = Role.query.filter_by(name='Student Assistant').first()
+    staff_members = Member.query.filter(Member.member_type != 'Student').all()
+
+    for member in staff_members:
+        user = User.query.get(member.id)
+        if user:
+            continue
+
+        username = member.member_id
+        if User.query.filter(User.username == username).first():
+            username = f'staff_{member.id}'
+
+        email = member.email
+        if email and User.query.filter(User.email == email).first():
+            email = f'{member.member_id.lower()}@local.invalid'
+        elif not email:
+            email = f'{member.member_id.lower()}@local.invalid'
+
+        user = User(
+            id=member.id,
+            username=username,
+            email=email,
+            full_name=member.full_name,
+            is_active=True,
+            role=staff_role,
+            password_hash=member.password_hash,
+        )
+        db.session.add(user)
+
+    if staff_members:
+        db.session.commit()
+
+
 def create_app(config_name=None):
     """Application factory pattern"""
     if config_name is None:
@@ -108,6 +146,7 @@ def create_app(config_name=None):
         # Seed default roles if not exist
         from app.models.user import Role
         Role.insert_default_roles()
+        _sync_staff_accounts(app)
         _sync_postgres_sequences(app)
     
     return app
