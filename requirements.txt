@@ -6,7 +6,8 @@ Flask-SQLAlchemy==3.1.1
 Flask-Login==0.6.3
 Flask-WTF==1.2.1
 Werkzeug==3.0.1
-SQLAlchemy==2.0.23
+SQLAlchemy==2.0.49
+psycopg2-binary==2.9.9
 
 # OCR dependencies
 pytesseract==0.3.10
