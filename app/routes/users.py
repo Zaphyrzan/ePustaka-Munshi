@@ -1021,11 +1021,46 @@ def promote_to_staff(member_id):
     """Promote a member to staff (Student Assistant)"""
     # Get member
     member = Member.query.get_or_404(member_id)
+    role = Role.query.filter_by(name='Student Assistant').first()
     
     # Change member type to Staff
     member.member_type = 'Student Assistant'
     member.form_level = None  # Staff don't have form level
     member.class_group = None
+
+    # Keep a matching staff User row so checkout/return audit fields can reference users.id
+    user = User.query.get(member.id)
+    if user is None:
+        username = member.member_id
+        if User.query.filter(User.username == username, User.id != member.id).first():
+            username = f'staff_{member.id}'
+
+        email = member.email
+        if email and User.query.filter(User.email == email, User.id != member.id).first():
+            email = f'{member.member_id.lower()}@local.invalid'
+        elif not email:
+            email = f'{member.member_id.lower()}@local.invalid'
+
+        user = User(
+            id=member.id,
+            username=username,
+            email=email,
+            full_name=member.full_name,
+            is_active=True,
+            role=role,
+            password_hash=member.password_hash,
+        )
+        db.session.add(user)
+    else:
+        user.username = member.member_id if user.username != member.member_id else user.username
+        user.email = member.email or user.email
+        user.full_name = member.full_name
+        user.is_active = True
+        if role:
+            user.role = role
+        if member.password_hash:
+            user.password_hash = member.password_hash
+
     db.session.commit()
     
     flash(f'{member.full_name} promoted to Student Assistant', 'success')
@@ -1043,6 +1078,12 @@ def demote_from_staff(member_id):
     # Change member type back to Student
     member.member_type = 'Student'
     member.form_level = 1  # Default to Form 1
+
+    # Disable the linked staff login so the account falls back to the member login
+    user = User.query.get(member.id)
+    if user:
+        user.is_active = False
+
     db.session.commit()
     
     flash(f'{member.full_name} demoted to Student', 'success')

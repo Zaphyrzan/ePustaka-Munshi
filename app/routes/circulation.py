@@ -5,7 +5,7 @@ from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from app import db
-from app.models import Member, Book, BookCopy, Loan, LoanStatus, CopyStatus, Permission
+from app.models import Member, User, Book, BookCopy, Loan, LoanStatus, CopyStatus, Permission
 
 circulation_bp = Blueprint('circulation', __name__)
 
@@ -73,11 +73,13 @@ def checkout():
                 flash(f'Book copy is not available (Status: {copy.status})', 'error')
             return render_template('circulation/checkout.html', member=member)
         
+        staff_user_id = current_user.id if User.query.get(current_user.id) else None
+
         # Create loan
         loan = Loan.create_checkout(
             member_id=member.id,
             copy_id=copy.id,
-            user_id=current_user.id
+            user_id=staff_user_id
         )
         db.session.commit()
         
@@ -110,8 +112,10 @@ def return_book():
         # Process return
         was_overdue = loan.is_overdue
         days_overdue = loan.days_overdue
+
+        staff_user_id = current_user.id if User.query.get(current_user.id) else None
         
-        loan.process_return(user_id=current_user.id)
+        loan.process_return(user_id=staff_user_id)
         db.session.commit()
         
         if was_overdue:
