@@ -5,6 +5,7 @@ Application Factory
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from sqlalchemy import text
 import os
 
 from config import config
@@ -14,6 +15,52 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
 login_manager.login_message = 'Please log in to access this page.'
+
+
+def _sync_postgres_sequences(app):
+    """Ensure PostgreSQL sequences are aligned with migrated data."""
+    engine = db.engine
+    if engine.dialect.name != 'postgresql':
+        return
+
+    # Tables that rely on integer PK sequences.
+    tables = [
+        'roles',
+        'users',
+        'members',
+        'books',
+        'book_copies',
+        'loans',
+        'ocr_jobs',
+        'ocr_results',
+        'digitized_ledger',
+    ]
+
+    for table in tables:
+        sequence_name = db.session.execute(
+            text("SELECT pg_get_serial_sequence(:table_name, 'id')"),
+            {'table_name': f'public.{table}'}
+        ).scalar()
+
+        if not sequence_name:
+            continue
+
+        max_id = db.session.execute(
+            text(f"SELECT COALESCE(MAX(id), 0) FROM public.{table}")
+        ).scalar() or 0
+
+        if max_id > 0:
+            db.session.execute(
+                text("SELECT setval(:sequence_name, :seq_value, true)"),
+                {'sequence_name': sequence_name, 'seq_value': int(max_id)}
+            )
+        else:
+            db.session.execute(
+                text("SELECT setval(:sequence_name, 1, false)"),
+                {'sequence_name': sequence_name}
+            )
+
+    db.session.commit()
 
 
 def create_app(config_name=None):
@@ -61,5 +108,6 @@ def create_app(config_name=None):
         # Seed default roles if not exist
         from app.models.user import Role
         Role.insert_default_roles()
+        _sync_postgres_sequences(app)
     
     return app
