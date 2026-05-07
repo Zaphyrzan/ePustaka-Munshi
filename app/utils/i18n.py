@@ -1002,11 +1002,22 @@ def register_i18n(app):
     @app.context_processor
     def inject_i18n():
         """Make translation functions available in all templates."""
+        from flask_login import current_user
+        from app.models import Member
+
+        linked_member = None
+        if current_user.is_authenticated:
+            if current_user.__class__.__name__ == 'Member':
+                linked_member = current_user
+            elif getattr(current_user, 'username', None):
+                linked_member = Member.query.filter_by(member_id=current_user.username).first()
+
         return {
             't': get_text,
             'get_text': get_text,
             'current_language': get_language(),
-            'languages': LANGUAGES
+            'languages': LANGUAGES,
+            'linked_member': linked_member,
         }
     
     @app.route('/set-language/<lang_code>')

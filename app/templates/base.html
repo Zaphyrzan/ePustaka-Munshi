@@ -268,9 +268,9 @@
 </head>
 <body>
     {% if current_user.is_authenticated %}
-    {% set is_member = current_user.__class__.__name__ == 'Member' %}
+    {% set is_member = linked_member is not none %}
     {% if is_member %}
-        {% set is_staff = current_user.member_type in ['Staff', 'Student Assistant', 'Librarian', 'Teacher'] %}
+        {% set is_staff = linked_member.member_type in ['Staff', 'Student Assistant', 'Librarian', 'Teacher'] %}
     {% else %}
         {% set is_staff = current_user.role and current_user.role.name != 'Student' %}
     {% endif %}
