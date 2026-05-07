@@ -108,28 +108,39 @@ def profile():
 @login_required
 def edit_profile():
     """Edit user profile - name, email, username"""
+    is_staff_account = hasattr(current_user, 'username')
+    current_username = getattr(current_user, 'username', '')
+    current_email = getattr(current_user, 'email', '')
+
     if request.method == 'POST':
         full_name = request.form.get('full_name', '').strip()
         email = request.form.get('email', '').strip()
         new_username = request.form.get('username', '').strip()
-        
-        # Validate username uniqueness (if changed)
-        if new_username != current_user.username:
-            existing = User.query.filter_by(username=new_username).first()
-            if existing:
-                flash('Username already taken', 'error')
-                return render_template('auth/edit_profile.html', user=current_user)
-            if len(new_username) < 3:
-                flash('Username must be at least 3 characters', 'error')
-                return render_template('auth/edit_profile.html', user=current_user)
-            current_user.username = new_username
-        
+
+        if is_staff_account:
+            # Validate username uniqueness (if changed)
+            if new_username != current_username:
+                existing = User.query.filter_by(username=new_username).first()
+                if existing:
+                    flash('Username already taken', 'error')
+                    return render_template('auth/edit_profile.html', user=current_user, can_edit_username=is_staff_account)
+                if len(new_username) < 3:
+                    flash('Username must be at least 3 characters', 'error')
+                    return render_template('auth/edit_profile.html', user=current_user, can_edit_username=is_staff_account)
+                current_user.username = new_username
+        elif new_username:
+            flash('Username changes are not available for student accounts', 'error')
+            return render_template('auth/edit_profile.html', user=current_user, can_edit_username=is_staff_account)
+
         # Validate email uniqueness (if changed and not empty)
-        if email and email != current_user.email:
-            existing = User.query.filter_by(email=email).first()
-            if existing:
+        if email and email != current_email:
+            if is_staff_account:
+                existing = User.query.filter_by(email=email).first()
+            else:
+                existing = Member.query.filter_by(email=email).first()
+            if existing and existing.id != current_user.id:
                 flash('Email already in use', 'error')
-                return render_template('auth/edit_profile.html', user=current_user)
+                return render_template('auth/edit_profile.html', user=current_user, can_edit_username=is_staff_account)
         
         current_user.full_name = full_name
         current_user.email = email
@@ -138,7 +149,7 @@ def edit_profile():
         flash('Profile updated successfully', 'success')
         return redirect(url_for('auth.profile'))
     
-    return render_template('auth/edit_profile.html', user=current_user)
+    return render_template('auth/edit_profile.html', user=current_user, can_edit_username=is_staff_account)
 
 
 @auth_bp.route('/change-password', methods=['GET', 'POST'])

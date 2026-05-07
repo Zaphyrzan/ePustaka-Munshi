@@ -13,6 +13,7 @@
                 </div>
                 <div class="card-body">
                     <form method="POST">
+                        {% if can_edit_username %}
                         <div class="mb-3">
                             <label for="username" class="form-label">Username <span class="text-danger">*</span></label>
                             <input type="text" 
@@ -26,6 +27,16 @@
                                    title="Letters, numbers, and underscores only">
                             <div class="form-text">Username for login. Letters, numbers, and underscores only.</div>
                         </div>
+                        {% else %}
+                        <div class="mb-3">
+                            <label class="form-label">Login ID</label>
+                            <input type="text"
+                                   class="form-control"
+                                   value="{{ user.member_id }}"
+                                   readonly>
+                            <div class="form-text">Student accounts use the member ID for login.</div>
+                        </div>
+                        {% endif %}
                         
                         <div class="mb-3">
                             <label for="full_name" class="form-label">Full Name</label>
