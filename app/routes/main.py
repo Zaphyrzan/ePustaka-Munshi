@@ -25,13 +25,11 @@ def dashboard():
     # the logged-in identity is an actual Member record. This avoids
     # mis-classifying staff User objects that may have an unexpected
     # role name value.
-    try:
-        from app.models import Member as _Member
-        if isinstance(current_user._get_current_object(), _Member):
-            return redirect(url_for('student.index'))
-    except Exception:
-        # Fall back to original behavior if import/inspection fails
-        if getattr(current_user, 'role', None) and getattr(current_user.role, 'name', None) == 'Student':
+    # If the logged-in identity is a Member record (has `member_id`) and
+    # their `member_type` is a Student, send them to the student portal.
+    # This avoids relying on role name strings for staff `User` objects.
+    if hasattr(current_user, 'member_id'):
+        if getattr(current_user, 'member_type', 'Student') == 'Student':
             return redirect(url_for('student.index'))
     
     stats = {
