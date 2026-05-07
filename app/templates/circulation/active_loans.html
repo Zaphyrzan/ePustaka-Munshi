@@ -9,7 +9,7 @@
         <div class="card table-card">
             <div class="card-header bg-transparent">
                 <!-- Tab Navigation -->
-                <ul class="nav nav-tabs border-0">
+                <ul class="nav nav-tabs border-0 flex-nowrap overflow-auto pb-1">
                     <li class="nav-item">
                         <a class="nav-link {% if current_view == 'active' %}active{% endif %}" 
                            href="{{ url_for('circulation.active_loans', view='active', page=1) }}">
@@ -35,7 +35,7 @@
                 <!-- Active Loans Tab -->
                 {% if current_view == 'active' %}
                 {% if loans.items %}
-                <div class="table-responsive">
+                <div class="table-responsive d-none d-md-block">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
                             <tr>
@@ -86,6 +86,44 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="d-md-none p-3">
+                    <div class="row g-3">
+                        {% for loan in loans.items %}
+                        <div class="col-12">
+                            <div class="card mobile-data-card {% if loan.is_overdue %}border-danger{% endif %}">
+                                <div class="card-body">
+                                    <div class="fw-semibold mb-1">{{ loan.copy.book.title }}</div>
+                                    <div class="small text-muted mb-2">{{ loan.member.full_name }} • {{ loan.member.member_id }}</div>
+                                    <div class="small mb-2">{{ loan.copy.accession_number }}</div>
+                                    <div class="d-flex justify-content-between small mb-2">
+                                        <span>{{ loan.checkout_date.strftime('%d/%m/%Y') }}</span>
+                                        <span>{{ loan.due_date.strftime('%d/%m/%Y') }}</span>
+                                    </div>
+                                    <div class="mb-3">
+                                        {% if loan.is_overdue %}
+                                            <span class="badge bg-danger">OVERDUE ({{ loan.days_overdue }} days)</span>
+                                        {% else %}
+                                            <span class="badge bg-info">Active</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        {% if loan.can_renew %}
+                                        <form method="POST" action="{{ url_for('circulation.renew', loan_id=loan.id) }}" class="flex-fill">
+                                            <button type="submit" class="btn btn-sm btn-outline-info w-100">
+                                                <i class="bi bi-arrow-clockwise"></i> Renew
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                        <a href="{{ url_for('circulation.return_book') }}" class="btn btn-sm btn-outline-success flex-fill">
+                                            <i class="bi bi-box-arrow-in-left"></i> Return
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
                 {% else %}
                 <div class="p-4 text-center text-muted">
                     <i class="bi bi-inbox" style="font-size: 3rem; opacity: 0.3;"></i>
@@ -96,7 +134,7 @@
                 <!-- Overdue Loans Tab -->
                 {% elif current_view == 'overdue' %}
                 {% if loans.items %}
-                <div class="table-responsive">
+                <div class="table-responsive d-none d-md-block">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
                             <tr>
@@ -136,6 +174,30 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="d-md-none p-3">
+                    <div class="row g-3">
+                        {% for loan in loans.items %}
+                        <div class="col-12">
+                            <div class="card mobile-data-card border-danger">
+                                <div class="card-body">
+                                    <div class="fw-semibold mb-1">{{ loan.copy.book.title }}</div>
+                                    <div class="small text-muted mb-2">{{ loan.member.full_name }} • {{ loan.member.member_id }}</div>
+                                    <div class="d-flex justify-content-between small mb-2">
+                                        <span>Due: {{ loan.due_date.strftime('%d/%m/%Y') }}</span>
+                                        <span>{{ loan.days_overdue }} days</span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <span class="badge bg-danger">Overdue</span>
+                                    </div>
+                                    <a href="{{ url_for('circulation.return_book') }}" class="btn btn-sm btn-outline-success w-100">
+                                        <i class="bi bi-box-arrow-in-left"></i> Return
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
                 {% else %}
                 <div class="p-4 text-center text-muted">
                     <i class="bi bi-check-circle" style="font-size: 3rem; opacity: 0.3;"></i>
@@ -149,12 +211,12 @@
                 <div class="p-3 border-bottom bg-light">
                     <form method="GET" class="row g-2 align-items-end">
                         <input type="hidden" name="view" value="history">
-                        <div class="col-auto">
+                        <div class="col-12 col-md-auto">
                             <label for="member" class="form-label mb-2">Member ID</label>
                             <input type="text" class="form-control form-control-sm" id="member" name="member" 
                                    placeholder="Search..." value="{{ request.args.get('member', '') }}">
                         </div>
-                        <div class="col-auto">
+                        <div class="col-12 col-md-auto">
                             <label for="status" class="form-label mb-2">Status</label>
                             <select class="form-select form-select-sm" id="status" name="status">
                                 <option value="">All</option>
@@ -164,7 +226,7 @@
                                 <option value="lost" {% if request.args.get('status') == 'lost' %}selected{% endif %}>Lost</option>
                             </select>
                         </div>
-                        <div class="col-auto">
+                        <div class="col-12 col-md-auto d-grid">
                             <button type="submit" class="btn btn-primary btn-sm">
                                 <i class="bi bi-search"></i> Search
                             </button>
@@ -173,7 +235,7 @@
                 </div>
 
                 {% if loans.items %}
-                <div class="table-responsive">
+                <div class="table-responsive d-none d-md-block">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
                             <tr>
@@ -225,6 +287,35 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="d-md-none p-3">
+                    <div class="row g-3">
+                        {% for loan in loans.items %}
+                        <div class="col-12">
+                            <div class="card mobile-data-card">
+                                <div class="card-body">
+                                    <div class="fw-semibold mb-1">{{ loan.copy.book.title }}</div>
+                                    <div class="small text-muted mb-2">{{ loan.member.full_name }} • {{ loan.member.member_id }}</div>
+                                    <div class="small mb-2">Out: {{ loan.checkout_date.strftime('%d/%m/%Y') }} • Due: {{ loan.due_date.strftime('%d/%m/%Y') }}</div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="small text-muted">Returned: {{ loan.return_date.strftime('%d/%m/%Y') if loan.return_date else 'Not Returned' }}</div>
+                                        {% if loan.status == 'active' %}
+                                            <span class="badge bg-info">Active</span>
+                                        {% elif loan.status == 'returned' %}
+                                            <span class="badge bg-success">Returned</span>
+                                        {% elif loan.status == 'overdue' %}
+                                            <span class="badge bg-danger">Overdue</span>
+                                        {% elif loan.status == 'lost' %}
+                                            <span class="badge bg-dark">Lost</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ loan.status }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
                 {% else %}
                 <div class="p-4 text-center text-muted">
                     <i class="bi bi-inbox" style="font-size: 3rem; opacity: 0.3;"></i>
@@ -236,7 +327,7 @@
                 <!-- Pagination (for all views) -->
                 {% if loans.pages > 1 %}
                 <nav class="p-3 border-top">
-                    <ul class="pagination mb-0 justify-content-center">
+                    <ul class="pagination pagination-sm mb-0 justify-content-center flex-wrap gap-1">
                         {% if loans.has_prev %}
                         <li class="page-item">
                             <a class="page-link" href="{{ url_for('circulation.active_loans', view=current_view, page=1, member=request.args.get('member', ''), status=request.args.get('status', '')) }}">First</a>
