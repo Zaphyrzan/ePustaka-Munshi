@@ -9,6 +9,13 @@ load_dotenv()
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
+def _runtime_folder(*parts):
+    """Return a writable folder path for local or serverless runtimes."""
+    if os.environ.get('VERCEL'):
+        return os.path.join('/tmp', 'epustaka-munshi', *parts)
+    return os.path.join(BASE_DIR, *parts)
+
+
 class Config:
     """Base configuration"""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'epustaka-munshi-dev-key-change-in-production'
