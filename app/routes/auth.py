@@ -10,6 +10,20 @@ from app.models import User, Member
 auth_bp = Blueprint('auth', __name__)
 
 
+@auth_bp.before_app_request
+def enforce_active_account():
+    """Immediately invalidate sessions for deactivated accounts."""
+    if not current_user.is_authenticated:
+        return None
+
+    if not getattr(current_user, 'is_active', True):
+        logout_user()
+        flash('Your account is disabled', 'error')
+        return redirect(url_for('auth.login'))
+
+    return None
+
+
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     """User login - accepts both User (staff) and Member (students)"""
@@ -27,6 +41,14 @@ def login():
         if user and user.check_password(password):
             # Staff user found with correct password
             if user.is_active:
+                # If this staff username is linked to a member record, honor
+                # the member active flag too. This prevents login bypass when
+                # member access is explicitly disabled.
+                linked_member = Member.query.filter_by(member_id=user.username).first()
+                if linked_member and not linked_member.is_active:
+                    flash('Your account is disabled', 'error')
+                    return render_template('auth/login.html')
+
                 # Active staff account - login as staff
                 login_user(user, remember=remember)
                 user.last_login = datetime.utcnow()
