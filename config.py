@@ -20,13 +20,13 @@ class Config:
     
     # OCR settings
     TESSERACT_CMD = os.environ.get('TESSERACT_CMD') or r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-    OCR_UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads', 'ocr')
-    OCR_OUTPUT_FOLDER = os.path.join(BASE_DIR, 'uploads', 'ocr_results')
+    OCR_UPLOAD_FOLDER = _runtime_folder('uploads', 'ocr')
+    OCR_OUTPUT_FOLDER = _runtime_folder('uploads', 'ocr_results')
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'tiff', 'pdf'}
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB max upload
     
     # Scanner settings (future expansion)
-    SCANNER_WATCH_FOLDER = os.path.join(BASE_DIR, 'uploads', 'scanner_spool')
+    SCANNER_WATCH_FOLDER = _runtime_folder('uploads', 'scanner_spool')
     SCANNER_DEFAULT_DPI = 300
     SCANNER_DEFAULT_FORMAT = 'PNG'
     

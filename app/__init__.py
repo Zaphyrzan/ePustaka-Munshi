@@ -7,7 +7,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 import os
 
-from config import config
+from config import config, _runtime_folder
 
 # Initialize extensions
 db = SQLAlchemy()
@@ -25,10 +25,11 @@ def create_app(config_name=None):
     app.config.from_object(config[config_name])
     
     # Ensure instance and upload folders exist
+    # Use _runtime_folder to handle Vercel read-only filesystem with /tmp fallback
     os.makedirs(app.instance_path, exist_ok=True)
-    os.makedirs(app.config.get('OCR_UPLOAD_FOLDER', 'uploads/ocr'), exist_ok=True)
-    os.makedirs(app.config.get('OCR_OUTPUT_FOLDER', 'uploads/ocr_results'), exist_ok=True)
-    os.makedirs(app.config.get('SCANNER_WATCH_FOLDER', 'uploads/scanner_spool'), exist_ok=True)
+    os.makedirs(_runtime_folder('uploads', 'ocr'), exist_ok=True)
+    os.makedirs(_runtime_folder('uploads', 'ocr_results'), exist_ok=True)
+    os.makedirs(_runtime_folder('uploads', 'scanner_spool'), exist_ok=True)
     
     # Initialize extensions with app
     db.init_app(app)
