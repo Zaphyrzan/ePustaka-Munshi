@@ -50,6 +50,10 @@
         font-size: 0.9rem;
     }
 
+    .rank-badge i {
+        font-size: 1rem;
+    }
+
     .rank-gold { background: #f8c400; color: #1f2a37; }
     .rank-silver { background: #d9dde2; color: #1f2a37; }
     .rank-bronze { background: #cd7f32; color: #fff; }
@@ -271,7 +275,7 @@
         <div class="col-lg-4 order-2 d-flex flex-column gap-3">
             <div class="card">
                 <div class="card-header bg-warning-subtle">
-                    <h5 class="mb-0"><i class="bi bi-trophy me-2"></i>3 Pembaca Terbaik</h5>
+                    <h5 class="mb-0"><i class="bi bi-trophy me-2"></i>{{ t('top_3_most_borrowed_per_student') }}</h5>
                 </div>
                 <div class="card-body">
                     {% if top_three_students and top_three_students|length > 0 %}
@@ -283,27 +287,27 @@
                         <div class="top-three-item">
                             {% if second %}
                             <div class="top-three-avatar"><i class="bi bi-person-fill"></i></div>
-                            <div class="rank-badge rank-silver">2</div>
+                            <div class="rank-badge rank-silver"><i class="bi bi-award-fill"></i></div>
                             <div class="top-three-name">{{ second[2] }}</div>
-                            <div class="top-three-sub">{{ second[5] }} buku</div>
+                            <div class="top-three-sub">{{ second[5] }} {{ t('books') }}</div>
                             {% endif %}
                         </div>
 
                         <div class="top-three-item">
                             {% if first %}
                             <div class="top-three-avatar first"><i class="bi bi-person-fill"></i></div>
-                            <div class="rank-badge rank-gold">1</div>
+                            <div class="rank-badge rank-gold"><i class="bi bi-award-fill"></i></div>
                             <div class="top-three-name">{{ first[2] }}</div>
-                            <div class="top-three-sub">{{ first[5] }} buku</div>
+                            <div class="top-three-sub">{{ first[5] }} {{ t('books') }}</div>
                             {% endif %}
                         </div>
 
                         <div class="top-three-item">
                             {% if third %}
                             <div class="top-three-avatar"><i class="bi bi-person-fill"></i></div>
-                            <div class="rank-badge rank-bronze">3</div>
+                            <div class="rank-badge rank-bronze"><i class="bi bi-award-fill"></i></div>
                             <div class="top-three-name">{{ third[2] }}</div>
-                            <div class="top-three-sub">{{ third[5] }} buku</div>
+                            <div class="top-three-sub">{{ third[5] }} {{ t('books') }}</div>
                             {% endif %}
                         </div>
                     </div>
@@ -315,7 +319,7 @@
 
             <div class="card">
                 <div class="card-header bg-info-subtle">
-                    <h5 class="mb-0"><i class="bi bi-people-fill me-2"></i>Top 3 Class</h5>
+                    <h5 class="mb-0"><i class="bi bi-people-fill me-2"></i>{{ t('top_3_most_borrowed_per_class') }}</h5>
                 </div>
                 <div class="card-body">
                     {% if top_three_classes %}
@@ -327,10 +331,10 @@
                                 <div class="small text-muted class-rank-form">{{ t('form') }} {{ form }}</div>
                             </div>
                             <div class="text-end">
-                                {% if loop.index == 1 %}<span class="rank-badge rank-gold">1</span>{% endif %}
-                                {% if loop.index == 2 %}<span class="rank-badge rank-silver">2</span>{% endif %}
-                                {% if loop.index == 3 %}<span class="rank-badge rank-bronze">3</span>{% endif %}
-                                <div class="fw-bold text-primary mt-1">{{ borrow_count }}</div>
+                                {% if loop.index == 1 %}<span class="rank-badge rank-gold"><i class="bi bi-award-fill"></i></span>{% endif %}
+                                {% if loop.index == 2 %}<span class="rank-badge rank-silver"><i class="bi bi-award-fill"></i></span>{% endif %}
+                                {% if loop.index == 3 %}<span class="rank-badge rank-bronze"><i class="bi bi-award-fill"></i></span>{% endif %}
+                                <div class="fw-bold text-primary mt-1">{{ borrow_count }} {{ t('books') }}</div>
                             </div>
                         </div>
                         {% endfor %}
