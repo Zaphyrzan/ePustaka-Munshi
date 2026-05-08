@@ -57,6 +57,23 @@
                             <p class="mb-0 fw-bold">{{ user.email or '-' }}</p>
                         </div>
                     </div>
+                    <!-- Student-specific fields -->
+                    {% if user.member_id %}
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="text-muted small">Phone Number</label>
+                            <p class="mb-0 fw-bold">{{ user.phone or '-' }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-muted small">Class</label>
+                            <p class="mb-0 fw-bold">{{ user.class_group or '-' }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-muted small">Member Type</label>
+                            <p class="mb-0 fw-bold">{{ user.member_type or '-' }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
                     <div class="row">
                         <div class="col-md-4">
                             <label class="text-muted small">Role</label>
