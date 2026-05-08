@@ -13,7 +13,8 @@
                 </div>
                 <div class="card-body">
                     <form method="POST">
-                        {% if can_edit_username %}
+                        <!-- Username field - staff only -->
+                        {% if is_staff %}
                         <div class="mb-3">
                             <label for="username" class="form-label">Username <span class="text-danger">*</span></label>
                             <input type="text" 
@@ -27,28 +28,40 @@
                                    title="Letters, numbers, and underscores only">
                             <div class="form-text">Username for login. Letters, numbers, and underscores only.</div>
                         </div>
-                        {% else %}
+                        {% elif is_member %}
                         <div class="mb-3">
                             <label class="form-label">Login ID</label>
                             <input type="text"
                                    class="form-control"
                                    value="{{ user.member_id }}"
                                    readonly>
-                            <div class="form-text">Student accounts use the member ID for login.</div>
+                            <div class="form-text">Your student login ID (cannot be changed).</div>
                         </div>
                         {% endif %}
                         
+                        <!-- Full Name - staff editable, students read-only -->
                         <div class="mb-3">
                             <label for="full_name" class="form-label">Full Name</label>
+                            {% if is_staff %}
                             <input type="text" 
                                    class="form-control" 
                                    id="full_name" 
                                    name="full_name" 
                                    value="{{ user.full_name or '' }}"
                                    placeholder="Enter your full name">
+                            {% else %}
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="full_name" 
+                                   name="full_name" 
+                                   value="{{ user.full_name or '' }}"
+                                   readonly>
+                            <div class="form-text text-muted">Full name can only be changed by administrators.</div>
+                            {% endif %}
                         </div>
                         
-                        <div class="mb-4">
+                        <!-- Email - editable by all -->
+                        <div class="mb-3">
                             <label for="email" class="form-label">Email Address</label>
                             <input type="email" 
                                    class="form-control" 
@@ -57,6 +70,19 @@
                                    value="{{ user.email or '' }}"
                                    placeholder="Enter your email">
                         </div>
+                        
+                        <!-- Phone - students only -->
+                        {% if is_member %}
+                        <div class="mb-4">
+                            <label for="phone" class="form-label">Phone Number</label>
+                            <input type="tel" 
+                                   class="form-control" 
+                                   id="phone" 
+                                   name="phone" 
+                                   value="{{ user.phone or '' }}"
+                                   placeholder="Enter your phone number">
+                        </div>
+                        {% endif %}
                         
                         <div class="d-flex justify-content-between">
                             <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-secondary">

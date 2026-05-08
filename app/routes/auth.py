@@ -129,31 +129,50 @@ def profile():
 @auth_bp.route('/profile/edit', methods=['GET', 'POST'])
 @login_required
 def edit_profile():
-    """Edit user profile - name, email, username"""
+    """Edit user profile - restricted by account type
+    
+    Staff: Can edit username, full_name, email
+    Student (Member): Can only edit email and phone (full_name and username are admin-only)
+    """
     is_staff_account = hasattr(current_user, 'username')
+    is_member_account = hasattr(current_user, 'member_id')
+    
     current_username = getattr(current_user, 'username', '')
     current_email = getattr(current_user, 'email', '')
+    current_phone = getattr(current_user, 'phone', '')
 
     if request.method == 'POST':
-        full_name = request.form.get('full_name', '').strip()
         email = request.form.get('email', '').strip()
+        phone = request.form.get('phone', '').strip()
+        full_name = request.form.get('full_name', '').strip()
         new_username = request.form.get('username', '').strip()
-
+        
+        # Staff accounts can edit all fields
         if is_staff_account:
             # Validate username uniqueness (if changed)
             if new_username != current_username:
                 existing = User.query.filter_by(username=new_username).first()
                 if existing:
                     flash('Username already taken', 'error')
-                    return render_template('auth/edit_profile.html', user=current_user, can_edit_username=is_staff_account)
+                    return render_template('auth/edit_profile.html', user=current_user, is_staff=is_staff_account, is_member=is_member_account)
                 if len(new_username) < 3:
                     flash('Username must be at least 3 characters', 'error')
-                    return render_template('auth/edit_profile.html', user=current_user, can_edit_username=is_staff_account)
+                    return render_template('auth/edit_profile.html', user=current_user, is_staff=is_staff_account, is_member=is_member_account)
                 current_user.username = new_username
-        elif new_username:
-            flash('Username changes are not available for student accounts', 'error')
-            return render_template('auth/edit_profile.html', user=current_user, can_edit_username=is_staff_account)
-
+            
+            current_user.full_name = full_name
+        
+        # Student members can ONLY edit email and phone
+        elif is_member_account:
+            # Block attempts to modify full_name or username
+            if full_name and full_name != current_user.full_name:
+                flash('Full name can only be changed by administrators', 'error')
+                return render_template('auth/edit_profile.html', user=current_user, is_staff=is_staff_account, is_member=is_member_account)
+            if new_username:
+                flash('Username cannot be changed by students', 'error')
+                return render_template('auth/edit_profile.html', user=current_user, is_staff=is_staff_account, is_member=is_member_account)
+        
+        # Both staff and members can update email and phone
         # Validate email uniqueness (if changed and not empty)
         if email and email != current_email:
             if is_staff_account:
@@ -162,16 +181,18 @@ def edit_profile():
                 existing = Member.query.filter_by(email=email).first()
             if existing and existing.id != current_user.id:
                 flash('Email already in use', 'error')
-                return render_template('auth/edit_profile.html', user=current_user, can_edit_username=is_staff_account)
+                return render_template('auth/edit_profile.html', user=current_user, is_staff=is_staff_account, is_member=is_member_account)
         
-        current_user.full_name = full_name
         current_user.email = email
+        if is_member_account:
+            current_user.phone = phone
+        
         db.session.commit()
         
         flash('Profile updated successfully', 'success')
         return redirect(url_for('auth.profile'))
     
-    return render_template('auth/edit_profile.html', user=current_user, can_edit_username=is_staff_account)
+    return render_template('auth/edit_profile.html', user=current_user, is_staff=is_staff_account, is_member=is_member_account)
 
 
 @auth_bp.route('/change-password', methods=['GET', 'POST'])
