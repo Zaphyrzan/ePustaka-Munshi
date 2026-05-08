@@ -81,18 +81,18 @@
                                 {% for member_id, student_id, name, form, class_group, borrow_count in leaderboard %}
                                 <tr>
                                     <td class="text-center">
-                                        {% if loop.index1 == 1 %}
+                                        {% if loop.index == 1 %}
                                         <span class="badge" style="background:#d4af37;color:#000"><i class="bi bi-award-fill"></i></span>
-                                        {% elif loop.index1 == 2 %}
+                                        {% elif loop.index == 2 %}
                                         <span class="badge" style="background:#c0c0c0;color:#000"><i class="bi bi-award-fill"></i></span>
-                                        {% elif loop.index1 == 3 %}
+                                        {% elif loop.index == 3 %}
                                         <span class="badge" style="background:#cd7f32;color:#fff"><i class="bi bi-award-fill"></i></span>
                                         {% else %}
-                                        <strong>{{ loop.index1 }}</strong>
+                                        <strong>{{ loop.index }}</strong>
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% if loop.index1 == 1 %}
+                                        {% if loop.index == 1 %}
                                         <div class="d-flex align-items-center gap-2">
                                             <h5 class="mb-0">{{ name }}</h5>
                                         </div>
@@ -118,14 +118,14 @@
                                 <div class="card mobile-rank-card">
                                     <div class="card-body d-flex align-items-center gap-3">
                                         <div class="mobile-rank-dot flex-shrink-0">
-                                            {% if loop.index1 == 1 %}
+                                            {% if loop.index == 1 %}
                                                 <i class="bi bi-award-fill" style="color:#d4af37"></i>
-                                            {% elif loop.index1 == 2 %}
+                                            {% elif loop.index == 2 %}
                                                 <i class="bi bi-award-fill" style="color:#c0c0c0"></i>
-                                            {% elif loop.index1 == 3 %}
+                                            {% elif loop.index == 3 %}
                                                 <i class="bi bi-award-fill" style="color:#cd7f32"></i>
                                             {% else %}
-                                                {{ loop.index1 }}
+                                                {{ loop.index }}
                                             {% endif %}
                                         </div>
                                         <div class="flex-grow-1 min-w-0">
