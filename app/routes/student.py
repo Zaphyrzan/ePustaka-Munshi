@@ -70,7 +70,8 @@ def index():
                           my_loans=my_loans,
                           due_soon=due_soon,
                           overdue=overdue,
-                          books_read=books_read)
+                          books_read=books_read,
+                          now=datetime.utcnow())
 
 
 @student_bp.route('/search')
@@ -245,13 +246,49 @@ def leaderboard():
         avg_borrowed = total_borrowed / student_count if student_count > 0 else 0
         form_stats_with_avg.append((form_level, student_count, total_borrowed, avg_borrowed))
     
+    # Top student and top class for selected form (if any)
+    top_student = None
+    top_class = None
+    if selected_form:
+        top_student_q = db.session.query(
+            Member.full_name,
+            Member.class_group,
+            func.count(Loan.id).label('borrow_count')
+        ).outerjoin(Loan,
+            db.and_(Loan.member_id == Member.id, Loan.status.in_([LoanStatus.ACTIVE.value, LoanStatus.RETURNED.value, LoanStatus.OVERDUE.value]))
+        ).filter(
+            Member.member_type == 'Student',
+            Member.form_level == selected_form,
+            Member.is_active == True
+        ).group_by(Member.id, Member.full_name, Member.class_group).order_by(func.count(Loan.id).desc()).first()
+
+        if top_student_q:
+            top_student = (top_student_q[0], top_student_q[1], top_student_q[2])
+
+        top_class_q = db.session.query(
+            Member.class_group,
+            func.count(Loan.id).label('borrow_count')
+        ).outerjoin(Loan,
+            db.and_(Loan.member_id == Member.id, Loan.status.in_([LoanStatus.ACTIVE.value, LoanStatus.RETURNED.value, LoanStatus.OVERDUE.value]))
+        ).filter(
+            Member.member_type == 'Student',
+            Member.form_level == selected_form,
+            Member.is_active == True,
+            Member.class_group.isnot(None)
+        ).group_by(Member.class_group).order_by(func.count(Loan.id).desc()).first()
+
+        if top_class_q:
+            top_class = (top_class_q[0], top_class_q[1])
+
     return render_template('student/leaderboard.html',
                           forms=forms,
                           selected_form=selected_form,
                           classes_in_form=classes_in_form,
                           selected_class=selected_class,
                           leaderboard=member_borrow_counts,
-                          form_stats=form_stats_with_avg)
+                          form_stats=form_stats_with_avg,
+                          top_student=top_student,
+                          top_class=top_class)
 
 
 # API for student portal

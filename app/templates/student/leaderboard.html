@@ -78,25 +78,30 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for member_id, student_id, name, form, class, borrow_count in leaderboard %}
+                                {% for member_id, student_id, name, form, class_group, borrow_count in leaderboard %}
                                 <tr>
                                     <td class="text-center">
                                         {% if loop.index1 == 1 %}
-                                        <span class="badge bg-warning text-dark"><i class="bi bi-star-fill"></i></span>
+                                        <span class="badge" style="background:#d4af37;color:#000"><i class="bi bi-award-fill"></i></span>
                                         {% elif loop.index1 == 2 %}
-                                        <span class="badge bg-secondary"><i class="bi bi-star-fill"></i></span>
+                                        <span class="badge" style="background:#c0c0c0;color:#000"><i class="bi bi-award-fill"></i></span>
                                         {% elif loop.index1 == 3 %}
-                                        <span class="badge bg-danger"><i class="bi bi-star-fill"></i></span>
+                                        <span class="badge" style="background:#cd7f32;color:#fff"><i class="bi bi-award-fill"></i></span>
                                         {% else %}
                                         <strong>{{ loop.index1 }}</strong>
                                         {% endif %}
                                     </td>
                                     <td>
+                                        {% if loop.index1 == 1 %}
+                                        <div class="d-flex align-items-center gap-2">
+                                            <h5 class="mb-0">{{ name }}</h5>
+                                        </div>
+                                        {% else %}
                                         <strong>{{ name }}</strong>
-                                        <br><small class="text-muted">{{ student_id }}</small>
+                                        {% endif %}
                                     </td>
                                     <td>
-                                        <span class="badge bg-light text-dark">{{ class }}</span>
+                                        <span class="badge bg-light text-dark">{{ class_group }}</span>
                                     </td>
                                     <td class="text-end">
                                         <strong class="text-primary fs-5">{{ borrow_count }}</strong>
@@ -108,27 +113,27 @@
                     </div>
                     <div class="d-md-none p-3">
                         <div class="row g-3">
-                            {% for member_id, student_id, name, form, class, borrow_count in leaderboard %}
+                            {% for member_id, student_id, name, form, class_group, borrow_count in leaderboard %}
                             <div class="col-12">
                                 <div class="card mobile-rank-card">
                                     <div class="card-body d-flex align-items-center gap-3">
                                         <div class="mobile-rank-dot flex-shrink-0">
                                             {% if loop.index1 == 1 %}
-                                                <i class="bi bi-star-fill text-warning"></i>
+                                                <i class="bi bi-award-fill" style="color:#d4af37"></i>
                                             {% elif loop.index1 == 2 %}
-                                                <i class="bi bi-star-fill text-secondary"></i>
+                                                <i class="bi bi-award-fill" style="color:#c0c0c0"></i>
                                             {% elif loop.index1 == 3 %}
-                                                <i class="bi bi-star-fill text-danger"></i>
+                                                <i class="bi bi-award-fill" style="color:#cd7f32"></i>
                                             {% else %}
                                                 {{ loop.index1 }}
                                             {% endif %}
                                         </div>
                                         <div class="flex-grow-1 min-w-0">
                                             <div class="fw-bold text-truncate">{{ name }}</div>
-                                            <div class="small text-muted text-truncate">{{ student_id }}</div>
+                                            <div class="small text-muted text-truncate">{{ t('form') }} {{ form }} • {{ t('class') }} {{ class_group }}</div>
                                             <div class="d-flex flex-wrap gap-2 mt-2">
                                                 <span class="badge bg-light text-dark">{{ t('form') }} {{ form }}</span>
-                                                <span class="badge bg-light text-dark">{{ t('class') }} {{ class }}</span>
+                                                <span class="badge bg-light text-dark">{{ t('class') }} {{ class_group }}</span>
                                             </div>
                                         </div>
                                         <div class="text-end flex-shrink-0">
@@ -183,6 +188,18 @@
                         </div>
                         {% endfor %}
                     </div>
+                    {% if selected_form %}
+                    <hr>
+                    <div class="mt-3">
+                        <h6 class="mb-2">Top in Form {{ selected_form }}</h6>
+                        {% if top_student %}
+                        <div class="mb-2">Top Student: <strong>{{ top_student[0] }}</strong> <span class="text-muted">(Class {{ top_student[1] }})</span> — <strong>{{ top_student[2] }}</strong> {{ t('books_borrowed_count') }}</div>
+                        {% endif %}
+                        {% if top_class %}
+                        <div>Top Class: <strong>{{ top_class[0] }}</strong> — <strong>{{ top_class[1] }}</strong> {{ t('books_borrowed_count') }}</div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
                     {% else %}
                     <div class="text-center py-4">
                         <p class="text-muted">{{ t('no_statistics') }}</p>
