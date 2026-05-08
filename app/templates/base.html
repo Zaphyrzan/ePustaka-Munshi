@@ -344,6 +344,15 @@
                 </a>
             </li>
             
+            {% if current_user.can(1) or current_user.can(2) %}
+            <li class="sidebar-section">{{ t('catalog') }}</li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'catalog' in request.endpoint %}active{% endif %}" href="{{ url_for('catalog.index') }}">
+                    <i class="bi bi-book"></i> {{ t('books') }}
+                </a>
+            </li>
+            {% endif %}
+
             <!-- Staff Section -->
             <li class="sidebar-section">{{ t('staff_functions') }}</li>
             <li class="nav-item">
