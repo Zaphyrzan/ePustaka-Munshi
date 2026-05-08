@@ -227,6 +227,40 @@ def leaderboard():
         Member.id, Member.member_id, Member.full_name, Member.form_level, Member.class_group
     ).order_by(func.count(Loan.id).desc(), Member.full_name).limit(100).all()
     
+    # Top 3 students for the current leaderboard filter
+    top_three_students = member_borrow_counts[:3]
+
+    # Top 3 classes by total borrowed books
+    # Class ranking follows selected_form filter (if any), but not selected_class,
+    # so users can still compare classes.
+    class_borrow_counts = db.session.query(
+        Member.form_level,
+        Member.class_group,
+        func.count(Loan.id).label('borrow_count')
+    ).outerjoin(
+        Loan,
+        db.and_(Loan.member_id == Member.id, Loan.status.in_([
+            LoanStatus.ACTIVE.value,
+            LoanStatus.RETURNED.value,
+            LoanStatus.OVERDUE.value
+        ]))
+    ).filter(
+        Member.member_type.in_(['Student', 'Student Assistant']),
+        Member.is_active == True,
+        Member.class_group.isnot(None)
+    )
+
+    if selected_form:
+        class_borrow_counts = class_borrow_counts.filter(Member.form_level == selected_form)
+
+    top_three_classes = class_borrow_counts.group_by(
+        Member.form_level,
+        Member.class_group
+    ).order_by(
+        func.count(Loan.id).desc(),
+        Member.class_group.asc()
+    ).limit(3).all()
+
     # Get stats by form - simplified to avoid nested aggregates
     form_stats = db.session.query(
         Member.form_level,
@@ -286,6 +320,8 @@ def leaderboard():
                           classes_in_form=classes_in_form,
                           selected_class=selected_class,
                           leaderboard=member_borrow_counts,
+                          top_three_students=top_three_students,
+                          top_three_classes=top_three_classes,
                           form_stats=form_stats_with_avg,
                           top_student=top_student,
                           top_class=top_class)
