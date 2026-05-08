@@ -140,8 +140,12 @@ class Member(UserMixin, db.Model):
         if self.member_type == 'Student':
             return False
         # Staff members can do checkout/return/view catalog/search
+        # Student Assistants also manage the catalog.
         if self.member_type in ['Staff', 'Student Assistant', 'Librarian', 'Teacher']:
-            return perm in [Permission.CHECKOUT, Permission.RETURN, Permission.VIEW_CATALOG, Permission.SEARCH]
+            allowed = [Permission.CHECKOUT, Permission.RETURN, Permission.VIEW_CATALOG, Permission.SEARCH]
+            if self.member_type == 'Student Assistant':
+                allowed.append(Permission.MANAGE_CATALOG)
+            return perm in allowed
         return False
     
     @property
