@@ -64,6 +64,53 @@
         font-size: 0.8rem;
         color: #6c757d;
     }
+
+    @media (max-width: 575.98px) {
+        .top-three-wrap {
+            gap: 0.45rem;
+        }
+
+        .top-three-avatar {
+            width: 46px;
+            height: 46px;
+            font-size: 1.2rem;
+        }
+
+        .top-three-avatar.first {
+            width: 60px;
+            height: 60px;
+        }
+
+        .rank-badge {
+            width: 26px;
+            height: 26px;
+            font-size: 0.8rem;
+        }
+
+        .top-three-name {
+            max-width: 100%;
+            font-size: 0.82rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .top-three-sub {
+            font-size: 0.75rem;
+        }
+
+        .class-rank-item {
+            gap: 0.5rem;
+        }
+
+        .class-rank-name {
+            font-size: 0.88rem;
+        }
+
+        .class-rank-form {
+            font-size: 0.76rem;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -274,10 +321,10 @@
                     {% if top_three_classes %}
                     <div class="list-group list-group-flush">
                         {% for form, class_group, borrow_count in top_three_classes %}
-                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <div class="list-group-item class-rank-item d-flex justify-content-between align-items-center px-0">
                             <div>
-                                <div class="fw-semibold">{{ t('class') }} {{ class_group }}</div>
-                                <div class="small text-muted">{{ t('form') }} {{ form }}</div>
+                                <div class="fw-semibold class-rank-name">{{ t('class') }} {{ class_group }}</div>
+                                <div class="small text-muted class-rank-form">{{ t('form') }} {{ form }}</div>
                             </div>
                             <div class="text-end">
                                 {% if loop.index == 1 %}<span class="rank-badge rank-gold">1</span>{% endif %}
