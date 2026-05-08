@@ -69,6 +69,7 @@ class Role(db.Model):
             'Student Assistant': [
                 Permission.VIEW_CATALOG,
                 Permission.SEARCH,
+                Permission.MANAGE_CATALOG,
                 Permission.CHECKOUT,
                 Permission.RETURN
             ],

@@ -47,7 +47,7 @@ def seed_demo_data():
             db.session.add(stu_001_user)
             db.session.commit()
             print("  ✓ Staff Assistant: username=STU0001, password=password123")
-            print("     This user can access Checkout/Return functions")
+            print("     This user can access Books Catalog, Add/Edit Book, Checkout, and Return functions")
         
         # Create corresponding Member account for borrowing
         stu_001_member = Member.query.filter_by(member_id='STU0001').first()
