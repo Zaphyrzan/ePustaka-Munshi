@@ -42,13 +42,41 @@ def dashboard():
         'pending_ocr_jobs': OCRJob.query.filter_by(status='pending').count()
     }
     
-    # Recent loans
-    recent_loans = Loan.query.order_by(Loan.checkout_date.desc()).limit(10).all()
+    # Recent loans and returns (combined activity feed)
+    recent_loans = Loan.query.order_by(Loan.checkout_date.desc()).limit(15).all()
     
     # Overdue items
     overdue_loans = Loan.query.filter_by(status=LoanStatus.OVERDUE.value).limit(10).all()
     
+    # Prepare activity data with staff handler information
+    activity = []
+    for loan in recent_loans:
+        activity.append({
+            'type': 'checkout',
+            'date': loan.checkout_date,
+            'book': loan.copy.book.title,
+            'member': loan.member.full_name,
+            'staff_name': loan.checkout_staff.full_name if loan.checkout_staff else 'System',
+            'status': loan.status,
+            'is_overdue': loan.is_overdue
+        })
+        if loan.return_date:
+            activity.append({
+                'type': 'return',
+                'date': loan.return_date,
+                'book': loan.copy.book.title,
+                'member': loan.member.full_name,
+                'staff_name': loan.return_staff.full_name if loan.return_staff else 'System',
+                'status': 'returned',
+                'is_overdue': False
+            })
+    
+    # Sort activity by date (most recent first) and limit to 15
+    activity.sort(key=lambda x: x['date'], reverse=True)
+    activity = activity[:15]
+    
     return render_template('dashboard.html', 
                           stats=stats, 
                           recent_loans=recent_loans,
+                          activity=activity,
                           overdue_loans=overdue_loans)

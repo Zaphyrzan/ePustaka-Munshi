@@ -61,11 +61,11 @@
 </div>
 
 <div class="row g-4">
-    <!-- Recent Loans -->
+    <!-- Recent Activity -->
     <div class="col-lg-8">
         <div class="card table-card">
             <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">Recent Loans</h6>
+                <h6 class="mb-0">Recent Activity</h6>
                 <a href="{{ url_for('circulation.active_loans') }}" class="btn btn-sm btn-outline-primary">View All</a>
             </div>
             <div class="card-body p-0">
@@ -73,33 +73,31 @@
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
                             <tr>
+                                <th>Action</th>
                                 <th>Book</th>
                                 <th>Member</th>
-                                <th>Checkout</th>
-                                <th>Due Date</th>
-                                <th>Status</th>
+                                <th>Handled By</th>
+                                <th>Date</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for loan in recent_loans %}
+                            {% for record in activity %}
                             <tr>
-                                <td>{{ loan.copy.book.title[:40] }}{% if loan.copy.book.title|length > 40 %}...{% endif %}</td>
-                                <td>{{ loan.member.full_name }}</td>
-                                <td>{{ loan.checkout_date.strftime('%d/%m/%Y') }}</td>
-                                <td>{{ loan.due_date.strftime('%d/%m/%Y') }}</td>
                                 <td>
-                                    {% if loan.status == 'returned' %}
-                                        <span class="badge bg-success">Returned</span>
-                                    {% elif loan.is_overdue %}
-                                        <span class="badge bg-danger">Overdue</span>
+                                    {% if record.type == 'checkout' %}
+                                        <span class="badge bg-primary">Checkout</span>
                                     {% else %}
-                                        <span class="badge bg-primary">Active</span>
+                                        <span class="badge bg-success">Return</span>
                                     {% endif %}
                                 </td>
+                                <td>{{ record.book[:40] }}{% if record.book|length > 40 %}...{% endif %}</td>
+                                <td>{{ record.member }}</td>
+                                <td><strong>{{ record.staff_name }}</strong></td>
+                                <td>{{ record.date.strftime('%d/%m/%Y %H:%M') }}</td>
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="5" class="text-center text-muted py-4">No recent loans</td>
+                                <td colspan="5" class="text-center text-muted py-4">No recent activity</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -107,30 +105,26 @@
                 </div>
                 <div class="d-md-none p-3">
                     <div class="row g-3">
-                        {% for loan in recent_loans %}
+                        {% for record in activity %}
                         <div class="col-12">
                             <div class="card mobile-data-card">
                                 <div class="card-body">
-                                    <div class="fw-semibold mb-1">{{ loan.copy.book.title[:70] }}{% if loan.copy.book.title|length > 70 %}...{% endif %}</div>
-                                    <div class="small text-muted mb-2">{{ loan.member.full_name }}</div>
-                                    <div class="d-flex justify-content-between small">
-                                        <span>{{ loan.checkout_date.strftime('%d/%m/%Y') }}</span>
-                                        <span>{{ loan.due_date.strftime('%d/%m/%Y') }}</span>
-                                    </div>
-                                    <div class="mt-2">
-                                        {% if loan.status == 'returned' %}
-                                            <span class="badge bg-success">Returned</span>
-                                        {% elif loan.is_overdue %}
-                                            <span class="badge bg-danger">Overdue</span>
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        <strong>{{ record.book[:50] }}{% if record.book|length > 50 %}...{% endif %}</strong>
+                                        {% if record.type == 'checkout' %}
+                                            <span class="badge bg-primary">Checkout</span>
                                         {% else %}
-                                            <span class="badge bg-primary">Active</span>
+                                            <span class="badge bg-success">Return</span>
                                         {% endif %}
                                     </div>
+                                    <div class="small text-muted mb-1">{{ record.member }}</div>
+                                    <div class="small mb-2">Handled by: <strong>{{ record.staff_name }}</strong></div>
+                                    <div class="small text-muted">{{ record.date.strftime('%d/%m/%Y %H:%M') }}</div>
                                 </div>
                             </div>
                         </div>
                         {% else %}
-                        <div class="col-12 text-center text-muted py-3">No recent loans</div>
+                        <div class="col-12 text-center text-muted py-3">No recent activity</div>
                         {% endfor %}
                     </div>
                 </div>
