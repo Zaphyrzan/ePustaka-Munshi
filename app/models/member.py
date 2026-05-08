@@ -145,6 +145,7 @@ class Member(UserMixin, db.Model):
             allowed = [Permission.CHECKOUT, Permission.RETURN, Permission.VIEW_CATALOG, Permission.SEARCH]
             if self.member_type == 'Student Assistant':
                 allowed.append(Permission.MANAGE_CATALOG)
+                allowed.append(Permission.MANAGE_COPIES)
             return perm in allowed
         return False
     

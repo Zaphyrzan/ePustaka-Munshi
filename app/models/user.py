@@ -70,6 +70,7 @@ class Role(db.Model):
                 Permission.VIEW_CATALOG,
                 Permission.SEARCH,
                 Permission.MANAGE_CATALOG,
+                Permission.MANAGE_COPIES,
                 Permission.CHECKOUT,
                 Permission.RETURN
             ],
