@@ -71,8 +71,24 @@
                                    placeholder="Enter your email">
                         </div>
                         
-                        <!-- Phone - students only -->
+                        <!-- Class Group - students only -->
                         {% if is_member %}
+                        <div class="mb-3">
+                            <label for="class_group" class="form-label">{{ t('class_group') or 'Class' }}</label>
+                            <select class="form-select" 
+                                    id="class_group" 
+                                    name="class_group">
+                                <option value="">-- {{ t('select') or 'Select' }} --</option>
+                                {% for class_name in available_classes %}
+                                <option value="{{ class_name }}" {% if user.class_group == class_name %}selected{% endif %}>
+                                    {{ class_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">{{ t('select_your_class') or 'Select your academic class.' }}</div>
+                        </div>
+                        
+                        <!-- Phone - students only -->
                         <div class="mb-4">
                             <label for="phone" class="form-label">Phone Number</label>
                             <input type="tel" 
