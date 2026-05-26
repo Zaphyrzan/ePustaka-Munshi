@@ -64,7 +64,7 @@ def index():
         my_loans = (
             Loan.query
             .filter_by(member_id=member.id, status=LoanStatus.ACTIVE.value)
-            .options(joinedload(Loan.copy).joinedload('book'))
+            .options(joinedload(Loan.copy).joinedload(BookCopy.book))
             .order_by(Loan.due_date)
             .all()
         )
@@ -77,7 +77,7 @@ def index():
         overdue = (
             Loan.query
             .filter_by(member_id=member.id, status=LoanStatus.OVERDUE.value)
-            .options(joinedload(Loan.copy).joinedload('book'))
+            .options(joinedload(Loan.copy).joinedload(BookCopy.book))
             .all()
         )
         
@@ -202,7 +202,7 @@ def my_loans():
             Loan.member_id == member.id,
             Loan.status.in_([LoanStatus.ACTIVE.value, LoanStatus.OVERDUE.value])
         )
-        .options(joinedload(Loan.copy).joinedload('book'))
+        .options(joinedload(Loan.copy).joinedload(BookCopy.book))
         .order_by(Loan.due_date)
     )
     active_loans = active_pagination.paginate(active_query)
@@ -212,7 +212,7 @@ def my_loans():
     history_query = (
         Loan.query
         .filter_by(member_id=member.id, status=LoanStatus.RETURNED.value)
-        .options(joinedload(Loan.copy).joinedload('book'))
+        .options(joinedload(Loan.copy).joinedload(BookCopy.book))
         .order_by(Loan.return_date.desc())
     )
     history = history_pagination.paginate(history_query)

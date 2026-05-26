@@ -161,7 +161,7 @@ def active_loans():
     # Base query with eager loading to avoid N+1 queries
     base_query = Loan.query.options(
         joinedload(Loan.member),
-        joinedload(Loan.copy).joinedload('book')
+        joinedload(Loan.copy).joinedload(BookCopy.book)
     )
     
     # Apply filters based on view
@@ -198,7 +198,7 @@ def overdue_loans():
     
     loans = Loan.query.options(
         joinedload(Loan.member),
-        joinedload(Loan.copy).joinedload('book')
+        joinedload(Loan.copy).joinedload(BookCopy.book)
     ).filter(
         Loan.status == LoanStatus.OVERDUE.value
     ).order_by(Loan.due_date).paginate(page=page, per_page=20)
@@ -214,7 +214,7 @@ def loan_history():
     
     query = Loan.query.options(
         joinedload(Loan.member),
-        joinedload(Loan.copy).joinedload('book')
+        joinedload(Loan.copy).joinedload(BookCopy.book)
     )
     
     # Filters
@@ -242,7 +242,7 @@ def member_loans(member_id):
     loans = (
         Loan.query
         .filter_by(member_id=member_id)
-        .options(joinedload(Loan.copy).joinedload('book'))
+        .options(joinedload(Loan.copy).joinedload(BookCopy.book))
         .order_by(Loan.checkout_date.desc())
         .all()
     )

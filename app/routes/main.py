@@ -60,7 +60,7 @@ def dashboard():
     recent_loans = (
         Loan.query
         .options(
-            joinedload(Loan.copy).joinedload('book'),
+            joinedload(Loan.copy).joinedload(BookCopy.book),
             joinedload(Loan.member),
             joinedload(Loan.checkout_staff),
             joinedload(Loan.return_staff)
@@ -74,7 +74,7 @@ def dashboard():
     overdue_loans = (
         Loan.query
         .options(
-            joinedload(Loan.copy).joinedload('book'),
+            joinedload(Loan.copy).joinedload(BookCopy.book),
             joinedload(Loan.member)
         )
         .filter_by(status=LoanStatus.OVERDUE.value)
