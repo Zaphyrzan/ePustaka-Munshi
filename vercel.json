@@ -47,16 +47,5 @@
   "env": {
     "FLASK_CONFIG": "production",
     "FLASK_ENV": "production"
-  },
-  "envVars": {
-    "SECRET_KEY": {
-      "description": "Flask secret key for session management (generate a random string)"
-    },
-    "DATABASE_URL": {
-      "description": "PostgreSQL connection string (use Supabase pooler URL for Vercel)"
-    },
-    "SUPABASE_POOLER_URL": {
-      "description": "Optional: Supabase connection pooler URL (preferred over DATABASE_URL on Vercel)"
-    }
   }
 }
