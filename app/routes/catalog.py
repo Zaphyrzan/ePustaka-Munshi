@@ -3,14 +3,26 @@ Catalog routes - Book and BookCopy management
 """
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, send_file
 from flask_login import login_required, current_user
+from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 from app import db
 from app.models import Book, BookCopy, CopyStatus, Permission
 from app.utils.barcode_utils import generate_accession_number, generate_barcode
+from app.utils.cache_utils import cache_query
 import io
 import barcode
 from barcode.writer import ImageWriter
 
 catalog_bp = Blueprint('catalog', __name__)
+
+
+@cache_query(ttl_seconds=3600)
+def get_catalog_categories():
+    """Get all distinct book categories for catalog, cached for 1 hour"""
+    categories = db.session.query(Book.category).distinct().filter(
+        Book.category.isnot(None)
+    ).order_by(Book.category).all()
+    return [c[0] for c in categories if c[0]]
 
 
 def permission_required(perm):
@@ -53,9 +65,8 @@ def index():
     if category:
         query = query.filter(Book.category == category)
     
-    # Get categories for filter dropdown
-    categories = db.session.query(Book.category).distinct().filter(Book.category.isnot(None)).all()
-    categories = [c[0] for c in categories if c[0]]
+    # Use cached categories (no database query on every page load!)
+    categories = get_catalog_categories()
     
     books = query.order_by(Book.title).paginate(page=page, per_page=per_page)
     

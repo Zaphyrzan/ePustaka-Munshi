@@ -5,10 +5,24 @@ from flask import Blueprint, render_template, request, jsonify
 from flask_login import login_required, current_user
 from datetime import datetime, timedelta
 from sqlalchemy import func, desc
+from sqlalchemy.orm import joinedload
 from app import db
 from app.models import Book, BookCopy, CopyStatus, Member, Loan, LoanStatus
+from app.utils.cache_utils import cache_query
 
 student_bp = Blueprint('student', __name__)
+
+
+@cache_query(ttl_seconds=3600)
+def get_book_categories():
+    """
+    Get all distinct book categories, cached for 1 hour.
+    This is called on every page load in the UI, so caching is critical.
+    """
+    categories = db.session.query(Book.category).distinct().filter(
+        Book.category.isnot(None)
+    ).order_by(Book.category).all()
+    return [c[0] for c in categories if c[0]]
 
 
 def get_linked_member():
@@ -34,7 +48,7 @@ def index():
     # Get member record - handle both Member and User logins
     member = get_linked_member()
     
-    # Stats for dashboard
+    # Stats for dashboard - use cached function
     total_books = Book.query.count()
     available_copies = BookCopy.query.filter_by(status=CopyStatus.AVAILABLE.value).count()
     
@@ -45,21 +59,26 @@ def index():
     books_read = 0
     
     if member:
-        # Get active loans
-        my_loans = Loan.query.filter_by(
-            member_id=member.id,
-            status=LoanStatus.ACTIVE.value
-        ).order_by(Loan.due_date).all()
+        # Get active loans with eager loading to avoid N+1
+        my_loans = (
+            Loan.query
+            .filter_by(member_id=member.id, status=LoanStatus.ACTIVE.value)
+            .options(joinedload(Loan.copy).joinedload('book'))
+            .order_by(Loan.due_date)
+            .all()
+        )
         
-        # Due in next 3 days
+        # Due in next 3 days - already loaded from above
         three_days = datetime.utcnow() + timedelta(days=3)
         due_soon = [l for l in my_loans if l.due_date and l.due_date <= three_days]
         
-        # Overdue
-        overdue = Loan.query.filter_by(
-            member_id=member.id,
-            status=LoanStatus.OVERDUE.value
-        ).all()
+        # Overdue - separate query with eager loading
+        overdue = (
+            Loan.query
+            .filter_by(member_id=member.id, status=LoanStatus.OVERDUE.value)
+            .options(joinedload(Loan.copy).joinedload('book'))
+            .all()
+        )
         
         books_read = member.total_books_read
     
@@ -103,17 +122,28 @@ def search_books():
     # Only show available toggle
     show_available = request.args.get('available', '') == '1'
     
-    # Get categories for filter
-    categories = db.session.query(Book.category).distinct().filter(Book.category.isnot(None)).all()
-    categories = [c[0] for c in categories if c[0]]
+    # Use cached categories (no database query on every page load!)
+    categories = get_book_categories()
     
     books = query.order_by(Book.title).paginate(page=page, per_page=per_page)
     
-    # Add availability info
+    # Get availability counts in a single query instead of N+1
+    # Build a mapping of book_id -> available_count
+    from sqlalchemy import func
+    book_ids = [book.id for book in books.items]
+    availability = db.session.query(
+        BookCopy.book_id,
+        func.count(BookCopy.id).label('available_count')
+    ).filter(
+        BookCopy.book_id.in_(book_ids),
+        BookCopy.status == CopyStatus.AVAILABLE.value
+    ).group_by(BookCopy.book_id).all()
+    
+    availability_map = {book_id: count for book_id, count in availability}
+    
+    # Attach availability info to books (no database queries!)
     for book in books.items:
-        book.available_count = book.copies.filter(
-            BookCopy.status == CopyStatus.AVAILABLE.value
-        ).count()
+        book.available_count = availability_map.get(book.id, 0)
     
     return render_template('student/search.html',
                           books=books,
@@ -157,17 +187,27 @@ def my_loans():
                               history=[],
                               now=datetime.utcnow())
     
-    # Active loans
-    active_loans = Loan.query.filter(
-        Loan.member_id == member.id,
-        Loan.status.in_([LoanStatus.ACTIVE.value, LoanStatus.OVERDUE.value])
-    ).order_by(Loan.due_date).all()
+    # Active loans with eager loading
+    active_loans = (
+        Loan.query
+        .filter(
+            Loan.member_id == member.id,
+            Loan.status.in_([LoanStatus.ACTIVE.value, LoanStatus.OVERDUE.value])
+        )
+        .options(joinedload(Loan.copy).joinedload('book'))
+        .order_by(Loan.due_date)
+        .all()
+    )
     
-    # Loan history (returned books)
-    history = Loan.query.filter_by(
-        member_id=member.id,
-        status=LoanStatus.RETURNED.value
-    ).order_by(Loan.return_date.desc()).limit(20).all()
+    # Loan history (returned books) with eager loading
+    history = (
+        Loan.query
+        .filter_by(member_id=member.id, status=LoanStatus.RETURNED.value)
+        .options(joinedload(Loan.copy).joinedload('book'))
+        .order_by(Loan.return_date.desc())
+        .limit(20)
+        .all()
+    )
     
     return render_template('student/my_loans.html',
                           member=member,
@@ -332,16 +372,14 @@ def leaderboard():
 @login_required
 def api_book_availability(book_id):
     """Get real-time availability for a book"""
-    book = Book.query.get_or_404(book_id)
+    book = Book.query.options(joinedload(Book.copies)).get_or_404(book_id)
     
-    available = book.copies.filter(
-        BookCopy.status == CopyStatus.AVAILABLE.value
-    ).all()
+    available = [c for c in book.copies if c.status == CopyStatus.AVAILABLE.value]
     
     return jsonify({
         'book_id': book.id,
         'title': book.title,
-        'total_copies': book.copies.count(),
+        'total_copies': len(book.copies),
         'available_count': len(available),
         'locations': [
             {

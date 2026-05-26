@@ -4,6 +4,7 @@ Circulation routes - Borrow/Return management
 from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
+from sqlalchemy.orm import joinedload
 from app import db
 from app.models import Member, User, Book, BookCopy, Loan, LoanStatus, CopyStatus, Permission
 
@@ -156,15 +157,19 @@ def active_loans():
     page = request.args.get('page', 1, type=int)
     view = request.args.get('view', 'active')  # active, overdue, history
     
-    query = Loan.query
+    # Base query with eager loading to avoid N+1 queries
+    base_query = Loan.query.options(
+        joinedload(Loan.member),
+        joinedload(Loan.copy).joinedload('book')
+    )
     
     # Apply filters based on view
     if view == 'active':
-        loans = query.filter(
+        loans = base_query.filter(
             Loan.status.in_([LoanStatus.ACTIVE.value, LoanStatus.OVERDUE.value])
         ).order_by(Loan.due_date).paginate(page=page, per_page=20)
     elif view == 'overdue':
-        loans = query.filter(
+        loans = base_query.filter(
             Loan.status == LoanStatus.OVERDUE.value
         ).order_by(Loan.due_date).paginate(page=page, per_page=20)
     else:  # history
@@ -173,13 +178,13 @@ def active_loans():
         if member_id:
             member = Member.query.filter_by(member_id=member_id).first()
             if member:
-                query = query.filter(Loan.member_id == member.id)
+                base_query = base_query.filter(Loan.member_id == member.id)
         
         status = request.args.get('status', '')
         if status:
-            query = query.filter(Loan.status == status)
+            base_query = base_query.filter(Loan.status == status)
         
-        loans = query.order_by(Loan.checkout_date.desc()).paginate(page=page, per_page=20)
+        loans = base_query.order_by(Loan.checkout_date.desc()).paginate(page=page, per_page=20)
     
     return render_template('circulation/active_loans.html', loans=loans, current_view=view)
 
@@ -190,7 +195,10 @@ def overdue_loans():
     """List overdue loans"""
     page = request.args.get('page', 1, type=int)
     
-    loans = Loan.query.filter(
+    loans = Loan.query.options(
+        joinedload(Loan.member),
+        joinedload(Loan.copy).joinedload('book')
+    ).filter(
         Loan.status == LoanStatus.OVERDUE.value
     ).order_by(Loan.due_date).paginate(page=page, per_page=20)
     
@@ -203,7 +211,10 @@ def loan_history():
     """Loan history with filters"""
     page = request.args.get('page', 1, type=int)
     
-    query = Loan.query
+    query = Loan.query.options(
+        joinedload(Loan.member),
+        joinedload(Loan.copy).joinedload('book')
+    )
     
     # Filters
     member_id = request.args.get('member', '')
@@ -226,7 +237,14 @@ def loan_history():
 def member_loans(member_id):
     """View member's loan history"""
     member = Member.query.get_or_404(member_id)
-    loans = member.loans.order_by(Loan.checkout_date.desc()).all()
+    # Eager load loans with their book data
+    loans = (
+        Loan.query
+        .filter_by(member_id=member_id)
+        .options(joinedload(Loan.copy).joinedload('book'))
+        .order_by(Loan.checkout_date.desc())
+        .all()
+    )
     
     return render_template('circulation/member_loans.html', member=member, loans=loans)
 

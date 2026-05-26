@@ -233,6 +233,17 @@ def seed_loans():
     click.echo('STU002: 1 overdue book (7 days late)')
 
 
+@app.cli.command('optimize-indexes')
+def optimize_indexes():
+    """Add performance indexes to database tables."""
+    # Import the migration script directly
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("add_indexes", "scripts/add_indexes.py")
+    add_indexes_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(add_indexes_module)
+    add_indexes_module.run_migration()
+
+
 @app.shell_context_processor
 def make_shell_context():
     """Add models to flask shell context."""

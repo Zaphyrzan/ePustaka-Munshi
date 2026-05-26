@@ -1,0 +1,65 @@
+{
+  "buildCommand": "pip install -r requirements.txt",
+  "outputDirectory": ".",
+  "framework": "flask",
+  "python": {
+    "version": "3.11"
+  },
+  "functions": {
+    "wsgi.py": {
+      "maxDuration": 30
+    },
+    "api/index.py": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/wsgi.py"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/static/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    }
+  ],
+  "env": {
+    "FLASK_CONFIG": "production",
+    "FLASK_ENV": "production"
+  },
+  "envVars": {
+    "SECRET_KEY": {
+      "description": "Flask secret key for session management (generate a random string)"
+    },
+    "DATABASE_URL": {
+      "description": "PostgreSQL connection string (use Supabase pooler URL for Vercel)"
+    },
+    "SUPABASE_POOLER_URL": {
+      "description": "Optional: Supabase connection pooler URL (preferred over DATABASE_URL on Vercel)"
+    }
+  }
+}

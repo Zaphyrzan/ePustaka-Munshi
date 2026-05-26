@@ -3,10 +3,30 @@ Main routes - Dashboard and home
 """
 from flask import Blueprint, render_template, redirect, url_for
 from flask_login import login_required, current_user
+from sqlalchemy.orm import joinedload
+from sqlalchemy import func
 from app import db
 from app.models import Book, BookCopy, Member, Loan, LoanStatus, OCRJob
+from app.utils.cache_utils import cache_query
 
 main_bp = Blueprint('main', __name__)
+
+
+@cache_query(ttl_seconds=300)
+def get_dashboard_stats():
+    """
+    Get dashboard statistics using optimized queries.
+    Results cached for 5 minutes.
+    """
+    return {
+        'total_books': Book.query.count(),
+        'total_copies': BookCopy.query.count(),
+        'available_copies': BookCopy.query.filter_by(status='available').count(),
+        'total_members': Member.query.filter_by(is_active=True).count(),
+        'active_loans': Loan.query.filter_by(status=LoanStatus.ACTIVE.value).count(),
+        'overdue_loans': Loan.query.filter_by(status=LoanStatus.OVERDUE.value).count(),
+        'pending_ocr_jobs': OCRJob.query.filter_by(status='pending').count()
+    }
 
 
 @main_bp.route('/')
@@ -32,23 +52,38 @@ def dashboard():
         if getattr(current_user, 'member_type', 'Student') == 'Student':
             return redirect(url_for('student.index'))
     
-    stats = {
-        'total_books': Book.query.count(),
-        'total_copies': BookCopy.query.count(),
-        'available_copies': BookCopy.query.filter_by(status='available').count(),
-        'total_members': Member.query.filter_by(is_active=True).count(),
-        'active_loans': Loan.query.filter_by(status=LoanStatus.ACTIVE.value).count(),
-        'overdue_loans': Loan.query.filter_by(status=LoanStatus.OVERDUE.value).count(),
-        'pending_ocr_jobs': OCRJob.query.filter_by(status='pending').count()
-    }
+    # Get cached stats
+    stats = get_dashboard_stats()
     
-    # Recent loans and returns (combined activity feed)
-    recent_loans = Loan.query.order_by(Loan.checkout_date.desc()).limit(15).all()
+    # Get recent loans with eager loading to avoid N+1 queries
+    # joinedload() ensures copy, book, member, and staff are fetched in one query
+    recent_loans = (
+        Loan.query
+        .options(
+            joinedload(Loan.copy).joinedload('book'),
+            joinedload(Loan.member),
+            joinedload(Loan.checkout_staff),
+            joinedload(Loan.return_staff)
+        )
+        .order_by(Loan.checkout_date.desc())
+        .limit(15)
+        .all()
+    )
     
-    # Overdue items
-    overdue_loans = Loan.query.filter_by(status=LoanStatus.OVERDUE.value).limit(10).all()
+    # Get overdue loans with eager loading
+    overdue_loans = (
+        Loan.query
+        .options(
+            joinedload(Loan.copy).joinedload('book'),
+            joinedload(Loan.member)
+        )
+        .filter_by(status=LoanStatus.OVERDUE.value)
+        .limit(10)
+        .all()
+    )
     
     # Prepare activity data with staff handler information
+    # No additional queries needed - all data already eager loaded
     activity = []
     for loan in recent_loans:
         activity.append({
