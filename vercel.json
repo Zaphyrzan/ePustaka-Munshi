@@ -2,14 +2,6 @@
   "buildCommand": "pip install -r requirements.txt",
   "outputDirectory": ".",
   "framework": "flask",
-  "functions": {
-    "wsgi.py": {
-      "maxDuration": 30
-    },
-    "api/index.py": {
-      "maxDuration": 30
-    }
-  },
   "rewrites": [
     {
       "source": "/(.*)",
