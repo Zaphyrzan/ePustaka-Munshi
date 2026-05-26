@@ -9,6 +9,7 @@ from sqlalchemy.orm import joinedload
 from app import db
 from app.models import Book, BookCopy, CopyStatus, Member, Loan, LoanStatus
 from app.utils.cache_utils import cache_query
+from app.utils.api_utils import OffsetPagination, ResponseFilter, ApiResponse
 
 student_bp = Blueprint('student', __name__)
 
@@ -96,9 +97,11 @@ def index():
 @student_bp.route('/search')
 @login_required
 def search_books():
-    """Search available books"""
-    page = request.args.get('page', 1, type=int)
-    per_page = 12
+    """Search available books with pagination and filtering"""
+    # Parse pagination parameters (per_page: 12-20 books optimal for UI grid)
+    pagination = OffsetPagination.from_request()
+    pagination.per_page = request.args.get('per_page', 12, type=int)
+    pagination.per_page = min(max(pagination.per_page, 12), 50)  # 12-50 range for UI
     
     query = Book.query
     
@@ -125,12 +128,12 @@ def search_books():
     # Use cached categories (no database query on every page load!)
     categories = get_book_categories()
     
-    books = query.order_by(Book.title).paginate(page=page, per_page=per_page)
+    query = query.order_by(Book.title)
+    books = pagination.paginate(query)
     
     # Get availability counts in a single query instead of N+1
     # Build a mapping of book_id -> available_count
-    from sqlalchemy import func
-    book_ids = [book.id for book in books.items]
+    book_ids = [book.id for book in books['items']]
     availability = db.session.query(
         BookCopy.book_id,
         func.count(BookCopy.id).label('available_count')
@@ -142,7 +145,7 @@ def search_books():
     availability_map = {book_id: count for book_id, count in availability}
     
     # Attach availability info to books (no database queries!)
-    for book in books.items:
+    for book in books['items']:
         book.available_count = availability_map.get(book.id, 0)
     
     return render_template('student/search.html',
@@ -176,19 +179,24 @@ def view_book(book_id):
 @student_bp.route('/my-loans')
 @login_required
 def my_loans():
-    """View my borrowed books"""
+    """View my borrowed books with pagination"""
     # Get member - handle both Member and User logins
     member = get_linked_member()
     
     if not member:
         return render_template('student/my_loans.html',
                               member=None,
-                              active_loans=[],
-                              history=[],
+                              active_loans={'items': [], 'total': 0, 'pages': 0, 'current_page': 1},
+                              history={'items': [], 'total': 0, 'pages': 0, 'current_page': 1},
                               now=datetime.utcnow())
     
-    # Active loans with eager loading
-    active_loans = (
+    # Parse pagination for active loans and history separately
+    active_page = request.args.get('active_page', 1, type=int)
+    history_page = request.args.get('history_page', 1, type=int)
+    
+    # Active loans pagination (per_page: 10 optimal for list view)
+    active_pagination = OffsetPagination(active_page, 10)
+    active_query = (
         Loan.query
         .filter(
             Loan.member_id == member.id,
@@ -196,18 +204,18 @@ def my_loans():
         )
         .options(joinedload(Loan.copy).joinedload('book'))
         .order_by(Loan.due_date)
-        .all()
     )
+    active_loans = active_pagination.paginate(active_query)
     
-    # Loan history (returned books) with eager loading
-    history = (
+    # Loan history pagination (per_page: 10 optimal for list view)
+    history_pagination = OffsetPagination(history_page, 10)
+    history_query = (
         Loan.query
         .filter_by(member_id=member.id, status=LoanStatus.RETURNED.value)
         .options(joinedload(Loan.copy).joinedload('book'))
         .order_by(Loan.return_date.desc())
-        .limit(20)
-        .all()
     )
+    history = history_pagination.paginate(history_query)
     
     return render_template('student/my_loans.html',
                           member=member,

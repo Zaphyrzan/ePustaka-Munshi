@@ -10,6 +10,7 @@ from app.utils.excel_import import (
     import_student_data, save_upload_file, get_class_groups, 
     get_form_levels, read_excel_file
 )
+from app.utils.api_utils import OffsetPagination, ResponseFilter, ApiResponse
 from datetime import datetime
 
 users_bp = Blueprint('users', __name__)
@@ -35,9 +36,28 @@ def permission_required(perm):
 @login_required
 @permission_required(Permission.MANAGE_USERS)
 def staff_list():
-    """List staff users"""
-    users = User.query.order_by(User.username).all()
-    return render_template('users/staff_list.html', users=users)
+    """List staff users with pagination"""
+    pagination = OffsetPagination.from_request()
+    pagination.per_page = 15  # 15 users per page (optimal for table)
+    
+    # Search/filter
+    search = request.args.get('search', '').strip()
+    query = User.query
+    
+    if search:
+        search_term = f'%{search}%'
+        query = query.filter(
+            db.or_(
+                User.username.ilike(search_term),
+                User.email.ilike(search_term),
+                User.full_name.ilike(search_term)
+            )
+        )
+    
+    query = query.order_by(User.username)
+    users = pagination.paginate(query)
+    
+    return render_template('users/staff_list.html', users=users, search=search)
 
 
 @users_bp.route('/staff/add', methods=['GET', 'POST'])
@@ -265,11 +285,13 @@ def edit_staff(user_id):
 @login_required
 @permission_required(Permission.MANAGE_MEMBERS)
 def member_list():
-    """List library members"""
-    page = request.args.get('page', 1, type=int)
+    """List library members with pagination and filtering"""
+    pagination = OffsetPagination.from_request()
+    pagination.per_page = 15  # 15 members per page (optimal for table)
     
     query = Member.query
     
+    # Search/filter
     search = request.args.get('search', '').strip()
     if search:
         search_term = f'%{search}%'
@@ -281,9 +303,23 @@ def member_list():
             )
         )
     
-    members = query.order_by(Member.full_name).paginate(page=page, per_page=20)
+    # Filter by member type (optional)
+    member_type = request.args.get('type', '').strip()
+    if member_type:
+        query = query.filter(Member.member_type == member_type)
     
-    return render_template('users/member_list.html', members=members, search=search)
+    # Filter by status (optional)
+    status = request.args.get('status', '').strip()
+    if status == 'active':
+        query = query.filter(Member.is_active == True)
+    elif status == 'inactive':
+        query = query.filter(Member.is_active == False)
+    
+    query = query.order_by(Member.full_name)
+    members = pagination.paginate(query)
+    
+    return render_template('users/member_list.html', members=members, search=search, 
+                          member_type=member_type, status=status)
 
 
 @users_bp.route('/members/add', methods=['GET', 'POST'])
