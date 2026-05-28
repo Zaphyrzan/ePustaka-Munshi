@@ -4,9 +4,10 @@ Main routes - Dashboard and home
 from flask import Blueprint, render_template, redirect, url_for
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
-from sqlalchemy import func
+from sqlalchemy import func, BookCopy
+from datetime import datetime
 from app import db
-from app.models import Book, BookCopy, Member, Loan, LoanStatus, OCRJob
+from app.models import Book, Member, Loan, LoanStatus, OCRJob
 from app.utils.cache_utils import cache_query
 
 main_bp = Blueprint('main', __name__)
@@ -115,3 +116,41 @@ def dashboard():
                           recent_loans=recent_loans,
                           activity=activity,
                           overdue_loans=overdue_loans)
+
+
+@main_bp.route('/health')
+def health():
+    """Health check endpoint for monitoring - no auth required"""
+    from app.utils.db_pool_utils import health_check_db, get_pool_monitor
+    
+    is_healthy, db_status = health_check_db(db.engine)
+    pool_monitor = get_pool_monitor()
+    
+    pool_stats = pool_monitor.get_pool_stats() if pool_monitor else {}
+    
+    return {
+        'status': 'healthy' if is_healthy else 'unhealthy',
+        'database': db_status,
+        'pool_stats': pool_stats,
+        'timestamp': datetime.utcnow().isoformat(),
+    }, 200 if is_healthy else 503
+
+
+@main_bp.route('/pool-stats')
+@login_required
+def pool_stats():
+    """Pool statistics endpoint - staff only"""
+    from app.utils.db_pool_utils import get_pool_monitor
+    
+    # Only allow administrators to view pool stats
+    if not current_user.can('MANAGE_USERS'):
+        return {'error': 'Unauthorized'}, 403
+    
+    pool_monitor = get_pool_monitor()
+    if not pool_monitor:
+        return {'error': 'Pool monitor not initialized'}, 500
+    
+    return {
+        'pool_stats': pool_monitor.get_pool_stats(),
+        'timestamp': datetime.utcnow().isoformat(),
+    }, 200

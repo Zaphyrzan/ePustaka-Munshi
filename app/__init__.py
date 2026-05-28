@@ -119,6 +119,24 @@ def create_app(config_name=None):
     db.init_app(app)
     login_manager.init_app(app)
     
+    # Setup database connection pool monitoring and health checks
+    from app.utils.db_pool_utils import (
+        setup_connection_pool_listeners,
+        ConnectionPoolMonitor,
+        set_pool_monitor
+    )
+    monitor = ConnectionPoolMonitor(db.engine)
+    setup_connection_pool_listeners(db.engine, monitor)
+    set_pool_monitor(monitor)
+    
+    # Log pool configuration for debugging
+    if os.environ.get('VERCEL'):
+        app.logger.info(
+            f"Database pool configured for Vercel: "
+            f"pool_size={app.config['SQLALCHEMY_ENGINE_OPTIONS'].get('pool_size')}, "
+            f"max_overflow={app.config['SQLALCHEMY_ENGINE_OPTIONS'].get('max_overflow')}"
+        )
+    
     # Register i18n (internationalization) for language switching
     from app.utils.i18n import register_i18n
     register_i18n(app)

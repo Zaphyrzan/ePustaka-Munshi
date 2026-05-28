@@ -74,25 +74,34 @@ class Config:
     SQLALCHEMY_DATABASE_URI = _build_database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # SQLAlchemy engine options optimized for Vercel serverless
-    # Vercel functions are stateless, so use connection pooling cautiously
+    # SQLAlchemy engine options optimized for serverless environments
+    # Pool configuration depends on environment (Vercel, development, etc.)
     if os.environ.get('VERCEL'):
+        # Vercel: Minimal pool, fail fast on exhaustion
+        # Each container instance is isolated, minimal concurrent requests
         SQLALCHEMY_ENGINE_OPTIONS = {
-            'pool_pre_ping': True,
-            'pool_size': 1,  # Minimal pool for serverless (each instance is isolated)
-            'max_overflow': 0,  # Disable overflow - fail fast if pool exhausted
-            'pool_recycle': 3600,  # Recycle connections every hour
-            'echo': False,  # Don't log SQL in production (use logs to debug)
+            'pool_size': 1,           # 1 connection per isolated function instance
+            'max_overflow': 0,        # Fail immediately if pool exhausted (don't queue)
+            'pool_pre_ping': True,    # Verify connections with SELECT 1 before use
+            'pool_recycle': 3600,     # Recycle connections every hour (Supabase pooler timeout)
+            'echo': False,            # Don't log SQL (use structured logging instead)
             'connect_args': {
-                'connect_timeout': 10,  # 10 second connection timeout
-                'keepalives': 1,
-                'keepalives_idle': 5,
+                'connect_timeout': 10,   # 10 second connection timeout
+                'keepalives': 1,         # Enable TCP keepalive
+                'keepalives_idle': 5,    # Send keepalive after 5s idle
             }
         }
     else:
-        # Development/local configuration
+        # Development/local: More lenient pooling for testing
         SQLALCHEMY_ENGINE_OPTIONS = {
+            'pool_size': 5,
+            'max_overflow': 10,
             'pool_pre_ping': True,
+            'pool_recycle': 3600,
+            'echo': False,
+            'connect_args': {
+                'connect_timeout': 30,
+            }
         }
     
     # OCR settings
