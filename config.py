@@ -82,7 +82,7 @@ class Config:
         SQLALCHEMY_ENGINE_OPTIONS = {
             'pool_size': 1,           # 1 connection per isolated function instance
             'max_overflow': 0,        # Fail immediately if pool exhausted (don't queue)
-            'pool_pre_ping': True,    # Verify connections with SELECT 1 before use
+            'pool_pre_ping': False,   # Don't verify connections (reduces latency, pool_recycle handles stale)
             'pool_recycle': 3600,     # Recycle connections every hour (Supabase pooler timeout)
             'echo': False,            # Don't log SQL (use structured logging instead)
             'connect_args': {
