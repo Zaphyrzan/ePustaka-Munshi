@@ -74,35 +74,47 @@ class Config:
     SQLALCHEMY_DATABASE_URI = _build_database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # SQLAlchemy engine options optimized for serverless environments
-    # Pool configuration depends on environment (Vercel, development, etc.)
-    if os.environ.get('VERCEL'):
-        # Vercel: Minimal pool, fail fast on exhaustion
-        # Each container instance is isolated, minimal concurrent requests
-        SQLALCHEMY_ENGINE_OPTIONS = {
+    # SQLAlchemy engine options - configurable per database type and environment
+    _db_uri = SQLALCHEMY_DATABASE_URI
+    _is_sqlite = 'sqlite' in _db_uri
+    _is_postgres = 'postgresql' in _db_uri
+    
+    # Base options (safe for all databases)
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'echo': False,
+        'pool_recycle': 3600,
+    }
+    
+    # Database-specific options
+    if os.environ.get('VERCEL') and _is_postgres:
+        # Vercel: Minimal pool, fail fast on exhaustion (PostgreSQL specific)
+        SQLALCHEMY_ENGINE_OPTIONS.update({
             'pool_size': 1,           # 1 connection per isolated function instance
             'max_overflow': 0,        # Fail immediately if pool exhausted (don't queue)
-            'pool_pre_ping': False,   # Don't verify connections (reduces latency, pool_recycle handles stale)
-            'pool_recycle': 3600,     # Recycle connections every hour (Supabase pooler timeout)
-            'echo': False,            # Don't log SQL (use structured logging instead)
+            'pool_pre_ping': False,   # Don't verify connections (reduces latency)
             'connect_args': {
-                'connect_timeout': 10,   # 10 second connection timeout
-                'keepalives': 1,         # Enable TCP keepalive
-                'keepalives_idle': 5,    # Send keepalive after 5s idle
+                'connect_timeout': 10,   # 10 second connection timeout (PostgreSQL)
+                'keepalives': 1,         # Enable TCP keepalive (PostgreSQL)
+                'keepalives_idle': 5,    # Send keepalive after 5s idle (PostgreSQL)
             }
-        }
-    else:
-        # Development/local: More lenient pooling for testing
-        SQLALCHEMY_ENGINE_OPTIONS = {
+        })
+    elif _is_postgres and not _is_sqlite:
+        # Production/Development with PostgreSQL (non-Vercel)
+        SQLALCHEMY_ENGINE_OPTIONS.update({
             'pool_size': 5,
             'max_overflow': 10,
             'pool_pre_ping': True,
-            'pool_recycle': 3600,
-            'echo': False,
             'connect_args': {
                 'connect_timeout': 30,
             }
-        }
+        })
+    elif _is_sqlite:
+        # SQLite (local development) - minimal options
+        SQLALCHEMY_ENGINE_OPTIONS.update({
+            'pool_size': 5,
+            'max_overflow': 10,
+            'pool_pre_ping': False,  # SQLite doesn't need ping
+        })
     
     # OCR settings
     TESSERACT_CMD = os.environ.get('TESSERACT_CMD') or r'C:\Program Files\Tesseract-OCR\tesseract.exe'

@@ -123,7 +123,16 @@ def create_app(config_name=None):
     from app.utils.i18n import register_i18n
     register_i18n(app)
     
-    # Register blueprints
+    # Setup API middleware (CORS, error handling, logging)
+    # This must be done before registering blueprints
+    from app.utils.api_config import setup_api_middleware
+    setup_api_middleware(app)
+    
+    # Register API blueprints (JSON endpoints for React frontend)
+    from app.api import register_api_blueprints
+    register_api_blueprints(app)
+    
+    # Register traditional Flask blueprints (HTML templates - legacy)
     from app.routes.main import main_bp
     from app.routes.auth import auth_bp
     from app.routes.catalog import catalog_bp
