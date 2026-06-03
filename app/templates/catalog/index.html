@@ -32,7 +32,7 @@
 
 <!-- Actions -->
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
-    <p class="text-muted mb-0">Showing {{ books.items|length }} of {{ books.total }} {{ t('books') }}</p>
+    <p class="text-muted mb-0">Showing {{ books['items']|length }} of {{ books.total }} {{ t('books') }}</p>
     {% if current_user.can(8) %}
     <a href="{{ url_for('catalog.add_book') }}" class="btn btn-primary">
         <i class="bi bi-plus-circle"></i> Add Book
@@ -57,7 +57,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for book in books.items %}
+                    {% for book in books['items'] %}
                     <tr>
                         <td>
                             <a href="{{ url_for('catalog.view_book', book_id=book.id) }}" class="text-decoration-none">
@@ -96,7 +96,7 @@
         </div>
         <div class="d-md-none p-3">
             <div class="row g-3">
-                {% for book in books.items %}
+                {% for book in books['items'] %}
                 <div class="col-12">
                     <div class="card mobile-data-card">
                         <div class="card-body">

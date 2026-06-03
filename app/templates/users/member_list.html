@@ -51,7 +51,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for member in members.items %}
+                    {% for member in members['items'] %}
                     <tr>
                         <td><strong>{{ member.member_id }}</strong></td>
                         <td>
@@ -112,7 +112,7 @@
         </div>
         <div class="d-md-none p-3">
             <div class="row g-3">
-                {% for member in members.items %}
+                {% for member in members['items'] %}
                 <div class="col-12">
                     <div class="card mobile-data-card">
                         <div class="card-body">

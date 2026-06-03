@@ -455,7 +455,7 @@
                         <i class="bi bi-globe2"></i> {{ languages.get(current_language, 'English') }}
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        {% for code, name in languages.items() %}
+                        {% for code, name in languages['items']() %}
                         <li>
                             <a class="dropdown-item {% if code == current_language %}active{% endif %}" 
                                href="{{ url_for('set_lang', lang_code=code) }}">

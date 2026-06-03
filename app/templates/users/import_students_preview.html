@@ -33,7 +33,7 @@
                         {% for row in rows %}
                         <tr>
                             <td><small class="text-muted">{{ loop.index }}</small></td>
-                            {% for key, value in row.items() %}
+                            {% for key, value in row['items']() %}
                             <td>
                                 {% if value %}
                                     {{ value }}
