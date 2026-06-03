@@ -119,24 +119,6 @@ def create_app(config_name=None):
     db.init_app(app)
     login_manager.init_app(app)
     
-    # Setup database connection pool monitoring and health checks
-    from app.utils.db_pool_utils import (
-        setup_connection_pool_listeners,
-        ConnectionPoolMonitor,
-        set_pool_monitor
-    )
-    monitor = ConnectionPoolMonitor(db.engine)
-    setup_connection_pool_listeners(db.engine, monitor)
-    set_pool_monitor(monitor)
-    
-    # Log pool configuration for debugging
-    if os.environ.get('VERCEL'):
-        app.logger.info(
-            f"Database pool configured for Vercel: "
-            f"pool_size={app.config['SQLALCHEMY_ENGINE_OPTIONS'].get('pool_size')}, "
-            f"max_overflow={app.config['SQLALCHEMY_ENGINE_OPTIONS'].get('max_overflow')}"
-        )
-    
     # Register i18n (internationalization) for language switching
     from app.utils.i18n import register_i18n
     register_i18n(app)
@@ -158,9 +140,29 @@ def create_app(config_name=None):
     app.register_blueprint(users_bp, url_prefix='/users')
     app.register_blueprint(student_bp, url_prefix='/student')
     
-    # Create database tables
+    # Create database tables and setup monitoring
     with app.app_context():
         db.create_all()
+        
+        # Setup database connection pool monitoring and health checks
+        # (must be done inside app context so db.engine is available)
+        from app.utils.db_pool_utils import (
+            setup_connection_pool_listeners,
+            ConnectionPoolMonitor,
+            set_pool_monitor
+        )
+        monitor = ConnectionPoolMonitor(db.engine)
+        setup_connection_pool_listeners(db.engine, monitor)
+        set_pool_monitor(monitor)
+        
+        # Log pool configuration for debugging
+        if os.environ.get('VERCEL'):
+            app.logger.info(
+                f"Database pool configured for Vercel: "
+                f"pool_size={app.config['SQLALCHEMY_ENGINE_OPTIONS'].get('pool_size')}, "
+                f"max_overflow={app.config['SQLALCHEMY_ENGINE_OPTIONS'].get('max_overflow')}"
+            )
+        
         # Seed default roles if not exist
         from app.models.user import Role
         Role.insert_default_roles()
