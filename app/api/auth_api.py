@@ -38,7 +38,11 @@ def login():
     }
     """
     try:
-        data = request.get_json()
+        # Get JSON data, handle missing content type
+        try:
+            data = request.get_json()
+        except Exception as e:
+            return ApiResponse.error('Request must be JSON (Content-Type: application/json)', status_code=400)
         
         if not data:
             return ApiResponse.error('Request body must be JSON', status_code=400)
