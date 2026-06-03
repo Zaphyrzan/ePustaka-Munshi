@@ -4,10 +4,10 @@ Main routes - Dashboard and home
 from flask import Blueprint, render_template, redirect, url_for
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
-from sqlalchemy import func, BookCopy
+from sqlalchemy import func
 from datetime import datetime
 from app import db
-from app.models import Book, Member, Loan, LoanStatus, OCRJob
+from app.models import Book, Member, Loan, LoanStatus, OCRJob, BookCopy
 from app.utils.cache_utils import cache_query
 
 main_bp = Blueprint('main', __name__)
