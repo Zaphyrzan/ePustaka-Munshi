@@ -109,11 +109,19 @@ def create_app(config_name=None):
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(config[config_name])
     
-    # Ensure instance and upload folders exist
-    os.makedirs(app.instance_path, exist_ok=True)
-    os.makedirs(app.config.get('OCR_UPLOAD_FOLDER', 'uploads/ocr'), exist_ok=True)
-    os.makedirs(app.config.get('OCR_OUTPUT_FOLDER', 'uploads/ocr_results'), exist_ok=True)
-    os.makedirs(app.config.get('SCANNER_WATCH_FOLDER', 'uploads/scanner_spool'), exist_ok=True)
+    # Ensure instance and upload folders exist. Only needed for local
+    # SQLite/OCR; on Vercel the filesystem is read-only and the DB is
+    # Supabase, so a failure here must not block startup.
+    for folder in (
+        app.instance_path,
+        app.config.get('OCR_UPLOAD_FOLDER', 'uploads/ocr'),
+        app.config.get('OCR_OUTPUT_FOLDER', 'uploads/ocr_results'),
+        app.config.get('SCANNER_WATCH_FOLDER', 'uploads/scanner_spool'),
+    ):
+        try:
+            os.makedirs(folder, exist_ok=True)
+        except OSError:
+            app.logger.warning(f'Could not create folder {folder} (read-only filesystem?)')
     
     # Initialize extensions with app
     db.init_app(app)
