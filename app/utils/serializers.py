@@ -3,7 +3,9 @@ Model Serializers - Convert SQLAlchemy models to dictionaries for JSON responses
 Provides consistent serialization across all API endpoints
 """
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
+
+from flask import current_app
 
 
 class ModelSerializer:
@@ -14,7 +16,7 @@ class ModelSerializer:
         """Convert datetime to ISO format string"""
         if not dt:
             return None
-        return dt.isoformat() if isinstance(dt, datetime) else str(dt)
+        return dt.isoformat() if hasattr(dt, 'isoformat') else str(dt)
     
     @staticmethod
     def serialize_enum(enum_val) -> str:
@@ -60,8 +62,21 @@ class UserSerializer(ModelSerializer):
         
         if include_password:
             data['password_hash'] = user.password_hash
-        
+
         return data
+
+    @staticmethod
+    def to_summary_dict(user) -> Dict[str, Any]:
+        """Lightweight payload for embedding in other resources.
+        Runs no extra queries (role is not loaded)."""
+        if not user:
+            return None
+
+        return {
+            'id': user.id,
+            'username': user.username,
+            'full_name': user.full_name,
+        }
 
 
 class MemberSerializer(ModelSerializer):
@@ -81,24 +96,71 @@ class MemberSerializer(ModelSerializer):
         """
         if not member:
             return None
-        
+
+        # Use batch-annotated counts when present (see users_api) to avoid
+        # per-member COUNT queries on list endpoints.
+        active_loans = getattr(member, '_active_loans', None)
+        overdue_loans = getattr(member, '_overdue_loans', None)
+        if active_loans is None:
+            active_loans = member.active_loans_count
+        if overdue_loans is None:
+            overdue_loans = member.overdue_loans_count
+
+        # Mirrors Member.can_borrow, but on the precomputed counts.
+        max_loans = current_app.config.get('MAX_LOANS_PER_MEMBER', 5)
+        can_borrow = (
+            bool(member.is_active)
+            and active_loans < max_loans
+            and overdue_loans == 0
+        )
+
         data = {
             'id': member.id,
             'member_id': member.member_id,
             'full_name': member.full_name,
             'email': member.email,
             'phone': member.phone,
-            'is_active': member.is_active,
             'member_type': member.member_type,
-            'student_id': member.student_id,
-            'date_joined': ModelSerializer.serialize_datetime(member.date_joined),
+            'form_level': member.form_level,
+            'form_name': member.form_name,
+            'class_group': member.class_group,
+            'student_year': member.student_year,
+            'total_books_read': member.total_books_read,
+            'is_active': member.is_active,
+            'is_staff': member.is_staff,
+            'is_graduated': member.is_graduated,
+            'mark_for_deletion': member.mark_for_deletion,
+            'active_loans': active_loans,
+            'overdue_loans': overdue_loans,
+            'can_borrow': can_borrow,
+            'created_at': ModelSerializer.serialize_datetime(member.created_at),
+            'updated_at': ModelSerializer.serialize_datetime(member.updated_at),
             'last_login': ModelSerializer.serialize_datetime(member.last_login),
+            'notes': member.notes,
         }
         
         if include_password:
             data['password_hash'] = member.password_hash
-        
+
         return data
+
+    @staticmethod
+    def to_summary_dict(member) -> Dict[str, Any]:
+        """Lightweight payload for embedding in other resources.
+        Runs no extra queries (no loan counts)."""
+        if not member:
+            return None
+
+        return {
+            'id': member.id,
+            'member_id': member.member_id,
+            'full_name': member.full_name,
+            'member_type': member.member_type,
+            'form_level': member.form_level,
+            'form_name': member.form_name,
+            'class_group': member.class_group,
+            'is_active': member.is_active,
+        }
 
 
 class BookSerializer(ModelSerializer):
@@ -119,6 +181,13 @@ class BookSerializer(ModelSerializer):
         if not book:
             return None
         
+        total_copies = getattr(book, '_total_copies', None)
+        available_copies = getattr(book, '_available_copies', None)
+        if total_copies is None:
+            total_copies = book.total_copies
+        if available_copies is None:
+            available_copies = book.available_copies
+
         data = {
             'id': book.id,
             'title': book.title,
@@ -135,17 +204,37 @@ class BookSerializer(ModelSerializer):
             'page_count': book.page_count,
             'cover_image': book.cover_image,
             'price': book.price,
-            'total_copies': book.total_copies,
-            'available_copies': book.available_copies,
-            'is_available': book.is_available,
+            'total_copies': total_copies,
+            'available_copies': available_copies,
+            'is_available': available_copies > 0,
             'created_at': ModelSerializer.serialize_datetime(book.created_at),
             'updated_at': ModelSerializer.serialize_datetime(book.updated_at),
         }
         
         if include_copies:
-            data['copies'] = [BookCopySerializer.to_dict(copy) for copy in book.copies]
-        
+            data['copies'] = [
+                BookCopySerializer.to_dict(copy)
+                for copy in book.copies.all()
+            ]
+
         return data
+
+    @staticmethod
+    def to_summary_dict(book) -> Dict[str, Any]:
+        """Lightweight payload for embedding in other resources.
+        Runs no extra queries (no copy counts)."""
+        if not book:
+            return None
+
+        return {
+            'id': book.id,
+            'title': book.title,
+            'author': book.author,
+            'isbn': book.isbn,
+            'category': book.category,
+            'call_number': book.call_number,
+            'cover_image': book.cover_image,
+        }
 
 
 class BookCopySerializer(ModelSerializer):
@@ -182,8 +271,25 @@ class BookCopySerializer(ModelSerializer):
             data['book'] = BookSerializer.to_dict(copy.book, include_copies=False)
         else:
             data['book_id'] = copy.book_id
-        
+
         return data
+
+    @staticmethod
+    def to_summary_dict(copy) -> Dict[str, Any]:
+        """Lightweight payload for embedding in loans.
+        Runs no extra queries (book is summarized without copy counts)."""
+        if not copy:
+            return None
+
+        return {
+            'id': copy.id,
+            'barcode': copy.barcode,
+            'accession_number': copy.accession_number,
+            'status': copy.status,
+            'location': copy.location,
+            'condition': copy.condition,
+            'book': BookSerializer.to_summary_dict(copy.book),
+        }
 
 
 class LoanSerializer(ModelSerializer):
@@ -212,19 +318,29 @@ class LoanSerializer(ModelSerializer):
             'return_date': ModelSerializer.serialize_datetime(loan.return_date),
             'is_overdue': loan.is_overdue,
             'days_overdue': loan.days_overdue,
-            'days_remaining': loan.days_remaining,
+            'renewal_count': loan.renewal_count,
+            'can_renew': loan.can_renew,
+            'fine_amount': loan.fine_amount,
+            'fine_paid': loan.fine_paid,
+            'notes': loan.notes,
         }
+
+        if loan.due_date and loan.status != 'returned':
+            remaining = loan.due_date - datetime.utcnow()
+            data['days_remaining'] = max(remaining.days, 0)
+        else:
+            data['days_remaining'] = 0
         
         if include_relations:
-            data['copy'] = BookCopySerializer.to_dict(loan.copy, include_book=True) if loan.copy else None
-            data['member'] = MemberSerializer.to_dict(loan.member) if loan.member else None
-            data['checkout_staff'] = UserSerializer.to_dict(loan.checkout_staff) if loan.checkout_staff else None
-            data['return_staff'] = UserSerializer.to_dict(loan.return_staff) if loan.return_staff else None
+            data['copy'] = BookCopySerializer.to_summary_dict(loan.copy)
+            data['member'] = MemberSerializer.to_summary_dict(loan.member)
+            data['checkout_staff'] = UserSerializer.to_summary_dict(loan.checkout_staff)
+            data['return_staff'] = UserSerializer.to_summary_dict(loan.return_staff)
         else:
             data['copy_id'] = loan.copy_id
             data['member_id'] = loan.member_id
-            data['checkout_staff_id'] = loan.checkout_staff_id
-            data['return_staff_id'] = loan.return_staff_id
+            data['checkout_staff_id'] = loan.checkout_by
+            data['return_staff_id'] = loan.return_by
         
         return data
 
@@ -249,20 +365,35 @@ class OCRJobSerializer(ModelSerializer):
         
         data = {
             'id': job.id,
-            'filename': job.filename,
+            'job_name': job.job_name,
+            'source_type': job.source_type,
+            'original_filename': job.original_filename,
             'status': job.status,
             'progress': job.progress,
             'page_count': job.page_count,
-            'processed_pages': job.processed_pages,
+            'result_count': job.result_count,
+            'reviewed_count': job.reviewed_count,
+            'pending_review_count': job.pending_review_count,
             'created_at': ModelSerializer.serialize_datetime(job.created_at),
+            'started_at': ModelSerializer.serialize_datetime(job.started_at),
             'completed_at': ModelSerializer.serialize_datetime(job.completed_at),
-            'uploaded_by_id': job.uploaded_by_id,
+            'reviewed_at': ModelSerializer.serialize_datetime(job.reviewed_at),
+            'committed_at': ModelSerializer.serialize_datetime(job.committed_at),
+            'created_by': job.created_by,
+            'reviewed_by': job.reviewed_by,
+            'error_message': job.error_message,
         }
         
-        if include_results and job.ocr_results:
-            data['results'] = job.ocr_results
+        if include_results:
+            data['results'] = [
+                result.to_dict()
+                for result in sorted(
+                    job.results.all(),
+                    key=lambda result: (result.page_number or 0, result.row_number or 0)
+                )
+            ]
         else:
-            data['has_results'] = bool(job.ocr_results)
+            data['has_results'] = job.result_count > 0
         
         return data
 
