@@ -119,6 +119,10 @@ class Config:
     # OCR settings
     TESSERACT_CMD = os.environ.get('TESSERACT_CMD') or r'C:\Program Files\Tesseract-OCR\tesseract.exe'
     OCR_UPLOAD_FOLDER = _runtime_folder('uploads', 'ocr')
+
+    # Vision OCR (Claude API) - handles the handwritten ledgers Tesseract can't read
+    ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY')
+    OCR_VISION_MODEL = os.environ.get('OCR_VISION_MODEL', 'claude-haiku-4-5')
     OCR_OUTPUT_FOLDER = _runtime_folder('uploads', 'ocr_results')
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'tiff', 'pdf'}
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB max upload

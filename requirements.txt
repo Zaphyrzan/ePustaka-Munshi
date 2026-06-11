@@ -26,3 +26,4 @@ python-barcode==0.15.1
 # Future scanner integration (placeholder)
 # pyinsane2  # SANE-based scanners (Linux/Mac)
 # wia-python # Windows WIA (when available)
+anthropic==0.92.0
