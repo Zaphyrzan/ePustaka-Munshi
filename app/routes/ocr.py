@@ -2,6 +2,7 @@
 OCR routes - Ledger digitization
 """
 import os
+import re
 import json
 from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app
@@ -9,7 +10,7 @@ from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from app import db
 from app.models import OCRJob, OCRResult, OCRJobStatus, Loan, Member, BookCopy, Permission
-from app.services import ScannerServiceFactory, OCRService, OCRCorrectionService
+from app.services import ScannerServiceFactory, OCRService, OCRCorrectionService, VisionOCRService
 from app.utils.excel_import import import_ocr_ledger_data, save_upload_file, read_excel_file
 
 ocr_bp = Blueprint('ocr', __name__)
@@ -33,6 +34,22 @@ def allowed_file(filename):
     """Check if file extension is allowed"""
     allowed = current_app.config.get('ALLOWED_EXTENSIONS', {'png', 'jpg', 'jpeg', 'tiff', 'pdf'})
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed
+
+
+def _truncate(value, max_len):
+    """Trim a value to a catalog column limit (Postgres rejects overlong strings)"""
+    if value is None:
+        return None
+    value = str(value).strip()
+    return value[:max_len] if value else None
+
+
+def _parse_year(value):
+    """Extract a 4-digit year from a ledger date string like '2003' or 'KL: 12/2003'"""
+    if not value:
+        return None
+    match = re.search(r'\b(1[89]\d{2}|20\d{2})\b', str(value))
+    return int(match.group(1)) if match else None
 
 
 @ocr_bp.route('/')
@@ -118,19 +135,37 @@ def process_job(job_id):
     if job.status not in [OCRJobStatus.PENDING.value, OCRJobStatus.FAILED.value]:
         flash('Job cannot be processed in current state', 'error')
         return redirect(url_for('ocr.view_job', job_id=job.id))
-    
-    # Initialize OCR service
+
+    # Engine selection: Claude vision reads the handwritten ledgers; Tesseract
+    # remains available as the printed-text/research baseline (engine=tesseract)
     tesseract_cmd = current_app.config.get('TESSERACT_CMD')
-    ocr_service = OCRService(tesseract_cmd=tesseract_cmd)
-    
-    if not ocr_service.is_available():
-        flash('OCR service (Tesseract) is not available. Please install Tesseract OCR.', 'error')
-        return redirect(url_for('ocr.view_job', job_id=job.id))
-    
+    engine = request.form.get('engine', 'vision')
+
+    vision_service = VisionOCRService(
+        api_key=current_app.config.get('ANTHROPIC_API_KEY'),
+        model=current_app.config.get('OCR_VISION_MODEL'),
+        tesseract_cmd=tesseract_cmd
+    )
+
+    if engine == 'vision' and vision_service.is_available():
+        ocr_service = vision_service
+    else:
+        if engine == 'vision':
+            flash('Vision OCR not configured (set ANTHROPIC_API_KEY). Falling back to Tesseract.', 'warning')
+        ocr_service = OCRService(tesseract_cmd=tesseract_cmd)
+        if not ocr_service.is_available():
+            flash('OCR service (Tesseract) is not available. Please install Tesseract OCR.', 'error')
+            return redirect(url_for('ocr.view_job', job_id=job.id))
+
     try:
         job.mark_processing()
+        # Record the engine used so results can be compared per-engine later
+        job.ocr_config = json.dumps({
+            'engine': 'vision' if isinstance(ocr_service, VisionOCRService) else 'tesseract',
+            'model': getattr(ocr_service, 'model', None)
+        })
         db.session.commit()
-        
+
         # Process file
         result_data = ocr_service.process_file(job.source_path)
         
@@ -246,79 +281,109 @@ def update_result(result_id):
 @login_required
 @permission_required(Permission.OCR_APPROVE)
 def commit_job(job_id):
-    """Upload reviewed ledger data to database as books"""
+    """Commit reviewed ledger rows to the catalog (Book + BookCopy) and the DigitizedLedger archive"""
     from app.models import Book, BookCopy
-    
+    from app.models.ocr import DigitizedLedger
+
     job = OCRJob.query.get_or_404(job_id)
-    
+
     # Check all results reviewed
     unreviewed = job.results.filter(OCRResult.is_reviewed == False).count()
     if unreviewed > 0:
         flash(f'Cannot commit: {unreviewed} results still need review', 'error')
         return redirect(url_for('ocr.review_job', job_id=job.id))
-    
+
     # Get valid reviewed results
     valid_results = job.results.filter(OCRResult.is_valid == True).all()
     if not valid_results:
         flash('No valid results to upload', 'warning')
         return redirect(url_for('ocr.review_job', job_id=job.id))
-    
+
     count = 0
     errors = []
-    
+
     for result in valid_results:
+        # Final values (corrected or extracted), trimmed to catalog column limits
+        title = _truncate(result.final_tajuk_buku, 256)
+        author = _truncate(result.final_pengarang, 256) or ''
+        accession = _truncate(result.final_no_perolehan, 32)
+
+        if not title or not accession:
+            errors.append(f'Row {result.row_number}: Missing title or accession number')
+            continue
+
+        # Skip rows whose accession is already catalogued (re-commit safety)
+        if BookCopy.query.filter_by(accession_number=accession).first():
+            errors.append(f'Row {result.row_number}: Accession {accession} already in database')
+            continue
+
         try:
-            # Get final values (corrected or extracted)
-            title = result.final_tajuk_buku
-            author = result.final_pengarang
-            publisher = result.final_penerbit
-            accession = result.final_no_perolehan
-            call_number = result.final_no_panggilan
-            
-            # Skip if title missing
-            if not title or not accession:
-                errors.append(f'Row {result.row_number}: Missing title or accession number')
-                continue
-            
-            # Check for duplicate accession
-            existing_copy = BookCopy.query.filter_by(accession_number=accession).first()
-            if existing_copy:
-                errors.append(f'Row {result.row_number}: Accession {accession} already in database')
-                continue
-            
-            # Create or find Book
-            book = Book.query.filter_by(title=title, author=author).first()
-            if not book:
-                book = Book(
-                    title=title,
-                    author=author or '',
-                    publisher=publisher or '',
-                    isbn='',
-                    description=result.final_catatan or ''
+            # Savepoint per row: a failing row rolls back alone without losing the batch
+            with db.session.begin_nested():
+                # Reuse the title-level record if it exists, else create it
+                # (mirrors the CRUD add-book flow in catalog.add_book)
+                book = Book.query.filter_by(title=title, author=author).first()
+                if not book:
+                    book = Book(
+                        title=title,
+                        author=author,
+                        publisher=_truncate(result.final_penerbit, 128),
+                        call_number=_truncate(result.final_no_panggilan, 32),
+                        publication_year=_parse_year(result.final_tarikh_penerbit),
+                        page_count=result.final_muka_surat,
+                        price=result.final_harga
+                    )
+                    db.session.add(book)
+                    db.session.flush()  # Get book.id for the copy below
+
+                # Physical copy carries the acquisition details from the ledger
+                copy = BookCopy(
+                    book_id=book.id,
+                    accession_number=accession,
+                    status='available',
+                    location='Library',
+                    acquisition_date=result.final_tarikh_perolehan,
+                    acquisition_source=_truncate(result.final_punca, 64),
+                    price=result.final_harga,
+                    notes=result.final_catatan
                 )
-                db.session.add(book)
-                db.session.flush()
-            
-            # Create BookCopy with accession info
-            copy = BookCopy(
-                book_id=book.id,
-                accession_number=accession,
-                call_number=call_number or '',
-                status='available',
-                location='Library',
-                isbn=''
-            )
-            db.session.add(copy)
+                db.session.add(copy)
+
+                # Archive the full ledger row for scan-to-book traceability
+                ledger = DigitizedLedger(
+                    source_job_id=job.id,
+                    source_result_id=result.id,
+                    no_perolehan=result.final_no_perolehan,
+                    no_panggilan=result.final_no_panggilan,
+                    pengarang=result.final_pengarang,
+                    tajuk_buku=result.final_tajuk_buku,
+                    penerbit=result.final_penerbit,
+                    tarikh_penerbit=result.final_tarikh_penerbit,
+                    tarikh_perolehan=result.final_tarikh_perolehan,
+                    bil_no=result.final_bil_no,
+                    punca=result.final_punca,
+                    harga=result.final_harga,
+                    muka_surat=result.final_muka_surat,
+                    catatan=result.final_catatan,
+                    linked_book_id=book.id,
+                    created_by=current_user.id
+                )
+                db.session.add(ledger)
+                db.session.flush()  # Get copy.id and ledger.id
+                ledger.linked_copy_id = copy.id
+                result.committed_ledger_id = ledger.id
+
             count += 1
-        
+
         except Exception as e:
             errors.append(f'Row {result.row_number}: {str(e)}')
-    
+
     if count > 0:
-        db.session.commit()
         job.mark_committed()
         db.session.commit()
-    
+    else:
+        db.session.rollback()
+
     # Flash messages
     if errors:
         flash(f'Uploaded {count} books. Issues with {len(errors)} rows:', 'warning')
@@ -326,7 +391,7 @@ def commit_job(job_id):
             flash(error, 'error')
     else:
         flash(f'Successfully uploaded {count} books to database', 'success')
-    
+
     return redirect(url_for('ocr.view_job', job_id=job.id))
 
 

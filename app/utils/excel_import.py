@@ -327,8 +327,12 @@ def import_ocr_ledger_data(filepath, book_id=None):
                     pass
             
             # Category (default to 'General' if not provided)
-            book.category = (row.get('category') or row.get('kategori') or 
+            book.category = (row.get('category') or row.get('kategori') or
                             row.get('subject') or 'General').strip()
+
+            # COLUMN 2: NO PANGGILAN (Call Number) - lives on Book, not BookCopy
+            book.call_number = (str(row.get('call_number') or row.get('no_panggilan') or
+                               row.get('callnumber') or '').strip()[:32]) or None
             
             # Notes/Remarks (optional)
             description = (row.get('notes') or row.get('catatan') or 
@@ -356,10 +360,6 @@ def import_ocr_ledger_data(filepath, book_id=None):
                             row.get('accession_num') or '').strip()
             
             if accession_num:
-                # COLUMN 2: NO PANGGILAN (Call Number)
-                call_number = (row.get('call_number') or row.get('no_panggilan') or 
-                              row.get('callnumber') or '').strip() or None
-                
                 # COLUMN 7: PUNCA (Source - how acquired)
                 source = (row.get('source') or row.get('punca') or 
                          row.get('acquisition_source') or '').strip() or 'Purchase'
@@ -381,9 +381,8 @@ def import_ocr_ledger_data(filepath, book_id=None):
                 
                 copy = BookCopy(
                     book_id=book.id,
-                    accession_number=accession_num,
-                    call_number=call_number,
-                    barcode=accession_num.replace('-', '').replace(' ', '').upper(),
+                    accession_number=accession_num[:32],
+                    barcode=accession_num.replace('-', '').replace(' ', '').upper()[:32],
                     status='available',
                     acquisition_source=source,
                     acquisition_date=acq_date,
