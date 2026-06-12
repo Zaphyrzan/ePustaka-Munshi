@@ -1,16 +1,28 @@
 {
-  "buildCommand": "pip install -r requirements.txt",
-  "outputDirectory": ".",
+  "buildCommand": "pip install -r requirements.txt && cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/dist",
   "framework": "flask",
   "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/wsgi.py"
-    }
+    { "source": "/api/(.*)", "destination": "/wsgi.py" },
+    { "source": "/catalog/api/(.*)", "destination": "/wsgi.py" },
+    { "source": "/circulation/api/(.*)", "destination": "/wsgi.py" },
+    { "source": "/ocr/api/(.*)", "destination": "/wsgi.py" },
+    { "source": "/users/api/(.*)", "destination": "/wsgi.py" },
+    { "source": "/catalog/book/(.*)/print-barcodes", "destination": "/wsgi.py" },
+    { "source": "/users/students/import", "destination": "/wsgi.py" },
+    { "source": "/users/staff/import", "destination": "/wsgi.py" },
+    { "source": "/users/students/active", "destination": "/wsgi.py" },
+    { "source": "/users/students/graduation-list", "destination": "/wsgi.py" },
+    { "source": "/users/admin/(.*)", "destination": "/wsgi.py" },
+    { "source": "/ocr/import-ledger", "destination": "/wsgi.py" },
+    { "source": "/auth/(.*)", "destination": "/wsgi.py" },
+    { "source": "/static/(.*)", "destination": "/wsgi.py" },
+    { "source": "/health", "destination": "/wsgi.py" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {
-      "source": "/static/(.*)",
+      "source": "/assets/(.*)",
       "headers": [
         {
           "key": "Cache-Control",

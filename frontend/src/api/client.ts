@@ -1,7 +1,9 @@
 import axios from 'axios'
 
-// Flask API base. Dev: local Flask on :5000. Prod: the deployed Flask API.
-const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+// Flask API base. Dev: local Flask on :5000. Prod: same origin (empty string),
+// since the React app and the Flask API share one Vercel deployment.
+export const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:5000'
+const baseURL = API_BASE
 
 export const api = axios.create({
   baseURL,
