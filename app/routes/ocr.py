@@ -277,29 +277,28 @@ def review_job(job_id):
                            ready_to_commit=ready_to_commit)
 
 
+def _corrections_from_form(form):
+    """Collect non-empty ledger field corrections from a review form"""
+    corrections = {}
+    for field in ['no_perolehan', 'no_panggilan', 'pengarang', 'tajuk_buku',
+                  'penerbit', 'tarikh_penerbit', 'punca',
+                  'tarikh_perolehan', 'bil_no', 'harga', 'muka_surat', 'catatan']:
+        value = form.get(field, '').strip()
+        if value:
+            corrections[field] = value
+    return corrections
+
+
 @ocr_bp.route('/result/<int:result_id>/update', methods=['POST'])
 @login_required
 @permission_required(Permission.OCR_APPROVE)
 def update_result(result_id):
     """Update ledger extraction with corrections"""
     result = OCRResult.query.get_or_404(result_id)
-    
+
     is_valid = request.form.get('is_valid') == 'true'
-    corrections = {}
-    
-    # Ledger 7-column fields
-    for field in ['no_perolehan', 'no_panggilan', 'pengarang', 'tajuk_buku', 
-                  'penerbit', 'tarikh_penerbit', 'punca']:
-        value = request.form.get(field, '').strip()
-        if value:
-            corrections[field] = value
-    
-    # Optional fields
-    for field in ['tarikh_perolehan', 'bil_no', 'harga', 'muka_surat', 'catatan']:
-        value = request.form.get(field, '').strip()
-        if value:
-            corrections[field] = value
-    
+    corrections = _corrections_from_form(request.form)
+
     notes = request.form.get('notes', '').strip()
     result.mark_reviewed(is_valid, corrections, notes)
     db.session.commit()
@@ -311,14 +310,92 @@ def update_result(result_id):
     return redirect(url_for('ocr.review_job', job_id=result.job_id))
 
 
+def _commit_result_row(job, result):
+    """Turn one reviewed ledger row into Book + BookCopy + DigitizedLedger.
+
+    Runs in a savepoint so a failing row rolls back alone. Returns an error
+    message, or None on success. Caller is responsible for db.session.commit().
+    """
+    from app.models import Book, BookCopy
+    from app.models.ocr import DigitizedLedger
+
+    # Final values (corrected or extracted), trimmed to catalog column limits
+    title = _truncate(result.final_tajuk_buku, 256)
+    author = _truncate(result.final_pengarang, 256) or ''
+    accession = _truncate(result.final_no_perolehan, 32)
+
+    if not title or not accession:
+        return f'Row {result.row_number}: Missing title or accession number'
+
+    # Skip rows whose accession is already catalogued (re-commit safety)
+    if BookCopy.query.filter_by(accession_number=accession).first():
+        return f'Row {result.row_number}: Accession {accession} already in database'
+
+    try:
+        with db.session.begin_nested():
+            # Reuse the title-level record if it exists, else create it
+            # (mirrors the CRUD add-book flow in catalog.add_book)
+            book = Book.query.filter_by(title=title, author=author).first()
+            if not book:
+                book = Book(
+                    title=title,
+                    author=author,
+                    publisher=_truncate(result.final_penerbit, 128),
+                    call_number=_truncate(result.final_no_panggilan, 32),
+                    publication_year=_parse_year(result.final_tarikh_penerbit),
+                    page_count=result.final_muka_surat,
+                    price=result.final_harga
+                )
+                db.session.add(book)
+                db.session.flush()  # Get book.id for the copy below
+
+            # Physical copy carries the acquisition details from the ledger
+            copy = BookCopy(
+                book_id=book.id,
+                accession_number=accession,
+                status='available',
+                location='Library',
+                acquisition_date=result.final_tarikh_perolehan,
+                acquisition_source=_truncate(result.final_punca, 64),
+                price=result.final_harga,
+                notes=result.final_catatan
+            )
+            db.session.add(copy)
+
+            # Archive the full ledger row for scan-to-book traceability
+            ledger = DigitizedLedger(
+                source_job_id=job.id,
+                source_result_id=result.id,
+                no_perolehan=result.final_no_perolehan,
+                no_panggilan=result.final_no_panggilan,
+                pengarang=result.final_pengarang,
+                tajuk_buku=result.final_tajuk_buku,
+                penerbit=result.final_penerbit,
+                tarikh_penerbit=result.final_tarikh_penerbit,
+                tarikh_perolehan=result.final_tarikh_perolehan,
+                bil_no=result.final_bil_no,
+                punca=result.final_punca,
+                harga=result.final_harga,
+                muka_surat=result.final_muka_surat,
+                catatan=result.final_catatan,
+                linked_book_id=book.id,
+                created_by=current_user.id
+            )
+            db.session.add(ledger)
+            db.session.flush()  # Get copy.id and ledger.id
+            ledger.linked_copy_id = copy.id
+            result.committed_ledger_id = ledger.id
+
+    except Exception as e:
+        return f'Row {result.row_number}: {str(e)}'
+    return None
+
+
 @ocr_bp.route('/job/<int:job_id>/commit', methods=['POST'])
 @login_required
 @permission_required(Permission.OCR_APPROVE)
 def commit_job(job_id):
     """Commit reviewed ledger rows to the catalog (Book + BookCopy) and the DigitizedLedger archive"""
-    from app.models import Book, BookCopy
-    from app.models.ocr import DigitizedLedger
-
     job = OCRJob.query.get_or_404(job_id)
 
     # Incremental commit: take rows that are reviewed, approved, and not yet
@@ -338,80 +415,11 @@ def commit_job(job_id):
     errors = []
 
     for result in valid_results:
-        # Final values (corrected or extracted), trimmed to catalog column limits
-        title = _truncate(result.final_tajuk_buku, 256)
-        author = _truncate(result.final_pengarang, 256) or ''
-        accession = _truncate(result.final_no_perolehan, 32)
-
-        if not title or not accession:
-            errors.append(f'Row {result.row_number}: Missing title or accession number')
-            continue
-
-        # Skip rows whose accession is already catalogued (re-commit safety)
-        if BookCopy.query.filter_by(accession_number=accession).first():
-            errors.append(f'Row {result.row_number}: Accession {accession} already in database')
-            continue
-
-        try:
-            # Savepoint per row: a failing row rolls back alone without losing the batch
-            with db.session.begin_nested():
-                # Reuse the title-level record if it exists, else create it
-                # (mirrors the CRUD add-book flow in catalog.add_book)
-                book = Book.query.filter_by(title=title, author=author).first()
-                if not book:
-                    book = Book(
-                        title=title,
-                        author=author,
-                        publisher=_truncate(result.final_penerbit, 128),
-                        call_number=_truncate(result.final_no_panggilan, 32),
-                        publication_year=_parse_year(result.final_tarikh_penerbit),
-                        page_count=result.final_muka_surat,
-                        price=result.final_harga
-                    )
-                    db.session.add(book)
-                    db.session.flush()  # Get book.id for the copy below
-
-                # Physical copy carries the acquisition details from the ledger
-                copy = BookCopy(
-                    book_id=book.id,
-                    accession_number=accession,
-                    status='available',
-                    location='Library',
-                    acquisition_date=result.final_tarikh_perolehan,
-                    acquisition_source=_truncate(result.final_punca, 64),
-                    price=result.final_harga,
-                    notes=result.final_catatan
-                )
-                db.session.add(copy)
-
-                # Archive the full ledger row for scan-to-book traceability
-                ledger = DigitizedLedger(
-                    source_job_id=job.id,
-                    source_result_id=result.id,
-                    no_perolehan=result.final_no_perolehan,
-                    no_panggilan=result.final_no_panggilan,
-                    pengarang=result.final_pengarang,
-                    tajuk_buku=result.final_tajuk_buku,
-                    penerbit=result.final_penerbit,
-                    tarikh_penerbit=result.final_tarikh_penerbit,
-                    tarikh_perolehan=result.final_tarikh_perolehan,
-                    bil_no=result.final_bil_no,
-                    punca=result.final_punca,
-                    harga=result.final_harga,
-                    muka_surat=result.final_muka_surat,
-                    catatan=result.final_catatan,
-                    linked_book_id=book.id,
-                    created_by=current_user.id
-                )
-                db.session.add(ledger)
-                db.session.flush()  # Get copy.id and ledger.id
-                ledger.linked_copy_id = copy.id
-                result.committed_ledger_id = ledger.id
-
+        error = _commit_result_row(job, result)
+        if error:
+            errors.append(error)
+        else:
             count += 1
-
-        except Exception as e:
-            errors.append(f'Row {result.row_number}: {str(e)}')
 
     remaining = job.results.filter(OCRResult.committed_ledger_id.is_(None)).count()
     if count > 0:
@@ -435,6 +443,58 @@ def commit_job(job_id):
         flash(f'Successfully uploaded {count} books to database', 'success')
 
     return redirect(url_for('ocr.view_job', job_id=job.id))
+
+
+@ocr_bp.route('/result/<int:result_id>/commit', methods=['POST'])
+@login_required
+@permission_required(Permission.OCR_APPROVE)
+def commit_result(result_id):
+    """Save one row's corrections and upload it to the catalog immediately"""
+    result = OCRResult.query.get_or_404(result_id)
+    job = result.job
+
+    if result.committed_ledger_id:
+        flash(f'Row {result.row_number} is already uploaded', 'warning')
+        return redirect(url_for('ocr.review_job', job_id=job.id) + f'#row-{result.id}')
+
+    # Apply any edits from the row form, mark reviewed+valid, then commit it
+    result.mark_reviewed(True, _corrections_from_form(request.form),
+                         request.form.get('notes', '').strip() or None)
+    error = _commit_result_row(job, result)
+    if error:
+        db.session.commit()  # keep the review state even when the upload failed
+        flash(error, 'error')
+    else:
+        if job.results.filter(OCRResult.committed_ledger_id.is_(None)).count() == 0:
+            job.mark_committed()
+        db.session.commit()
+        flash(f'Row {result.row_number} uploaded to catalog', 'success')
+
+    return redirect(url_for('ocr.review_job', job_id=job.id) + f'#row-{result.id}')
+
+
+@ocr_bp.route('/job/<int:job_id>/bulk-review', methods=['POST'])
+@login_required
+@permission_required(Permission.OCR_APPROVE)
+def bulk_review(job_id):
+    """Mark every unreviewed row as reviewed and valid in one click.
+
+    Extracted values become the final values; individual rows can still be
+    corrected afterwards until they are committed.
+    """
+    job = OCRJob.query.get_or_404(job_id)
+
+    pending = job.results.filter(
+        OCRResult.is_reviewed == False,
+        OCRResult.committed_ledger_id.is_(None),
+    ).all()
+    for result in pending:
+        result.mark_reviewed(True)
+    db.session.commit()
+
+    flash(f'Marked {len(pending)} rows as reviewed and valid. '
+          f'They are now ready to upload.', 'success')
+    return redirect(url_for('ocr.review_job', job_id=job.id))
 
 
 @ocr_bp.route('/job/<int:job_id>/delete', methods=['POST'])
