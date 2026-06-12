@@ -3,10 +3,12 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Paginated } from '../../api/client'
+import { useAuth } from '../../auth/AuthContext'
 import type { Book } from '../../types'
 
 export default function CatalogListPage() {
   const { t } = useTranslation()
+  const { session } = useAuth()
   const [params, setParams] = useSearchParams()
   const page = Number(params.get('page') || 1)
   const search = params.get('search') || ''
@@ -36,17 +38,25 @@ export default function CatalogListPage() {
           {t('catalog')}{' '}
           {pg && <span className="fs-6 text-muted">({pg.total.toLocaleString()} {t('title').toLowerCase()}s)</span>}
         </h3>
-        <form className="d-flex gap-2" onSubmit={submitSearch} style={{ width: 420 }}>
-          <input
-            className="form-control"
-            placeholder={t('searchPlaceholder')}
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-          />
-          <button className="btn btn-primary">
-            <i className="bi bi-search" />
-          </button>
-        </form>
+        <div className="d-flex gap-2">
+          <form className="d-flex gap-2" onSubmit={submitSearch} style={{ width: 420 }}>
+            <input
+              className="form-control"
+              placeholder={t('searchPlaceholder')}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+            />
+            <button className="btn btn-primary">
+              <i className="bi bi-search" />
+            </button>
+          </form>
+          {session?.user_type === 'staff' && (
+            <Link to="/catalog/add" className="btn btn-success text-nowrap">
+              <i className="bi bi-plus-lg me-1" />
+              Add book
+            </Link>
+          )}
+        </div>
       </div>
 
       {isLoading ? (

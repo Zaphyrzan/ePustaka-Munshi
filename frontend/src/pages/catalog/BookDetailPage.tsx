@@ -1,7 +1,8 @@
-import { Link, useParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap } from '../../api/client'
+import { useAuth } from '../../auth/AuthContext'
 import type { Book, BookCopy } from '../../types'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
@@ -9,10 +10,27 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 export default function BookDetailPage() {
   const { bookId } = useParams()
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const { session } = useAuth()
+  const isStaff = session?.user_type === 'staff'
 
   const { data, isLoading } = useQuery({
     queryKey: ['book', bookId],
     queryFn: () => unwrap<{ book: Book; copies: BookCopy[] }>(api.get(`/api/catalog/books/${bookId}`)),
+  })
+
+  const addCopy = useMutation({
+    mutationFn: () => unwrap(api.post(`/api/catalog/books/${bookId}/copies`, {})),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['book', bookId] }),
+  })
+
+  const deleteBook = useMutation({
+    mutationFn: () => unwrap(api.delete(`/api/catalog/books/${bookId}`)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['books'] })
+      navigate('/catalog')
+    },
   })
 
   if (isLoading) return <div className="text-muted py-5 text-center">{t('loading')}</div>
@@ -30,8 +48,38 @@ export default function BookDetailPage() {
 
       <div className="card shadow-sm mb-4">
         <div className="card-body">
-          <h4 className="mb-1">{book.title}</h4>
-          <p className="text-muted mb-3">{book.author}</p>
+          <div className="d-flex justify-content-between align-items-start">
+            <div>
+              <h4 className="mb-1">{book.title}</h4>
+              <p className="text-muted mb-3">{book.author}</p>
+            </div>
+            {isStaff && (
+              <div className="d-flex gap-2">
+                <Link to={`/catalog/${book.id}/edit`} className="btn btn-outline-primary btn-sm">
+                  <i className="bi bi-pencil me-1" />
+                  Edit
+                </Link>
+                <a
+                  href={`${API_BASE}/catalog/book/${book.id}/print-barcodes`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn btn-outline-secondary btn-sm"
+                >
+                  <i className="bi bi-printer me-1" />
+                  Print barcodes
+                </a>
+                <button
+                  className="btn btn-outline-danger btn-sm"
+                  onClick={() => {
+                    if (confirm(`Delete "${book.title}" and all its copies?`)) deleteBook.mutate()
+                  }}
+                >
+                  <i className="bi bi-trash me-1" />
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
           <div className="row small">
             <div className="col-md-3">
               <strong>{t('publisher')}:</strong> {book.publisher || '—'}
@@ -52,9 +100,17 @@ export default function BookDetailPage() {
         </div>
       </div>
 
-      <h5 className="mb-3">
-        {t('copies')} ({copies.length})
-      </h5>
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h5 className="mb-0">
+          {t('copies')} ({copies.length})
+        </h5>
+        {isStaff && (
+          <button className="btn btn-success btn-sm" onClick={() => addCopy.mutate()} disabled={addCopy.isPending}>
+            <i className="bi bi-plus-lg me-1" />
+            {addCopy.isPending ? t('loading') : 'Add copy'}
+          </button>
+        )}
+      </div>
       <div className="card shadow-sm">
         <table className="table mb-0 align-middle">
           <thead className="table-light">
