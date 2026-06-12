@@ -31,11 +31,22 @@
     </div>
 </div>
 
-<!-- Instructions -->
-<div class="alert alert-info mb-4">
-    <i class="bi bi-info-circle"></i>
-    <strong>7-Column Malaysian Ledger Format:</strong> Review each row. Correct OCR errors. Check ✓ when valid.
-    Once all rows reviewed, upload to database.
+<!-- Instructions + bulk actions -->
+<div class="alert alert-info mb-4 d-flex justify-content-between align-items-center">
+    <div>
+        <i class="bi bi-info-circle"></i>
+        <strong>Review options:</strong> fix a row and <em>Save</em> it, upload a single
+        row straight to the catalog with <em>Save & Upload</em>, or accept the whole
+        extraction with <em>Mark all reviewed</em> and upload in one batch.
+    </div>
+    <form method="POST" action="{{ url_for('ocr.bulk_review', job_id=job.id) }}"
+          onsubmit="return confirm('Mark all {{ job.pending_review_count }} unreviewed rows as reviewed and valid? You can still edit rows until they are uploaded.');"
+          class="ms-3 flex-shrink-0">
+        <button type="submit" class="btn btn-outline-primary btn-sm"
+                {% if job.pending_review_count == 0 %}disabled{% endif %}>
+            <i class="bi bi-check2-all"></i> Mark all {{ job.pending_review_count }} reviewed
+        </button>
+    </form>
 </div>
 
 <!-- Review Table -->
@@ -58,14 +69,16 @@
             </thead>
             <tbody>
                 {% for result in results %}
-                <tr id="row-{{ result.id }}" 
-                    class="{% if result.is_reviewed %}
+                {% set committed = result.committed_ledger_id is not none %}
+                <tr id="row-{{ result.id }}"
+                    class="{% if committed %}table-secondary
+                    {% elif result.is_reviewed %}
                         {% if result.is_valid %}table-success{% else %}table-danger{% endif %}
                     {% elif result.confidence_overall < 0.7 %}table-warning{% endif %}">
-                    
+
                     <!-- Row Number -->
                     <td>{{ result.row_number }}</td>
-                    
+
                     <!-- Inline Edit Form -->
                     <form method="POST" action="{{ url_for('ocr.update_result', result_id=result.id) }}" class="row-form" style="display: contents;">
                         
@@ -125,14 +138,23 @@
                         <td class="text-center">
                             <input type="hidden" name="is_valid" value="false">
                             <input type="checkbox" class="form-check-input" name="is_valid" value="true"
-                                   {% if result.is_valid %}checked{% endif %}>
+                                   {% if result.is_valid %}checked{% endif %} {% if committed %}disabled{% endif %}>
                         </td>
-                        
-                        <!-- Save Button -->
-                        <td>
-                            <button type="submit" class="btn btn-primary btn-sm">
+
+                        <!-- Actions -->
+                        <td class="text-nowrap">
+                            {% if committed %}
+                            <span class="badge bg-success"><i class="bi bi-cloud-check"></i> Uploaded</span>
+                            {% else %}
+                            <button type="submit" class="btn btn-primary btn-sm" title="Save corrections and review status">
                                 <i class="bi bi-check"></i> Save
                             </button>
+                            <button type="submit" class="btn btn-success btn-sm"
+                                    formaction="{{ url_for('ocr.commit_result', result_id=result.id) }}"
+                                    title="Save this row and upload it to the catalog now">
+                                <i class="bi bi-cloud-upload"></i> Save & Upload
+                            </button>
+                            {% endif %}
                         </td>
                     </form>
                 </tr>
@@ -202,4 +224,11 @@ thead.sticky-top {
     font-size: 0.85rem;
 }
 </style>
+
+<script>
+// Uploaded rows are read-only: their data already lives in the catalog
+document.querySelectorAll('tr.table-secondary input').forEach(function (el) {
+    el.disabled = true;
+});
+</script>
 {% endblock %}
