@@ -400,3 +400,83 @@ def get_categories():
         current_app.logger.error(f'Get categories error: {str(e)}')
         return ApiResponse.error(str(e), status_code=500)
 
+
+
+@bp.route('/books/<int:book_id>/copies', methods=['POST'])
+@login_required
+def add_copy(book_id):
+    """Add a physical copy with auto-generated accession number + barcode.
+
+    Mirrors the web add_copy flow (catalog.add_copy).
+
+    Request JSON (all optional): {"condition": "Good", "location": "Shelf A", "notes": "..."}
+    """
+    try:
+        if not (hasattr(current_user, 'can') and current_user.can(Permission.MANAGE_COPIES)):
+            return ApiResponse.error('Insufficient permissions', status_code=403)
+
+        book = Book.query.get(book_id)
+        if not book:
+            return ApiResponse.error('Book not found', status_code=404)
+
+        from app.utils.barcode_utils import generate_accession_number, generate_barcode
+        data = request.get_json(silent=True) or {}
+
+        accession = generate_accession_number()
+        copy = BookCopy(
+            book_id=book.id,
+            accession_number=accession,
+            barcode=generate_barcode(accession),
+            status=CopyStatus.AVAILABLE.value,
+            condition=(data.get('condition') or 'Good').strip(),
+            location=(data.get('location') or '').strip() or None,
+            notes=(data.get('notes') or '').strip() or None,
+        )
+        db.session.add(copy)
+        db.session.commit()
+
+        return ApiResponse.success(
+            BookCopySerializer.to_dict(copy, include_book=False),
+            message=f'Copy {copy.accession_number} added',
+            status_code=201,
+        )
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Add copy error: {str(e)}')
+        return ApiResponse.error(str(e), status_code=500)
+
+
+@bp.route('/copies/<int:copy_id>', methods=['PUT'])
+@login_required
+def update_copy(copy_id):
+    """Update a copy's status/condition/location/notes. Barcode and accession are read-only."""
+    try:
+        if not (hasattr(current_user, 'can') and current_user.can(Permission.MANAGE_COPIES)):
+            return ApiResponse.error('Insufficient permissions', status_code=403)
+
+        copy = BookCopy.query.get(copy_id)
+        if not copy:
+            return ApiResponse.error('Copy not found', status_code=404)
+
+        data = request.get_json(silent=True) or {}
+        if 'status' in data:
+            valid = [s.value for s in CopyStatus]
+            if data['status'] not in valid:
+                return ApiResponse.error(f'Invalid status. Valid: {valid}', status_code=400)
+            copy.status = data['status']
+        if 'condition' in data:
+            copy.condition = (data['condition'] or '').strip() or copy.condition
+        if 'location' in data:
+            copy.location = (data['location'] or '').strip() or None
+        if 'notes' in data:
+            copy.notes = (data['notes'] or '').strip() or None
+
+        db.session.commit()
+        return ApiResponse.success(
+            BookCopySerializer.to_dict(copy, include_book=False),
+            message='Copy updated',
+        )
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Update copy error: {str(e)}')
+        return ApiResponse.error(str(e), status_code=500)
