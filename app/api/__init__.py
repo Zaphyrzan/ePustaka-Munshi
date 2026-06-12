@@ -14,14 +14,15 @@ def register_api_blueprints(app):
     Register all API blueprints with the Flask app
     This function is called from app/__init__.py
     """
-    from app.api import auth_api, catalog_api, circulation_api, users_api, student_api
-    
+    from app.api import auth_api, catalog_api, circulation_api, users_api, student_api, ocr_api
+
     blueprints = [
         auth_api.bp,
         catalog_api.bp,
         circulation_api.bp,
         users_api.bp,
         student_api.bp,
+        ocr_api.bp,
     ]
     
     for bp in blueprints:
