@@ -10,6 +10,8 @@ import BookFormPage from './pages/catalog/BookFormPage'
 import LoansPage from './pages/circulation/LoansPage'
 import CheckoutPage from './pages/circulation/CheckoutPage'
 import ReturnPage from './pages/circulation/ReturnPage'
+import OcrJobsPage from './pages/ocr/OcrJobsPage'
+import OcrReviewPage from './pages/ocr/OcrReviewPage'
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth()
@@ -45,6 +47,8 @@ export default function App() {
         <Route path="/circulation" element={<LoansPage />} />
         <Route path="/circulation/checkout" element={<CheckoutPage />} />
         <Route path="/circulation/return" element={<ReturnPage />} />
+        <Route path="/ocr" element={<OcrJobsPage />} />
+        <Route path="/ocr/:jobId/review" element={<OcrReviewPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
