@@ -7,6 +7,9 @@ import ChangePasswordPage from './pages/ChangePasswordPage'
 import CatalogListPage from './pages/catalog/CatalogListPage'
 import BookDetailPage from './pages/catalog/BookDetailPage'
 import BookFormPage from './pages/catalog/BookFormPage'
+import LoansPage from './pages/circulation/LoansPage'
+import CheckoutPage from './pages/circulation/CheckoutPage'
+import ReturnPage from './pages/circulation/ReturnPage'
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth()
@@ -39,6 +42,9 @@ export default function App() {
         <Route path="/catalog/add" element={<BookFormPage />} />
         <Route path="/catalog/:bookId" element={<BookDetailPage />} />
         <Route path="/catalog/:bookId/edit" element={<BookFormPage />} />
+        <Route path="/circulation" element={<LoansPage />} />
+        <Route path="/circulation/checkout" element={<CheckoutPage />} />
+        <Route path="/circulation/return" element={<ReturnPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
