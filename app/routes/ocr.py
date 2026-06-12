@@ -91,16 +91,42 @@ def upload():
         # Import uploaded file
         original_filename = secure_filename(file.filename)
         scanned_image = file_service.import_uploaded_file(file, original_filename)
-        
+
+        # PDFs are processed synchronously in one web request, so reject page
+        # counts that would hang the browser and burn API credits unattended.
+        page_count = 1
+        if original_filename.lower().endswith('.pdf'):
+            try:
+                from pdf2image.pdf2image import pdfinfo_from_path
+                from app.services.vision_ocr_service import _find_poppler
+                info = pdfinfo_from_path(scanned_image.file_path, poppler_path=_find_poppler())
+                page_count = int(info.get('Pages', 1))
+            except Exception:
+                page_count = 1
+            max_pages = current_app.config.get('OCR_WEB_MAX_PAGES', 10)
+            if page_count > max_pages:
+                try:
+                    os.remove(scanned_image.file_path)
+                except OSError:
+                    pass
+                flash(
+                    f'This PDF has {page_count} pages; web uploads are limited to '
+                    f'{max_pages} pages per job. For full ledgers, use the batch '
+                    f'processor (scripts/process_job_cli.py), which runs page by '
+                    f'page and can resume.',
+                    'error',
+                )
+                return render_template('ocr/upload.html')
+
         # Create OCR job
         job_name = request.form.get('job_name', '').strip() or f'Scan_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
-        
+
         job = OCRJob(
             job_name=job_name,
             source_type='file_upload',
             source_path=scanned_image.file_path,
             original_filename=original_filename,
-            page_count=1,
+            page_count=page_count,
             status=OCRJobStatus.PENDING.value,
             created_by=current_user.id
         )
@@ -239,8 +265,16 @@ def review_job(job_id):
         return redirect(url_for('ocr.view_job', job_id=job.id))
     
     results = job.results.order_by(OCRResult.page_number, OCRResult.row_number).all()
-    
-    return render_template('ocr/review_job.html', job=job, results=results)
+
+    # Rows reviewed + approved but not yet committed - enables batch commits
+    ready_to_commit = job.results.filter(
+        OCRResult.is_reviewed == True,
+        OCRResult.is_valid == True,
+        OCRResult.committed_ledger_id.is_(None),
+    ).count()
+
+    return render_template('ocr/review_job.html', job=job, results=results,
+                           ready_to_commit=ready_to_commit)
 
 
 @ocr_bp.route('/result/<int:result_id>/update', methods=['POST'])
@@ -287,16 +321,17 @@ def commit_job(job_id):
 
     job = OCRJob.query.get_or_404(job_id)
 
-    # Check all results reviewed
-    unreviewed = job.results.filter(OCRResult.is_reviewed == False).count()
-    if unreviewed > 0:
-        flash(f'Cannot commit: {unreviewed} results still need review', 'error')
-        return redirect(url_for('ocr.review_job', job_id=job.id))
-
-    # Get valid reviewed results
-    valid_results = job.results.filter(OCRResult.is_valid == True).all()
+    # Incremental commit: take rows that are reviewed, approved, and not yet
+    # committed. Unreviewed rows simply wait for a later commit, so large jobs
+    # can be committed in batches instead of all-or-nothing.
+    valid_results = job.results.filter(
+        OCRResult.is_reviewed == True,
+        OCRResult.is_valid == True,
+        OCRResult.committed_ledger_id.is_(None),
+    ).all()
     if not valid_results:
-        flash('No valid results to upload', 'warning')
+        flash('No reviewed rows ready to commit. Review and approve rows first - '
+              'you can commit in batches.', 'warning')
         return redirect(url_for('ocr.review_job', job_id=job.id))
 
     count = 0
@@ -378,8 +413,12 @@ def commit_job(job_id):
         except Exception as e:
             errors.append(f'Row {result.row_number}: {str(e)}')
 
+    remaining = job.results.filter(OCRResult.committed_ledger_id.is_(None)).count()
     if count > 0:
-        job.mark_committed()
+        # Only seal the job once every row is committed; otherwise keep it
+        # reviewable so the next batch can be committed later.
+        if remaining == 0:
+            job.mark_committed()
         db.session.commit()
     else:
         db.session.rollback()
@@ -389,6 +428,9 @@ def commit_job(job_id):
         flash(f'Uploaded {count} books. Issues with {len(errors)} rows:', 'warning')
         for error in errors[:5]:
             flash(error, 'error')
+    elif remaining > 0:
+        flash(f'Successfully uploaded {count} books. {remaining} rows not yet '
+              f'committed - review and commit them anytime.', 'success')
     else:
         flash(f'Successfully uploaded {count} books to database', 'success')
 

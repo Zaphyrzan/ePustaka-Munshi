@@ -167,19 +167,20 @@
         <div>
             <small class="text-muted">
                 <i class="bi bi-info-circle"></i>
-                All rows must be reviewed before uploading. Unchecked rows are skipped.
+                Reviewed and approved rows upload in batches - unreviewed rows
+                stay staged and can be committed later.
             </small>
         </div>
         <div>
-            {% if job.pending_review_count == 0 %}
+            {% if ready_to_commit > 0 %}
             <form method="POST" action="{{ url_for('ocr.commit_job', job_id=job.id) }}" style="display: inline;">
                 <button type="submit" class="btn btn-success">
-                    <i class="bi bi-cloud-upload"></i> Upload to Database
+                    <i class="bi bi-cloud-upload"></i> Upload {{ ready_to_commit }} reviewed row{{ 's' if ready_to_commit != 1 }}
                 </button>
             </form>
             {% else %}
-            <button class="btn btn-success" disabled title="Complete review first">
-                <i class="bi bi-cloud-upload"></i> Upload ({{ job.pending_review_count }} pending)
+            <button class="btn btn-success" disabled title="Review and approve at least one row first">
+                <i class="bi bi-cloud-upload"></i> Upload (0 ready)
             </button>
             {% endif %}
         </div>

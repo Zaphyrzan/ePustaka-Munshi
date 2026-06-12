@@ -126,6 +126,9 @@ class Config:
     OCR_OUTPUT_FOLDER = _runtime_folder('uploads', 'ocr_results')
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'tiff', 'pdf'}
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB max upload
+    # Web uploads are processed synchronously in one request, so cap the page
+    # count; large ledgers go through scripts/process_job_cli.py instead.
+    OCR_WEB_MAX_PAGES = int(os.environ.get('OCR_WEB_MAX_PAGES', 10))
     
     # Scanner settings (future expansion)
     SCANNER_WATCH_FOLDER = _runtime_folder('uploads', 'scanner_spool')
