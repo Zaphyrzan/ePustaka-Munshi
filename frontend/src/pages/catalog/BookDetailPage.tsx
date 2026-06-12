@@ -1,11 +1,9 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { api, unwrap } from '../../api/client'
+import { API_BASE, api, unwrap } from '../../api/client'
 import { useAuth } from '../../auth/AuthContext'
 import type { Book, BookCopy } from '../../types'
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 export default function BookDetailPage() {
   const { bookId } = useParams()

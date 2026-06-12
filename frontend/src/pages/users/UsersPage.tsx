@@ -2,9 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { api, unwrap, type Paginated } from '../../api/client'
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+import { API_BASE, api, unwrap, type Paginated } from '../../api/client'
 
 interface MemberRow {
   id: number
