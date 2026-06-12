@@ -296,7 +296,9 @@ def update_result(result_id):
     """Update ledger extraction with corrections"""
     result = OCRResult.query.get_or_404(result_id)
 
-    is_valid = request.form.get('is_valid') == 'true'
+    # The form posts a hidden false plus the checkbox true; the checkbox wins.
+    # (form.get returns only the FIRST value, which is always the hidden false)
+    is_valid = 'true' in request.form.getlist('is_valid')
     corrections = _corrections_from_form(request.form)
 
     notes = request.form.get('notes', '').strip()
