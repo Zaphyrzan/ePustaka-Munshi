@@ -472,3 +472,117 @@ def update_member(member_id):
         current_app.logger.error(f'Update member error: {str(e)}')
         return ApiResponse.error(str(e), status_code=500)
 
+
+
+@bp.route('/members/<int:member_id>', methods=['DELETE'])
+@login_required
+def delete_member(member_id):
+    """Delete a member (blocked while they have active loans)"""
+    try:
+        if not _has_permission(Permission.MANAGE_USERS):
+            return ApiResponse.error('Insufficient permissions', status_code=403)
+        member = Member.query.get(member_id)
+        if not member:
+            return ApiResponse.error('Member not found', status_code=404)
+        from app.models import Loan, LoanStatus
+        active = Loan.query.filter(
+            Loan.member_id == member.id,
+            Loan.status.in_([LoanStatus.ACTIVE.value, LoanStatus.OVERDUE.value]),
+        ).count()
+        if active:
+            return ApiResponse.error(f'Member has {active} active loan(s)', status_code=409)
+        db.session.delete(member)
+        db.session.commit()
+        return ApiResponse.success(message='Member deleted')
+    except Exception as e:
+        db.session.rollback()
+        return ApiResponse.error(str(e), status_code=500)
+
+
+@bp.route('/staff/<int:user_id>', methods=['DELETE'])
+@login_required
+def delete_staff(user_id):
+    """Delete a staff account (cannot delete yourself)"""
+    try:
+        if not _has_permission(Permission.MANAGE_USERS):
+            return ApiResponse.error('Insufficient permissions', status_code=403)
+        if user_id == current_user.id:
+            return ApiResponse.error('Cannot delete your own staff account', status_code=409)
+        user = User.query.get(user_id)
+        if not user:
+            return ApiResponse.error('Staff not found', status_code=404)
+        db.session.delete(user)
+        db.session.commit()
+        return ApiResponse.success(message='Staff account deleted')
+    except Exception as e:
+        db.session.rollback()
+        return ApiResponse.error(str(e), status_code=500)
+
+
+@bp.route('/members/<int:member_id>/promote', methods=['POST'])
+@login_required
+def promote_member(member_id):
+    """Promote a member to Student Assistant (mirrors users.promote_to_staff)"""
+    try:
+        if not _has_permission(Permission.MANAGE_USERS):
+            return ApiResponse.error('Insufficient permissions', status_code=403)
+        from app.models import Role
+        member = Member.query.get(member_id)
+        if not member:
+            return ApiResponse.error('Member not found', status_code=404)
+        role = Role.query.filter_by(name='Student Assistant').first()
+
+        member.member_type = 'Student Assistant'
+        member.form_level = None
+        member.class_group = None
+
+        user = User.query.get(member.id)
+        if user is None:
+            username = member.member_id
+            if User.query.filter(User.username == username, User.id != member.id).first():
+                username = f'staff_{member.id}'
+            email = member.email
+            if email and User.query.filter(User.email == email, User.id != member.id).first():
+                email = f'{member.member_id.lower()}@local.invalid'
+            elif not email:
+                email = f'{member.member_id.lower()}@local.invalid'
+            user = User(
+                id=member.id, username=username, email=email,
+                full_name=member.full_name, is_active=True, role=role,
+                password_hash=member.password_hash,
+            )
+            db.session.add(user)
+        else:
+            user.full_name = member.full_name
+            user.is_active = True
+            if role:
+                user.role = role
+            if member.password_hash:
+                user.password_hash = member.password_hash
+        db.session.commit()
+        return ApiResponse.success(MemberSerializer.to_dict(member), message=f'{member.full_name} promoted to Student Assistant')
+    except Exception as e:
+        db.session.rollback()
+        return ApiResponse.error(str(e), status_code=500)
+
+
+@bp.route('/members/<int:member_id>/demote', methods=['POST'])
+@login_required
+def demote_member(member_id):
+    """Demote a Student Assistant back to Student (mirrors users.demote_from_staff)"""
+    try:
+        if not _has_permission(Permission.MANAGE_USERS):
+            return ApiResponse.error('Insufficient permissions', status_code=403)
+        member = Member.query.get(member_id)
+        if not member:
+            return ApiResponse.error('Member not found', status_code=404)
+        member.member_type = 'Student'
+        member.form_level = 1
+        user = User.query.get(member.id)
+        if user:
+            user.is_active = False
+        db.session.commit()
+        return ApiResponse.success(MemberSerializer.to_dict(member), message=f'{member.full_name} demoted to Student')
+    except Exception as e:
+        db.session.rollback()
+        return ApiResponse.error(str(e), status_code=500)

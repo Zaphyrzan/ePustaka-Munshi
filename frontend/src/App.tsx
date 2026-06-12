@@ -12,6 +12,10 @@ import CheckoutPage from './pages/circulation/CheckoutPage'
 import ReturnPage from './pages/circulation/ReturnPage'
 import OcrJobsPage from './pages/ocr/OcrJobsPage'
 import OcrReviewPage from './pages/ocr/OcrReviewPage'
+import UsersPage from './pages/users/UsersPage'
+import MemberFormPage from './pages/users/MemberFormPage'
+import StaffFormPage from './pages/users/StaffFormPage'
+import StudentPortalPage from './pages/student/StudentPortalPage'
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth()
@@ -49,6 +53,12 @@ export default function App() {
         <Route path="/circulation/return" element={<ReturnPage />} />
         <Route path="/ocr" element={<OcrJobsPage />} />
         <Route path="/ocr/:jobId/review" element={<OcrReviewPage />} />
+        <Route path="/users" element={<UsersPage />} />
+        <Route path="/users/members/add" element={<MemberFormPage />} />
+        <Route path="/users/members/:memberId/edit" element={<MemberFormPage />} />
+        <Route path="/users/staff/add" element={<StaffFormPage />} />
+        <Route path="/users/staff/:userId/edit" element={<StaffFormPage />} />
+        <Route path="/student" element={<StudentPortalPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
