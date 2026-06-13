@@ -16,6 +16,21 @@ def _runtime_folder(*parts):
     return os.path.join(BASE_DIR, *parts)
 
 
+def _force_psycopg3(url):
+    """Pin the SQLAlchemy URL to the psycopg (v3) driver.
+
+    Accepts postgresql:// or postgresql+psycopg2:// and returns
+    postgresql+psycopg://, leaving any query string intact.
+    """
+    if url.startswith('postgresql+psycopg://'):
+        return url
+    if url.startswith('postgresql+psycopg2://'):
+        return url.replace('postgresql+psycopg2://', 'postgresql+psycopg://', 1)
+    if url.startswith('postgresql://'):
+        return url.replace('postgresql://', 'postgresql+psycopg://', 1)
+    return url
+
+
 def _build_database_uri():
     """Resolve database URI from env with Supabase support.
     Optimized for Vercel serverless with proper connection pooling and SSL."""
@@ -40,14 +55,19 @@ def _build_database_uri():
         # SQLAlchemy 1.4+/2.x expects postgresql:// instead of postgres://
         if database_url.startswith('postgres://'):
             database_url = database_url.replace('postgres://', 'postgresql://', 1)
-        
+
+        # Use the psycopg (v3) driver: it ships prebuilt wheels for current
+        # Python versions, unlike psycopg2-binary, so Vercel's uv installer
+        # doesn't try to compile from source (which needs pg_config/libpq).
+        database_url = _force_psycopg3(database_url)
+
         # For Vercel serverless, add connection timeout if not already present
         # (sslmode=require is already in DATABASE_URL from Supabase)
         if os.environ.get('VERCEL') and 'supabase.co' in database_url:
             if 'connect_timeout' not in database_url:
                 separator = '&' if '?' in database_url else '?'
                 database_url += f"{separator}connect_timeout=10"
-        
+
         return database_url
 
     # Optional Supabase fallback if DATABASE_URL is not set
@@ -59,7 +79,7 @@ def _build_database_uri():
         db_name = os.environ.get('SUPABASE_DB_NAME', 'postgres')
         db_port = os.environ.get('SUPABASE_DB_PORT', '5432')
         return (
-            f"postgresql+psycopg2://{db_user}:{db_password}"
+            f"postgresql+psycopg://{db_user}:{db_password}"
             f"@db.{project_id}.supabase.co:{db_port}/{db_name}?sslmode=require"
         )
 
