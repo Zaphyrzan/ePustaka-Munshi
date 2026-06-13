@@ -122,12 +122,19 @@ def dashboard():
 def health():
     """Health check endpoint for monitoring - no auth required"""
     from app.utils.db_pool_utils import health_check_db, get_pool_monitor
-    
+
     is_healthy, db_status = health_check_db(db.engine)
-    pool_monitor = get_pool_monitor()
-    
-    pool_stats = pool_monitor.get_pool_stats() if pool_monitor else {}
-    
+
+    # Pool stats are best-effort: never let a monitoring-only detail 500 the
+    # health endpoint (psycopg3's pool exposes different internals).
+    pool_stats = {}
+    try:
+        pool_monitor = get_pool_monitor()
+        if pool_monitor:
+            pool_stats = pool_monitor.get_pool_stats()
+    except Exception as e:
+        pool_stats = {'error': str(e)}
+
     return {
         'status': 'healthy' if is_healthy else 'unhealthy',
         'database': db_status,
