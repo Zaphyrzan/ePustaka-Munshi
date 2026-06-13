@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Paginated } from '../../api/client'
-import type { Loan } from '../../types'
+import { loanBadge, type Loan } from '../../types'
 
 type Tab = 'active' | 'overdue' | 'all'
 
@@ -89,17 +89,7 @@ export default function LoansPage() {
                   </td>
                   <td>{loan.due_date?.slice(0, 10) || '—'}</td>
                   <td>
-                    <span
-                      className={`badge ${
-                        loan.status === 'overdue'
-                          ? 'bg-danger'
-                          : loan.status === 'active'
-                            ? 'bg-info text-dark'
-                            : 'bg-secondary'
-                      }`}
-                    >
-                      {loan.status}
-                    </span>
+                    <span className={`badge ${loanBadge(loan).className}`}>{loanBadge(loan).label}</span>
                   </td>
                   <td className="text-end">
                     {(loan.status === 'active' || loan.status === 'overdue') && (

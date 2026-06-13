@@ -310,9 +310,16 @@ class LoanSerializer(ModelSerializer):
         if not loan:
             return None
         
+        # Effective status: the stored status only flips to 'overdue' when the
+        # manual update-overdue action runs, so compute it live instead of
+        # trusting the stale column.
+        status = loan.status
+        if status == 'active' and loan.is_overdue:
+            status = 'overdue'
+
         data = {
             'id': loan.id,
-            'status': loan.status,
+            'status': status,
             'checkout_date': ModelSerializer.serialize_datetime(loan.checkout_date),
             'due_date': ModelSerializer.serialize_datetime(loan.due_date),
             'return_date': ModelSerializer.serialize_datetime(loan.return_date),

@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap } from '../../api/client'
 import { useAuth } from '../../auth/AuthContext'
-import type { Book, Loan } from '../../types'
+import { loanBadge, type Book, type Loan } from '../../types'
 
 interface LeaderboardEntry {
   member_id?: string
@@ -78,17 +78,18 @@ export default function StudentPortalPage() {
               </tr>
             </thead>
             <tbody>
-              {loanItems.map((loan) => (
-                <tr key={loan.id}>
-                  <td>{loan.copy?.book?.title || loan.copy?.accession_number}</td>
-                  <td>{loan.due_date?.slice(0, 10)}</td>
-                  <td>
-                    <span className={`badge ${loan.status === 'overdue' ? 'bg-danger' : 'bg-info text-dark'}`}>
-                      {loan.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {loanItems.map((loan) => {
+                const badge = loanBadge(loan)
+                return (
+                  <tr key={loan.id}>
+                    <td>{loan.copy?.book?.title || loan.copy?.accession_number}</td>
+                    <td>{loan.due_date?.slice(0, 10)}</td>
+                    <td>
+                      <span className={`badge ${badge.className}`}>{badge.label}</span>
+                    </td>
+                  </tr>
+                )
+              })}
               {loanItems.length === 0 && (
                 <tr>
                   <td colSpan={3} className="text-center text-muted py-4">
