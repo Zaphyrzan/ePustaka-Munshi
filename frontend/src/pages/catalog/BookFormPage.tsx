@@ -98,7 +98,20 @@ export default function BookFormPage() {
           {field(t('year'), 'publication_year', { type: 'number', min: 1800, max: 2100 })}
           {field(t('category'), 'category')}
           {field('Call Number', 'call_number')}
-          {field('Language', 'language')}
+          <div className="col-md-6 mb-3">
+            <label className="form-label">Language</label>
+            <select
+              className="form-select"
+              value={form.language}
+              onChange={(e) => setForm({ ...form, language: e.target.value })}
+            >
+              {['Malay', 'English', 'Chinese', 'Tamil', 'Arabic'].map((l) => (
+                <option key={l} value={l}>
+                  {l}
+                </option>
+              ))}
+            </select>
+          </div>
           {field('Price (RM)', 'price', { type: 'number', step: '0.01', min: 0 })}
         </div>
         <div className="mb-3">

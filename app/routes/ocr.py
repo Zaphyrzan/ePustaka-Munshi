@@ -321,10 +321,12 @@ def _commit_result_row(job, result):
     from app.models import Book, BookCopy
     from app.models.ocr import DigitizedLedger
     from app.utils.barcode_utils import generate_barcode
+    from app.utils.text_format import to_caps
 
-    # Final values (corrected or extracted), trimmed to catalog column limits
-    title = _truncate(result.final_tajuk_buku, 256)
-    author = _truncate(result.final_pengarang, 256) or ''
+    # Final values (corrected or extracted), trimmed to catalog column limits.
+    # Descriptive fields stored UPPERCASE per school policy.
+    title = to_caps(_truncate(result.final_tajuk_buku, 256))
+    author = to_caps(_truncate(result.final_pengarang, 256)) or ''
     accession = _truncate(result.final_no_perolehan, 32)
 
     if not title or not accession:
@@ -343,7 +345,7 @@ def _commit_result_row(job, result):
                 book = Book(
                     title=title,
                     author=author,
-                    publisher=_truncate(result.final_penerbit, 128),
+                    publisher=to_caps(_truncate(result.final_penerbit, 128)),
                     call_number=_truncate(result.final_no_panggilan, 32),
                     publication_year=_parse_year(result.final_tarikh_penerbit),
                     page_count=result.final_muka_surat,
