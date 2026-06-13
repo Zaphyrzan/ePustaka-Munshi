@@ -127,7 +127,11 @@ export default function BookFormPage() {
           <button className="btn btn-primary" disabled={busy}>
             {busy ? t('loading') : bookId ? 'Save changes' : 'Add book'}
           </button>
-          <button type="button" className="btn btn-outline-secondary" onClick={() => navigate(-1)}>
+          <button
+            type="button"
+            className="btn btn-outline-secondary"
+            onClick={() => navigate(bookId ? `/catalog/${bookId}` : '/catalog')}
+          >
             Cancel
           </button>
         </div>
