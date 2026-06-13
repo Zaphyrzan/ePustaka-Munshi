@@ -218,10 +218,12 @@ def my_loans():
     )
     history = history_pagination.paginate(history_query)
     
+    # OffsetPagination.paginate() returns a dict; the template iterates plain
+    # lists, so hand it the items (iterating the dict would yield string keys).
     return render_template('student/my_loans.html',
                           member=member,
-                          active_loans=active_loans,
-                          history=history,
+                          active_loans=active_loans['items'],
+                          history=history['items'],
                           now=datetime.utcnow())
 
 
