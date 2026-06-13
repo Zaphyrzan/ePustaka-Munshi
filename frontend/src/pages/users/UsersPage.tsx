@@ -30,12 +30,17 @@ export default function UsersPage() {
   const [tab, setTab] = useState<'members' | 'staff'>('members')
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
+  const [typeFilter, setTypeFilter] = useState('')
   const [msg, setMsg] = useState<{ kind: 'success' | 'danger'; text: string } | null>(null)
 
   const { data: members, isLoading: loadingMembers } = useQuery({
-    queryKey: ['members', page, search],
+    queryKey: ['members', page, search, typeFilter],
     queryFn: () =>
-      unwrap<Paginated<MemberRow>>(api.get('/api/users/members', { params: { page, per_page: 20, search } })),
+      unwrap<Paginated<MemberRow>>(
+        api.get('/api/users/members', {
+          params: { page, per_page: 20, search, ...(typeFilter && { type: typeFilter }) },
+        }),
+      ),
     placeholderData: keepPreviousData,
     enabled: tab === 'members',
   })
@@ -80,6 +85,21 @@ export default function UsersPage() {
           />
           {tab === 'members' ? (
             <>
+              <select
+                className="form-select"
+                style={{ width: 200 }}
+                value={typeFilter}
+                onChange={(e) => {
+                  setTypeFilter(e.target.value)
+                  setPage(1)
+                }}
+              >
+                <option value="">All members</option>
+                <option value="Student">Students</option>
+                <option value="Student Assistant">Student Librarians</option>
+                <option value="Staff">Staff / Teacher</option>
+                <option value="External">External</option>
+              </select>
               <Link to="/users/members/add" className="btn btn-success text-nowrap">
                 <i className="bi bi-person-plus me-1" />
                 Add member
@@ -157,9 +177,19 @@ export default function UsersPage() {
                     {m.is_active === false && <span className="badge bg-secondary ms-2">inactive</span>}
                   </td>
                   <td>
-                    <span className={`badge ${m.member_type === 'Student' ? 'bg-info text-dark' : 'bg-primary'}`}>
-                      {m.member_type || 'Student'}
-                    </span>
+                    {(() => {
+                      const type = m.member_type || 'Student'
+                      const cls =
+                        type === 'Student Assistant'
+                          ? 'bg-warning text-dark'
+                          : type === 'Student'
+                            ? 'bg-info text-dark'
+                            : type === 'External'
+                              ? 'bg-secondary'
+                              : 'bg-primary'
+                      const label = type === 'Student Assistant' ? 'Student Librarian' : type
+                      return <span className={`badge ${cls}`}>{label}</span>
+                    })()}
                   </td>
                   <td>
                     {m.form_level ? `Form ${m.form_level}` : '—'}

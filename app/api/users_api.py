@@ -298,7 +298,12 @@ def list_members():
         active = request.args.get('active', '').lower()
         if active in ['true', 'false']:
             query = query.filter(Member.is_active == (active == 'true'))
-        
+
+        # Member type filter (Student | Student Assistant | Staff | External)
+        member_type = request.args.get('type', '').strip()
+        if member_type:
+            query = query.filter(Member.member_type == member_type)
+
         query = query.order_by(Member.created_at.desc())
         
         total = query.count()
@@ -532,9 +537,9 @@ def promote_member(member_id):
             return ApiResponse.error('Member not found', status_code=404)
         role = Role.query.filter_by(name='Student Assistant').first()
 
+        # A Student Assistant is still a student in their class — keep
+        # form_level and class_group so they remain in the NILAM leaderboard.
         member.member_type = 'Student Assistant'
-        member.form_level = None
-        member.class_group = None
 
         user = User.query.get(member.id)
         if user is None:

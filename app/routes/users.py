@@ -1059,10 +1059,9 @@ def promote_to_staff(member_id):
     member = Member.query.get_or_404(member_id)
     role = Role.query.filter_by(name='Student Assistant').first()
     
-    # Change member type to Staff
+    # Change member type but keep form_level/class_group: a Student Assistant
+    # is still a student in their class and must stay in the NILAM leaderboard.
     member.member_type = 'Student Assistant'
-    member.form_level = None  # Staff don't have form level
-    member.class_group = None
 
     # Keep a matching staff User row so checkout/return audit fields can reference users.id
     user = User.query.get(member.id)

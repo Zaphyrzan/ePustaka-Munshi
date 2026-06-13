@@ -76,6 +76,7 @@ export default function LoansPage() {
                 <th>Member</th>
                 <th>Due date</th>
                 <th>Status</th>
+                <th>Handled By</th>
                 <th />
               </tr>
             </thead>
@@ -90,6 +91,18 @@ export default function LoansPage() {
                   <td>{loan.due_date?.slice(0, 10) || '—'}</td>
                   <td>
                     <span className={`badge ${loanBadge(loan).className}`}>{loanBadge(loan).label}</span>
+                  </td>
+                  <td className="small">
+                    <div>
+                      <i className="bi bi-box-arrow-right text-primary me-1" />
+                      {loan.checkout_staff?.full_name || 'System'}
+                    </div>
+                    {loan.return_date && (
+                      <div className="text-success">
+                        <i className="bi bi-box-arrow-in-left me-1" />
+                        {loan.return_staff?.full_name || 'System'}
+                      </div>
+                    )}
                   </td>
                   <td className="text-end">
                     {(loan.status === 'active' || loan.status === 'overdue') && (
@@ -106,7 +119,7 @@ export default function LoansPage() {
               ))}
               {data?.items.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="text-center text-muted py-4">
+                  <td colSpan={6} className="text-center text-muted py-4">
                     No loans
                   </td>
                 </tr>
