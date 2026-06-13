@@ -2,6 +2,9 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
+import { API_BASE } from '../api/client'
+
+const LOGO = `${API_BASE}/static/images/Lencana_Sekolah_Menengah_Kebangsaan_Abdullah_Munshi.jpg`
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -27,16 +30,22 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="d-flex align-items-center justify-content-center min-vh-100 bg-light">
-      <div className="card shadow-sm" style={{ width: 380 }}>
-        <div className="card-body p-4">
-          <h4 className="text-center mb-1 fw-bold">
-            <i className="bi bi-book me-2 text-primary" />
+    <div className="login-page">
+      <div className="login-card">
+        <div className="text-center mb-4">
+          <img
+            src={LOGO}
+            alt="SMK Abdullah Munshi"
+            className="rounded mb-3"
+            style={{ width: 72, height: 72, objectFit: 'contain' }}
+          />
+          <h4 className="mb-1 fw-bold" style={{ color: 'var(--primary-color)' }}>
             {t('appName')}
           </h4>
-          <p className="text-center text-muted small mb-4">SMK Abdullah Munshi</p>
-          {error && <div className="alert alert-danger py-2">{error}</div>}
-          <form onSubmit={handleSubmit}>
+          <p className="text-muted small mb-0">SMK Abdullah Munshi</p>
+        </div>
+        {error && <div className="alert alert-danger py-2">{error}</div>}
+        <form onSubmit={handleSubmit}>
             <div className="mb-3">
               <label className="form-label">{t('username')}</label>
               <input
@@ -61,7 +70,6 @@ export default function LoginPage() {
               {busy ? t('loading') : t('login')}
             </button>
           </form>
-        </div>
       </div>
     </div>
   )
