@@ -320,7 +320,7 @@ def _commit_result_row(job, result):
     """
     from app.models import Book, BookCopy
     from app.models.ocr import DigitizedLedger
-    from app.utils.barcode_utils import generate_barcode
+    from app.utils.barcode_utils import standard_barcode
     from app.utils.text_format import to_caps
 
     # Final values (corrected or extracted), trimmed to catalog column limits.
@@ -355,12 +355,11 @@ def _commit_result_row(job, result):
                 db.session.flush()  # Get book.id for the copy below
 
             # Physical copy carries the acquisition details from the ledger.
-            # Barcode mirrors the CRUD add-copy flow so scanner-based
-            # checkout/return works for OCR-committed books too.
+            # Barcode is assigned after flush (standard EPM####### format),
+            # so scanner-based checkout/return works for OCR-committed books.
             copy = BookCopy(
                 book_id=book.id,
                 accession_number=accession,
-                barcode=generate_barcode(accession),
                 status='available',
                 location='Library',
                 acquisition_date=result.final_tarikh_perolehan,
@@ -391,6 +390,7 @@ def _commit_result_row(job, result):
             )
             db.session.add(ledger)
             db.session.flush()  # Get copy.id and ledger.id
+            copy.barcode = standard_barcode(copy.id)
             ledger.linked_copy_id = copy.id
             result.committed_ledger_id = ledger.id
 

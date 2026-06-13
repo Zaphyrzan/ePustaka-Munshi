@@ -52,6 +52,16 @@ def generate_barcode(accession_number):
     return barcode_value
 
 
+def standard_barcode(copy_id, prefix='EPM', width=7):
+    """Uniform library barcode: prefix + zero-padded copy id.
+
+    e.g. copy id 42 -> 'EPM0000042'. Using the copy's primary key keeps
+    every barcode unique and exactly the same length regardless of the
+    accession-number format (CRUD 'ACC-YYYY-NNNN' vs OCR ledger numbers).
+    """
+    return f"{prefix}{int(copy_id):0{width}d}"
+
+
 def create_barcode_image(accession_number, filepath):
     """
     Generate a barcode image file for printing
