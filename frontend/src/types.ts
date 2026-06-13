@@ -54,6 +54,8 @@ export interface Loan {
   renewals?: number
   member?: { id: number; member_id: string; full_name: string }
   copy?: BookCopy & { book?: Book }
+  checkout_staff?: { id: number; username?: string; full_name?: string } | null
+  return_staff?: { id: number; username?: string; full_name?: string } | null
 }
 
 /** Human status for a loan: overdue beats due-soon beats plain status */
