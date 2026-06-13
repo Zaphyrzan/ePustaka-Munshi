@@ -125,12 +125,18 @@ def dashboard():
 
             three_days = datetime.utcnow() + timedelta(days=3)
             my_loans = [LoanSerializer.to_dict(loan) for loan in active_loans]
+            # Due soon = due within 3 days but NOT yet overdue. Loans whose
+            # stored status is stale-active but past due count as overdue.
             due_soon = [
                 LoanSerializer.to_dict(loan)
                 for loan in active_loans
-                if loan.due_date and loan.due_date <= three_days
+                if loan.due_date and not loan.is_overdue and loan.due_date <= three_days
             ]
-            overdue = [LoanSerializer.to_dict(loan) for loan in overdue_loans]
+            overdue = [LoanSerializer.to_dict(loan) for loan in overdue_loans] + [
+                LoanSerializer.to_dict(loan)
+                for loan in active_loans
+                if loan.is_overdue
+            ]
 
         return ApiResponse.success({
             'member': MemberSerializer.to_dict(member),

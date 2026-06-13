@@ -69,9 +69,10 @@ def index():
             .all()
         )
         
-        # Due in next 3 days - already loaded from above
+        # Due in next 3 days - already loaded from above. Excludes loans that
+        # are already past due (those belong in overdue, not "due soon").
         three_days = datetime.utcnow() + timedelta(days=3)
-        due_soon = [l for l in my_loans if l.due_date and l.due_date <= three_days]
+        due_soon = [l for l in my_loans if l.due_date and not l.is_overdue and l.due_date <= three_days]
         
         # Overdue - separate query with eager loading
         overdue = (

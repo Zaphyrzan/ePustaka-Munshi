@@ -48,9 +48,26 @@ export interface Loan {
   due_date?: string
   return_date?: string
   status: string
+  is_overdue?: boolean
+  days_overdue?: number
+  days_remaining?: number
   renewals?: number
   member?: { id: number; member_id: string; full_name: string }
   copy?: BookCopy & { book?: Book }
+}
+
+/** Human status for a loan: overdue beats due-soon beats plain status */
+export function loanBadge(loan: Loan): { label: string; className: string } {
+  if (loan.status === 'returned') return { label: 'returned', className: 'bg-secondary' }
+  if (loan.is_overdue || loan.status === 'overdue') {
+    const days = loan.days_overdue ?? 0
+    return { label: days > 0 ? `${days} day${days === 1 ? '' : 's'} overdue` : 'overdue', className: 'bg-danger' }
+  }
+  const left = loan.days_remaining
+  if (left != null && left <= 3) {
+    return { label: left === 0 ? 'due today' : `due in ${left} day${left === 1 ? '' : 's'}`, className: 'bg-warning text-dark' }
+  }
+  return { label: loan.status, className: 'bg-info text-dark' }
 }
 
 export interface CirculationStats {
