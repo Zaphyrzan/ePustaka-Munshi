@@ -1,23 +1,22 @@
 {
-  "buildCommand": "pip install -r requirements.txt && cd frontend && npm install && npm run build",
+  "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/dist",
-  "framework": "flask",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/wsgi.py" },
-    { "source": "/catalog/api/(.*)", "destination": "/wsgi.py" },
-    { "source": "/circulation/api/(.*)", "destination": "/wsgi.py" },
-    { "source": "/ocr/api/(.*)", "destination": "/wsgi.py" },
-    { "source": "/users/api/(.*)", "destination": "/wsgi.py" },
-    { "source": "/catalog/book/(.*)/print-barcodes", "destination": "/wsgi.py" },
-    { "source": "/users/students/import", "destination": "/wsgi.py" },
-    { "source": "/users/staff/import", "destination": "/wsgi.py" },
-    { "source": "/users/students/active", "destination": "/wsgi.py" },
-    { "source": "/users/students/graduation-list", "destination": "/wsgi.py" },
-    { "source": "/users/admin/(.*)", "destination": "/wsgi.py" },
-    { "source": "/ocr/import-ledger", "destination": "/wsgi.py" },
-    { "source": "/auth/(.*)", "destination": "/wsgi.py" },
-    { "source": "/static/(.*)", "destination": "/wsgi.py" },
-    { "source": "/health", "destination": "/wsgi.py" },
+    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/catalog/api/(.*)", "destination": "/api/index" },
+    { "source": "/circulation/api/(.*)", "destination": "/api/index" },
+    { "source": "/ocr/api/(.*)", "destination": "/api/index" },
+    { "source": "/users/api/(.*)", "destination": "/api/index" },
+    { "source": "/catalog/book/(.*)/print-barcodes", "destination": "/api/index" },
+    { "source": "/users/students/import", "destination": "/api/index" },
+    { "source": "/users/staff/import", "destination": "/api/index" },
+    { "source": "/users/students/active", "destination": "/api/index" },
+    { "source": "/users/students/graduation-list", "destination": "/api/index" },
+    { "source": "/users/admin/(.*)", "destination": "/api/index" },
+    { "source": "/ocr/import-ledger", "destination": "/api/index" },
+    { "source": "/auth/(.*)", "destination": "/api/index" },
+    { "source": "/static/(.*)", "destination": "/api/index" },
+    { "source": "/health", "destination": "/api/index" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
@@ -40,10 +39,6 @@
         {
           "key": "X-Frame-Options",
           "value": "DENY"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
         }
       ]
     }
