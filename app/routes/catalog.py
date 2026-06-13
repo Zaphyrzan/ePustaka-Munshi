@@ -170,21 +170,22 @@ def add_copy(book_id):
     book = Book.query.get_or_404(book_id)
     
     if request.method == 'POST':
-        # Auto-generate accession number and barcode
+        # Auto-generate accession number; barcode assigned after flush
+        from app.utils.barcode_utils import standard_barcode
         accession = generate_accession_number()
-        barcode_value = generate_barcode(accession)
-        
+
         copy = BookCopy(
             book_id=book.id,
             accession_number=accession,
-            barcode=barcode_value,
             status=CopyStatus.AVAILABLE.value,
             condition=request.form.get('condition', 'Good'),
             location=request.form.get('location', '').strip() or None,
             notes=request.form.get('notes', '').strip() or None
         )
-        
+
         db.session.add(copy)
+        db.session.flush()
+        copy.barcode = standard_barcode(copy.id)
         db.session.commit()
         
         flash(f'Copy {copy.accession_number} added successfully (Barcode: {copy.barcode})', 'success')

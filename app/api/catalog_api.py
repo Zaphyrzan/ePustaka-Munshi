@@ -420,20 +420,21 @@ def add_copy(book_id):
         if not book:
             return ApiResponse.error('Book not found', status_code=404)
 
-        from app.utils.barcode_utils import generate_accession_number, generate_barcode
+        from app.utils.barcode_utils import generate_accession_number, standard_barcode
         data = request.get_json(silent=True) or {}
 
         accession = generate_accession_number()
         copy = BookCopy(
             book_id=book.id,
             accession_number=accession,
-            barcode=generate_barcode(accession),
             status=CopyStatus.AVAILABLE.value,
             condition=(data.get('condition') or 'Good').strip(),
             location=(data.get('location') or '').strip() or None,
             notes=(data.get('notes') or '').strip() or None,
         )
         db.session.add(copy)
+        db.session.flush()  # assign copy.id
+        copy.barcode = standard_barcode(copy.id)
         db.session.commit()
 
         return ApiResponse.success(
