@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -13,14 +14,21 @@ export default function BookDetailPage() {
   const { session } = useAuth()
   const isStaff = session?.user_type === 'staff'
 
+  const [showAddCopy, setShowAddCopy] = useState(false)
+  const [copyForm, setCopyForm] = useState({ condition: 'Good', location: '', notes: '' })
+
   const { data, isLoading } = useQuery({
     queryKey: ['book', bookId],
     queryFn: () => unwrap<{ book: Book; copies: BookCopy[] }>(api.get(`/api/catalog/books/${bookId}`)),
   })
 
   const addCopy = useMutation({
-    mutationFn: () => unwrap(api.post(`/api/catalog/books/${bookId}/copies`, {})),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['book', bookId] }),
+    mutationFn: () => unwrap(api.post(`/api/catalog/books/${bookId}/copies`, copyForm)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['book', bookId] })
+      setShowAddCopy(false)
+      setCopyForm({ condition: 'Good', location: '', notes: '' })
+    },
   })
 
   const deleteBook = useMutation({
@@ -103,19 +111,68 @@ export default function BookDetailPage() {
           {t('copies')} ({copies.length})
         </h5>
         {isStaff && (
-          <button className="btn btn-success btn-sm" onClick={() => addCopy.mutate()} disabled={addCopy.isPending}>
-            <i className="bi bi-plus-lg me-1" />
-            {addCopy.isPending ? t('loading') : 'Add copy'}
+          <button className="btn btn-success btn-sm" onClick={() => setShowAddCopy((v) => !v)}>
+            <i className={`bi ${showAddCopy ? 'bi-x-lg' : 'bi-plus-lg'} me-1`} />
+            {showAddCopy ? 'Cancel' : 'Add copy'}
           </button>
         )}
       </div>
-      <div className="card shadow-sm">
+
+      {isStaff && showAddCopy && (
+        <div className="card mb-3">
+          <div className="card-body">
+            <p className="small text-muted mb-3">
+              <i className="bi bi-info-circle me-1" />
+              Accession number and barcode are generated automatically.
+            </p>
+            <div className="row g-2 align-items-end">
+              <div className="col-md-3">
+                <label className="form-label small">Condition</label>
+                <select
+                  className="form-select"
+                  value={copyForm.condition}
+                  onChange={(e) => setCopyForm({ ...copyForm, condition: e.target.value })}
+                >
+                  <option>Good</option>
+                  <option>Fair</option>
+                  <option>Poor</option>
+                </select>
+              </div>
+              <div className="col-md-4">
+                <label className="form-label small">Shelf Location</label>
+                <input
+                  className="form-control"
+                  placeholder="e.g. Shelf A-3"
+                  value={copyForm.location}
+                  onChange={(e) => setCopyForm({ ...copyForm, location: e.target.value })}
+                />
+              </div>
+              <div className="col-md-3">
+                <label className="form-label small">Notes</label>
+                <input
+                  className="form-control"
+                  value={copyForm.notes}
+                  onChange={(e) => setCopyForm({ ...copyForm, notes: e.target.value })}
+                />
+              </div>
+              <div className="col-md-2">
+                <button className="btn btn-primary w-100" onClick={() => addCopy.mutate()} disabled={addCopy.isPending}>
+                  {addCopy.isPending ? t('loading') : 'Add'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="card">
         <table className="table mb-0 align-middle">
           <thead className="table-light">
             <tr>
               <th>Accession #</th>
               <th>Barcode</th>
               <th>Status</th>
+              <th>Condition</th>
               <th>Location</th>
             </tr>
           </thead>
@@ -139,6 +196,7 @@ export default function BookDetailPage() {
                     {copy.status}
                   </span>
                 </td>
+                <td>{copy.condition || '—'}</td>
                 <td>{copy.location || '—'}</td>
               </tr>
             ))}

@@ -8,6 +8,7 @@ from sqlalchemy import func
 from app import db
 from app.models import Book, BookCopy, CopyStatus, Permission
 from app.utils.serializers import BookSerializer, BookCopySerializer, ApiResponse
+from app.utils.text_format import to_caps
 
 bp = Blueprint('api_catalog', __name__, url_prefix='/api/catalog')
 
@@ -217,14 +218,14 @@ def create_book():
             if existing:
                 return ApiResponse.error('ISBN already exists', status_code=409)
         
-        # Create book
+        # Create book (descriptive fields stored UPPERCASE per school policy)
         book = Book(
-            title=title,
-            author=data.get('author', '').strip(),
+            title=to_caps(title),
+            author=to_caps(data.get('author', '').strip()),
             isbn=data.get('isbn', '').strip() or None,
-            publisher=data.get('publisher', '').strip(),
+            publisher=to_caps(data.get('publisher', '').strip()),
             publication_year=data.get('publication_year'),
-            category=data.get('category', '').strip(),
+            category=to_caps(data.get('category', '').strip()),
             call_number=data.get('call_number', '').strip(),
             language=data.get('language', 'English'),
             page_count=data.get('page_count'),
@@ -279,10 +280,10 @@ def update_book(book_id):
             title = data['title'].strip()
             if not title:
                 return ApiResponse.error('Title cannot be empty', status_code=400)
-            book.title = title
-        
+            book.title = to_caps(title)
+
         if 'author' in data:
-            book.author = data['author'].strip() or None
+            book.author = to_caps(data['author'].strip() or None)
         
         if 'isbn' in data and data['isbn']:
             # Check for duplicate ISBN
@@ -295,13 +296,13 @@ def update_book(book_id):
             book.isbn = data['isbn'].strip()
         
         if 'publisher' in data:
-            book.publisher = data['publisher'].strip() or None
-        
+            book.publisher = to_caps(data['publisher'].strip() or None)
+
         if 'publication_year' in data:
             book.publication_year = data.get('publication_year')
-        
+
         if 'category' in data:
-            book.category = data['category'].strip() or None
+            book.category = to_caps(data['category'].strip() or None)
         
         if 'call_number' in data:
             book.call_number = data['call_number'].strip() or None
