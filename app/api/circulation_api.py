@@ -409,3 +409,88 @@ def get_stats():
         current_app.logger.error(f'Get stats error: {str(e)}')
         return ApiResponse.error(str(e), status_code=500)
 
+
+
+@bp.route('/dashboard', methods=['GET'])
+@login_required
+def dashboard():
+    """Staff dashboard payload: stats + recent activity (with staff handler) + overdue.
+
+    Mirrors the Flask main.dashboard view so the React dashboard has parity,
+    including who handled each checkout/return ("works being done by other
+    librarians").
+    """
+    try:
+        from app.models import Book, OCRJob
+
+        stats = {
+            'total_books': Book.query.count(),
+            'total_copies': BookCopy.query.count(),
+            'available_copies': BookCopy.query.filter_by(status=CopyStatus.AVAILABLE.value).count(),
+            'total_members': Member.query.filter_by(is_active=True).count(),
+            'active_loans': Loan.query.filter_by(status=LoanStatus.ACTIVE.value).count(),
+            'overdue_loans': Loan.query.filter_by(status=LoanStatus.OVERDUE.value).count(),
+            'pending_ocr_jobs': OCRJob.query.filter_by(status='pending').count(),
+        }
+
+        recent_loans = (
+            Loan.query
+            .options(
+                joinedload(Loan.copy).joinedload(BookCopy.book),
+                joinedload(Loan.member),
+                joinedload(Loan.checkout_staff),
+                joinedload(Loan.return_staff),
+            )
+            .order_by(Loan.checkout_date.desc())
+            .limit(15)
+            .all()
+        )
+
+        activity = []
+        for loan in recent_loans:
+            book_title = loan.copy.book.title if loan.copy and loan.copy.book else '(unknown)'
+            member_name = loan.member.full_name if loan.member else '(unknown)'
+            activity.append({
+                'type': 'checkout',
+                'date': loan.checkout_date.isoformat() if loan.checkout_date else None,
+                'book': book_title,
+                'member': member_name,
+                'staff_name': loan.checkout_staff.full_name if loan.checkout_staff else 'System',
+                'status': loan.status,
+                'is_overdue': loan.is_overdue,
+            })
+            if loan.return_date:
+                activity.append({
+                    'type': 'return',
+                    'date': loan.return_date.isoformat(),
+                    'book': book_title,
+                    'member': member_name,
+                    'staff_name': loan.return_staff.full_name if loan.return_staff else 'System',
+                    'status': 'returned',
+                    'is_overdue': False,
+                })
+        activity.sort(key=lambda x: x['date'] or '', reverse=True)
+        activity = activity[:15]
+
+        overdue = (
+            Loan.query
+            .options(joinedload(Loan.copy).joinedload(BookCopy.book), joinedload(Loan.member))
+            .filter_by(status=LoanStatus.OVERDUE.value)
+            .limit(10)
+            .all()
+        )
+        overdue_list = [{
+            'id': l.id,
+            'book': (l.copy.book.title if l.copy and l.copy.book else '(unknown)'),
+            'member': (l.member.full_name if l.member else '(unknown)'),
+            'days_overdue': l.days_overdue,
+        } for l in overdue]
+
+        return ApiResponse.success({
+            'stats': stats,
+            'activity': activity,
+            'overdue': overdue_list,
+        })
+    except Exception as e:
+        current_app.logger.error(f'Dashboard error: {str(e)}')
+        return ApiResponse.error(str(e), status_code=500)
