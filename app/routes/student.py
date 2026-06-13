@@ -99,11 +99,10 @@ def index():
 @login_required
 def search_books():
     """Search available books with pagination and filtering"""
-    # Parse pagination parameters (per_page: 12-20 books optimal for UI grid)
-    pagination = OffsetPagination.from_request()
-    pagination.per_page = request.args.get('per_page', 12, type=int)
-    pagination.per_page = min(max(pagination.per_page, 12), 50)  # 12-50 range for UI
-    
+    # per_page: 12-50 books, optimal for the UI grid
+    page = request.args.get('page', 1, type=int)
+    per_page = min(max(request.args.get('per_page', 12, type=int), 12), 50)
+
     query = Book.query
     
     # Search filters
@@ -130,11 +129,14 @@ def search_books():
     categories = get_book_categories()
     
     query = query.order_by(Book.title)
-    books = pagination.paginate(query)
-    
+    # Native SQLAlchemy pagination: the template uses both books['items'] and
+    # books.iter_pages()/has_next; a Pagination object satisfies both (Jinja
+    # falls back from getitem to getattr for ['items']).
+    books = query.paginate(page=page, per_page=per_page, error_out=False)
+
     # Get availability counts in a single query instead of N+1
     # Build a mapping of book_id -> available_count
-    book_ids = [book.id for book in books['items']]
+    book_ids = [book.id for book in books.items]
     availability = db.session.query(
         BookCopy.book_id,
         func.count(BookCopy.id).label('available_count')
@@ -146,7 +148,7 @@ def search_books():
     availability_map = {book_id: count for book_id, count in availability}
     
     # Attach availability info to books (no database queries!)
-    for book in books['items']:
+    for book in books.items:
         book.available_count = availability_map.get(book.id, 0)
     
     return render_template('student/search.html',

@@ -37,13 +37,12 @@ def permission_required(perm):
 @permission_required(Permission.MANAGE_USERS)
 def staff_list():
     """List staff users with pagination"""
-    pagination = OffsetPagination.from_request()
-    pagination.per_page = 15  # 15 users per page (optimal for table)
-    
+    page = request.args.get('page', 1, type=int)
+
     # Search/filter
     search = request.args.get('search', '').strip()
     query = User.query
-    
+
     if search:
         search_term = f'%{search}%'
         query = query.filter(
@@ -53,10 +52,11 @@ def staff_list():
                 User.full_name.ilike(search_term)
             )
         )
-    
+
     query = query.order_by(User.username)
-    users = pagination.paginate(query)
-    
+    # Native pagination object: iterable in the template ({% for user in users %})
+    users = query.paginate(page=page, per_page=15, error_out=False)
+
     return render_template('users/staff_list.html', users=users, search=search)
 
 
@@ -286,11 +286,10 @@ def edit_staff(user_id):
 @permission_required(Permission.MANAGE_MEMBERS)
 def member_list():
     """List library members with pagination and filtering"""
-    pagination = OffsetPagination.from_request()
-    pagination.per_page = 15  # 15 members per page (optimal for table)
-    
+    page = request.args.get('page', 1, type=int)
+
     query = Member.query
-    
+
     # Search/filter
     search = request.args.get('search', '').strip()
     if search:
@@ -316,9 +315,10 @@ def member_list():
         query = query.filter(Member.is_active == False)
     
     query = query.order_by(Member.full_name)
-    members = pagination.paginate(query)
-    
-    return render_template('users/member_list.html', members=members, search=search, 
+    # Native pagination: template uses members['items'] and members.iter_pages()
+    members = query.paginate(page=page, per_page=15, error_out=False)
+
+    return render_template('users/member_list.html', members=members, search=search,
                           member_type=member_type, status=status)
 
 
