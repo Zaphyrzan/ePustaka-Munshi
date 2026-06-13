@@ -7,7 +7,12 @@ interface MemberInfo {
   member_id: string
   full_name: string
   member_type?: string
-  active_loans_count?: number
+  form_name?: string
+  class_group?: string
+  active_loans?: number
+  overdue_loans?: number
+  can_borrow?: boolean
+  is_active?: boolean
 }
 
 /** Scanner-first checkout: scan member card, then book barcode. */
@@ -69,9 +74,49 @@ export default function CheckoutPage() {
           <button className="btn btn-primary">Find</button>
         </div>
         {member && (
-          <div className="alert alert-info mt-3 mb-0 py-2">
-            <strong>{member.full_name}</strong> ({member.member_id})
-            {member.member_type && <span className="badge bg-secondary ms-2">{member.member_type}</span>}
+          <div className={`card mt-3 mb-0 border ${member.can_borrow ? 'border-success' : 'border-danger'}`}>
+            <div className="card-body py-3">
+              <div className="d-flex justify-content-between align-items-start">
+                <div>
+                  <h6 className="mb-1">
+                    {member.full_name}{' '}
+                    <span className="text-muted small fw-normal">({member.member_id})</span>
+                  </h6>
+                  <div className="small text-muted">
+                    {member.member_type === 'Student Assistant' ? 'Student Librarian' : member.member_type || 'Student'}
+                    {member.form_name ? ` • ${member.form_name}` : ''}
+                    {member.class_group ? ` ${member.class_group}` : ''}
+                  </div>
+                </div>
+                {member.can_borrow ? (
+                  <span className="badge bg-success fs-6">✓ Can Borrow</span>
+                ) : (
+                  <span className="badge bg-danger fs-6">✗ Cannot Borrow</span>
+                )}
+              </div>
+              <div className="d-flex gap-4 mt-2 small">
+                <span>
+                  <i className="bi bi-journal-bookmark me-1" />
+                  Active loans: <strong>{member.active_loans ?? 0}</strong>
+                </span>
+                {(member.overdue_loans ?? 0) > 0 && (
+                  <span className="text-danger">
+                    <i className="bi bi-exclamation-triangle me-1" />
+                    Overdue: <strong>{member.overdue_loans}</strong>
+                  </span>
+                )}
+                {member.is_active === false && <span className="text-danger">Account inactive</span>}
+              </div>
+              {!member.can_borrow && (
+                <div className="alert alert-danger py-2 mt-2 mb-0 small">
+                  {(member.overdue_loans ?? 0) > 0
+                    ? 'This member has overdue books and cannot borrow until they are returned.'
+                    : member.is_active === false
+                      ? 'This member account is inactive.'
+                      : 'This member has reached the maximum number of loans.'}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </form>
@@ -85,13 +130,16 @@ export default function CheckoutPage() {
             value={barcode}
             onChange={(e) => setBarcode(e.target.value)}
             placeholder="Scan book barcode"
-            disabled={!member}
+            disabled={!member || !member.can_borrow}
             required
           />
-          <button className="btn btn-success" disabled={!member}>
+          <button className="btn btn-success" disabled={!member || !member.can_borrow}>
             {t('checkout')}
           </button>
         </div>
+        {member && !member.can_borrow && (
+          <div className="small text-danger mt-2">Checkout disabled — this member is not eligible to borrow.</div>
+        )}
       </form>
     </div>
   )
