@@ -4,6 +4,7 @@ import Layout from './components/Layout'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import ChangePasswordPage from './pages/ChangePasswordPage'
+import ProfilePage from './pages/ProfilePage'
 import CatalogListPage from './pages/catalog/CatalogListPage'
 import BookDetailPage from './pages/catalog/BookDetailPage'
 import BookFormPage from './pages/catalog/BookFormPage'
@@ -61,6 +62,7 @@ export default function App() {
         <Route path="/" element={<HomeRedirect />} />
         <Route path="/dashboard" element={<StaffOnly><DashboardPage /></StaffOnly>} />
         <Route path="/change-password" element={<ChangePasswordPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
         {/* Catalog browse/detail is open to students; create/edit is staff-only */}
         <Route path="/catalog" element={<CatalogListPage />} />
         <Route path="/catalog/add" element={<StaffOnly><BookFormPage /></StaffOnly>} />

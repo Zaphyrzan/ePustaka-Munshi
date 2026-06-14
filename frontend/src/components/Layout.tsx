@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
 import { API_BASE } from '../api/client'
@@ -24,9 +24,21 @@ export default function Layout() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
   const isStaff = session?.user_type === 'staff' && STAFF_ROLES.includes(session.role)
 
+  // Close the profile dropdown on outside click
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [])
+
   async function handleLogout() {
+    setMenuOpen(false)
     await logout()
     navigate('/login')
   }
@@ -98,9 +110,7 @@ export default function Layout() {
           <button className="btn btn-outline-secondary btn-sm d-lg-none" onClick={() => setOpen((v) => !v)}>
             <i className="bi bi-list" />
           </button>
-          <div className="fw-semibold text-truncate" style={{ color: 'var(--primary-dark)' }}>
-            {session?.user.full_name || session?.user.username || session?.user.member_id}
-          </div>
+          <div className="flex-grow-1" />
           <div className="d-flex align-items-center gap-3">
             <div className="btn-group btn-group-sm">
               <button
@@ -116,10 +126,52 @@ export default function Layout() {
                 BM
               </button>
             </div>
-            <button className="btn btn-outline-danger btn-sm" onClick={handleLogout}>
-              <i className="bi bi-box-arrow-right me-1" />
-              {t('logout')}
-            </button>
+
+            {/* Profile dropdown (React-controlled; app doesn't bundle Bootstrap JS) */}
+            <div className="position-relative" ref={menuRef}>
+              <button
+                className="btn btn-light btn-sm d-flex align-items-center gap-2"
+                onClick={() => setMenuOpen((v) => !v)}
+              >
+                <i className="bi bi-person-circle fs-5" />
+                <span className="d-none d-sm-inline text-truncate" style={{ maxWidth: 160 }}>
+                  {session?.user.full_name || session?.user.username || session?.user.member_id}
+                </span>
+                <i className="bi bi-chevron-down small" />
+              </button>
+              {menuOpen && (
+                <ul
+                  className="dropdown-menu show shadow"
+                  style={{ position: 'absolute', right: 0, top: '100%', display: 'block', minWidth: 200 }}
+                >
+                  <li className="px-3 py-2 border-bottom">
+                    <div className="fw-semibold text-truncate">{session?.user.full_name}</div>
+                    <div className="small text-muted">{session?.role}</div>
+                  </li>
+                  <li>
+                    <Link className="dropdown-item" to="/profile" onClick={() => setMenuOpen(false)}>
+                      <i className="bi bi-person me-2" />
+                      {t('profile')}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link className="dropdown-item" to="/change-password" onClick={() => setMenuOpen(false)}>
+                      <i className="bi bi-key me-2" />
+                      {t('changePassword') || 'Change Password'}
+                    </Link>
+                  </li>
+                  <li>
+                    <hr className="dropdown-divider" />
+                  </li>
+                  <li>
+                    <button className="dropdown-item text-danger" onClick={handleLogout}>
+                      <i className="bi bi-box-arrow-right me-2" />
+                      {t('logout')}
+                    </button>
+                  </li>
+                </ul>
+              )}
+            </div>
           </div>
         </div>
 

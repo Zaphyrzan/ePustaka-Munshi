@@ -104,6 +104,7 @@ const resources = {
       next: 'Next',
       // --- Change password (shared) ---
       changePassword: 'Change Password',
+      profile: 'Profile',
       currentPassword: 'Current password',
       newPassword: 'New password',
       confirmNewPassword: 'Confirm new password',
@@ -210,6 +211,7 @@ const resources = {
       next: 'Seterusnya',
       // --- Tukar kata laluan (dikongsi) ---
       changePassword: 'Tukar Kata Laluan',
+      profile: 'Profil',
       currentPassword: 'Kata Laluan Semasa',
       newPassword: 'Kata Laluan Baharu',
       confirmNewPassword: 'Sahkan Kata Laluan Baharu',
