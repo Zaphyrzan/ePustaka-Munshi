@@ -130,7 +130,7 @@ export default function StudentLoansPage() {
               {active.length === 0 && (
                 <tr>
                   <td colSpan={6} className="text-center text-muted py-4">
-                    {t('noBooks')} <Link to="/catalog">{t('searchBooks')}</Link>
+                    {t('noBooks')} <Link to="/student/search">{t('searchBooks')}</Link>
                   </td>
                 </tr>
               )}

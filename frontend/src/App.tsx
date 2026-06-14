@@ -16,6 +16,7 @@ import UsersPage from './pages/users/UsersPage'
 import MemberFormPage from './pages/users/MemberFormPage'
 import StaffFormPage from './pages/users/StaffFormPage'
 import StudentPortalPage from './pages/student/StudentPortalPage'
+import StudentSearchPage from './pages/student/StudentSearchPage'
 import StudentLoansPage from './pages/student/StudentLoansPage'
 import StudentLeaderboardPage from './pages/student/StudentLeaderboardPage'
 
@@ -75,6 +76,7 @@ export default function App() {
         <Route path="/users/staff/add" element={<StaffOnly><StaffFormPage /></StaffOnly>} />
         <Route path="/users/staff/:userId/edit" element={<StaffOnly><StaffFormPage /></StaffOnly>} />
         <Route path="/student" element={<StudentPortalPage />} />
+        <Route path="/student/search" element={<StudentSearchPage />} />
         <Route path="/student/loans" element={<StudentLoansPage />} />
         <Route path="/student/leaderboard" element={<StudentLeaderboardPage />} />
       </Route>

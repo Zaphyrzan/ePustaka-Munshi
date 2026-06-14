@@ -51,7 +51,7 @@ export default function Layout() {
           title: t('student_portal'),
           items: [
             { to: '/student', icon: 'bi-house', label: t('home'), end: true },
-            { to: '/catalog', icon: 'bi-search', label: t('search') },
+            { to: '/student/search', icon: 'bi-search', label: t('search') },
             { to: '/student/loans', icon: 'bi-journal-bookmark', label: t('myLoans') },
             { to: '/student/leaderboard', icon: 'bi-trophy', label: t('leaderboard') },
           ],
