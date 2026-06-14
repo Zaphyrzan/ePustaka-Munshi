@@ -2,8 +2,10 @@
 Excel import utilities for data import operations.
 Provides reusable functions for importing student data and OCR ledger data.
 """
+import io
 import os
 import re
+import zipfile
 from datetime import datetime
 from werkzeug.utils import secure_filename
 import openpyxl
@@ -39,9 +41,109 @@ DEFAULT_CLASS_GROUPS = [
 ]
 
 
+# Header tokens that mark a sheet as having a structured header row (as opposed
+# to a plain class roster where row 1 is the class name and column A is names).
+HEADER_TOKENS = {
+    'name', 'full_name', 'fullname', 'nama', 'student_name',
+    'member_id', 'memberid', 'id', 'email', 'phone', 'no',
+    'class', 'class_group', 'kelas', 'form', 'form_level', 'tingkatan',
+}
+
+
 def allowed_file(filename):
     """Check if file extension is allowed"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def _sanitize_xlsx_bytes(raw):
+    """
+    Repair common openpyxl-incompatible quirks in real-world .xlsx files.
+
+    Files exported by some Excel/LibreOffice versions (e.g. with the
+    "Arial Narrow" font) set <family val="34"/> in xl/styles.xml. openpyxl
+    rejects any font family > 14 with a hard ValueError, so the whole upload
+    fails to load. We clamp those out-of-range values so the data is readable.
+
+    Returns a BytesIO of the patched workbook, or None if it isn't a zip.
+    """
+    try:
+        zin = zipfile.ZipFile(io.BytesIO(raw))
+    except zipfile.BadZipFile:
+        return None
+
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == 'xl/styles.xml':
+                text = data.decode('utf-8', 'replace')
+                text = re.sub(
+                    r'<family val="(\d+)"\s*/>',
+                    lambda m: '<family val="2"/>' if int(m.group(1)) > 14 else m.group(0),
+                    text,
+                )
+                data = text.encode('utf-8')
+            zout.writestr(item, data)
+    out.seek(0)
+    return out
+
+
+def _safe_load_workbook(filepath, **kwargs):
+    """
+    Load an .xlsx workbook, transparently repairing files that openpyxl's
+    strict validation would otherwise reject. Falls back to the sanitized
+    copy only when the normal load fails.
+    """
+    try:
+        return openpyxl.load_workbook(filepath, **kwargs)
+    except Exception:
+        with open(filepath, 'rb') as fh:
+            raw = fh.read()
+        patched = _sanitize_xlsx_bytes(raw)
+        if patched is None:
+            raise
+        return openpyxl.load_workbook(patched, **kwargs)
+
+
+def _clean(value):
+    """Normalise a cell value to a trimmed string (or '')."""
+    if value is None:
+        return ''
+    if isinstance(value, str):
+        return value.strip()
+    return str(value).strip()
+
+
+def _parse_class_title(text):
+    """
+    Parse a class header like "1 BESTARI", "1B", "TINGKATAN 1 SETIA" or
+    "5 Science 1" into (form_level, class_name).
+
+    Returns (form_level or None, class_name title-cased). The class name keeps
+    any trailing number (e.g. "Science 1") but drops the leading form digit.
+    """
+    raw = _clean(text)
+    if not raw:
+        return None, None
+
+    # Drop a leading "Tingkatan"/"Form" word if present
+    cleaned = re.sub(r'^\s*(tingkatan|form|ting)\s*', '', raw, flags=re.IGNORECASE)
+
+    form_level = None
+    name = cleaned
+    m = re.match(r'^\s*(\d)\s*(.*)$', cleaned)
+    if m:
+        form_level = int(m.group(1))
+        remainder = m.group(2).strip()
+        # "1B" (no space) -> form 1, class "B"; "1 BESTARI" -> form 1, "Bestari"
+        name = remainder if remainder else cleaned[1:].strip()
+
+    name = name.strip(' -:')
+    if not name:
+        return form_level, None
+    # Title-case alphabetic class names but leave short codes (e.g. "B") alone
+    pretty = name.title() if any(c.isalpha() for c in name) and len(name) > 2 else name
+    return form_level, pretty
 
 
 def save_upload_file(file):
@@ -70,9 +172,9 @@ def save_upload_file(file):
 def read_excel_file(filepath):
     """Read Excel file and return list of dictionaries"""
     try:
-        workbook = openpyxl.load_workbook(filepath)
+        workbook = _safe_load_workbook(filepath, data_only=True)
         sheet = workbook.active
-        
+
         # Read header row (first row)
         headers = []
         for cell in sheet[1]:
@@ -105,6 +207,252 @@ def read_excel_file(filepath):
     
     except Exception as e:
         return None, f"Error reading Excel file: {str(e)}"
+
+
+def _row_values(row):
+    """Return a list of cleaned string values for a row of cells."""
+    return [_clean(c.value) for c in row]
+
+
+def parse_student_workbook(filepath):
+    """
+    Parse a student Excel workbook into a normalised, preview-friendly structure
+    that works for BOTH layouts we see in the field:
+
+    1. Class-roster layout (SMK Munshi "SENARAI NAMA" files): one worksheet per
+       class, row 1 is the class title (e.g. "1 BESTARI"), and column A lists
+       the student names. There is NO header row.
+
+    2. Structured layout: a header row (full_name/name/email/class/form ...) with
+       one student per row. Works whether the data is in one sheet or many.
+
+    Returns: (sheets, error) where sheets is a list of dicts:
+        {
+          'sheet': <worksheet name>,
+          'format': 'roster' | 'columns',
+          'form_level': <int|None>,        # suggested default for the sheet
+          'class_group': <str|None>,       # suggested default for the sheet
+          'students': [
+             {'full_name', 'form_level', 'class_group', 'email', 'phone'}
+          ],
+        }
+    """
+    try:
+        workbook = _safe_load_workbook(filepath, data_only=True)
+    except Exception as e:
+        return None, f"Could not open Excel file: {str(e)}"
+
+    sheets = []
+    try:
+        for ws in workbook.worksheets:
+            rows = [r for r in ws.iter_rows(values_only=False)]
+            if not rows:
+                continue
+
+            first_row_vals = [v for v in _row_values(rows[0]) if v]
+            lowered = {v.lower() for v in first_row_vals}
+            is_structured = bool(lowered & HEADER_TOKENS)
+
+            if is_structured:
+                sheet_dict = _parse_columns_sheet(ws.title, rows)
+            else:
+                sheet_dict = _parse_roster_sheet(ws.title, rows)
+
+            if sheet_dict and sheet_dict['students']:
+                sheets.append(sheet_dict)
+    finally:
+        workbook.close()
+
+    if not sheets:
+        return None, "No student names found in the file."
+
+    return sheets, None
+
+
+def _parse_roster_sheet(sheet_title, rows):
+    """Parse a single class-roster worksheet (class title in row 1, names below)."""
+    title_text = next((v for v in _row_values(rows[0]) if v), '')
+    form_level, class_name = _parse_class_title(title_text)
+    # Fall back to the sheet tab name (e.g. "1B") when row 1 has no class title
+    if not class_name:
+        form_level, class_name = _parse_class_title(sheet_title)
+
+    students = []
+    for row in rows[1:]:
+        # Take the first non-empty cell in the row as the student's name
+        name = next((v for v in _row_values(row) if v), '')
+        if not name:
+            continue
+        # Skip a repeated class-title or obvious header line
+        if _parse_class_title(name)[1] and name.upper() == title_text.upper():
+            continue
+        students.append({
+            'full_name': name,
+            'form_level': form_level,
+            'class_group': class_name,
+            'email': None,
+            'phone': None,
+        })
+
+    return {
+        'sheet': sheet_title,
+        'format': 'roster',
+        'form_level': form_level,
+        'class_group': class_name,
+        'students': students,
+    }
+
+
+def _parse_columns_sheet(sheet_title, rows):
+    """Parse a worksheet that has a structured header row."""
+    headers = [v.lower() for v in _row_values(rows[0])]
+
+    def find(*names):
+        for n in names:
+            if n in headers:
+                return headers.index(n)
+        return None
+
+    name_idx = find('full_name', 'fullname', 'name', 'nama', 'student_name')
+    email_idx = find('email')
+    phone_idx = find('phone')
+    class_idx = find('class_group', 'class', 'kelas')
+    form_idx = find('form_level', 'form', 'tingkatan')
+
+    students = []
+    seen_form, seen_class = None, None
+    for row in rows[1:]:
+        vals = _row_values(row)
+
+        def at(idx):
+            return vals[idx] if idx is not None and idx < len(vals) else ''
+
+        name = at(name_idx) if name_idx is not None else next((v for v in vals if v), '')
+        if not name:
+            continue
+
+        form_level = None
+        form_raw = at(form_idx)
+        if form_raw:
+            digits = ''.join(filter(str.isdigit, form_raw))
+            if digits:
+                form_level = max(1, min(6, int(digits)))
+        class_name = at(class_idx) or None
+
+        seen_form = seen_form or form_level
+        seen_class = seen_class or class_name
+
+        students.append({
+            'full_name': name,
+            'form_level': form_level,
+            'class_group': class_name,
+            'email': at(email_idx) or None,
+            'phone': at(phone_idx) or None,
+        })
+
+    return {
+        'sheet': sheet_title,
+        'format': 'columns',
+        'form_level': seen_form,
+        'class_group': seen_class,
+        'students': students,
+    }
+
+
+def commit_student_records(records):
+    """
+    Create Member rows from a list of normalised student dicts (typically the
+    edited preview coming back from the React import wizard).
+
+    Each record: {full_name, form_level, class_group, email, phone, member_type}
+
+    Returns: (success_count, errors, imported_members)
+    """
+    success_count = 0
+    errors = []
+    imported = []
+    default_password = 'Munshi123'
+
+    for i, rec in enumerate(records, start=1):
+        try:
+            full_name = _clean(rec.get('full_name'))
+            if not full_name:
+                errors.append(f"Row {i}: Missing name")
+                continue
+
+            form_level = rec.get('form_level')
+            try:
+                form_level = max(1, min(6, int(form_level))) if form_level not in (None, '') else 1
+            except (ValueError, TypeError):
+                form_level = 1
+
+            class_group = _clean(rec.get('class_group')) or None
+            email = _clean(rec.get('email')) or None
+            phone = _clean(rec.get('phone')) or None
+            member_type = _clean(rec.get('member_type')) or 'Student'
+
+            # Skip duplicate emails to avoid unique-constraint failures
+            if email and Member.query.filter_by(email=email).first():
+                errors.append(f"Row {i}: Email '{email}' already exists — skipped")
+                continue
+
+            member = Member(
+                member_id=generate_member_id(),
+                full_name=full_name,
+                email=email,
+                phone=phone,
+                member_type=member_type,
+                form_level=form_level,
+                class_group=class_group,
+                student_year=datetime.now().year,
+                is_active=True,
+            )
+            member.set_password(default_password)
+            db.session.add(member)
+            db.session.flush()  # allocate id + surface errors per-row
+
+            success_count += 1
+            imported.append({
+                'member_id': member.member_id,
+                'full_name': full_name,
+                'form_level': form_level,
+                'class_group': class_group,
+            })
+        except Exception as e:
+            db.session.rollback()
+            errors.append(f"Row {i} ({rec.get('full_name', '?')}): {str(e)}")
+            continue
+
+    if success_count > 0:
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            errors.insert(0, f"Database commit error: {str(e)}")
+            return 0, errors, []
+
+    # Make sure any newly seen classes are remembered for the dropdown
+    try:
+        _remember_classes(imported)
+    except Exception:
+        db.session.rollback()
+
+    return success_count, errors, imported
+
+
+def _remember_classes(imported):
+    """Persist any new class names from an import into the ClassGroup table."""
+    from app.models import ClassGroup
+    existing = {c.name.lower() for c in ClassGroup.query.all()}
+    added = False
+    for rec in imported:
+        name = (rec.get('class_group') or '').strip()
+        if name and name.lower() not in existing:
+            db.session.add(ClassGroup(name=name, form_level=rec.get('form_level'), is_active=True))
+            existing.add(name.lower())
+            added = True
+    if added:
+        db.session.commit()
 
 
 def import_student_data(filepath, class_mapping=None):
@@ -420,8 +768,33 @@ def import_ocr_ledger_data(filepath, book_id=None):
 
 
 def get_class_groups():
-    """Get list of available class groups (configurable)"""
-    return DEFAULT_CLASS_GROUPS
+    """
+    Get the list of class names for the dropdown.
+
+    Merges three sources, de-duplicated and sorted:
+      1. Admin-managed ClassGroup table (seeded with SMK Munshi streams)
+      2. Distinct class_group values already used by members
+      3. The hard-coded fallback defaults (in case the table is empty)
+    """
+    names = {}  # lower -> display, preserves first-seen casing
+    try:
+        from app.models import ClassGroup
+        for cg in ClassGroup.query.filter_by(is_active=True).all():
+            if cg.name:
+                names.setdefault(cg.name.lower(), cg.name)
+        rows = db.session.query(Member.class_group).distinct().filter(
+            Member.class_group.isnot(None), Member.class_group != ''
+        ).all()
+        for (name,) in rows:
+            if name and name.strip():
+                names.setdefault(name.strip().lower(), name.strip())
+    except Exception:
+        pass
+
+    if not names:
+        return list(DEFAULT_CLASS_GROUPS)
+
+    return sorted(names.values(), key=lambda s: s.lower())
 
 
 def get_form_levels():

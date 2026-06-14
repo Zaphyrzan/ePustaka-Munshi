@@ -192,3 +192,49 @@ class Member(UserMixin, db.Model):
             'overdue_loans': self.overdue_loans_count,
             'can_borrow': self.can_borrow
         }
+
+
+class ClassGroup(db.Model):
+    """
+    Admin-managed list of class names (e.g. "Bestari", "Science 1").
+
+    This backs the class dropdown in the member form and the Excel import
+    preview. Classes are also discovered automatically from existing members,
+    but storing them here lets an admin pre-create a class before any student
+    is assigned to it.
+    """
+    __tablename__ = 'class_groups'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    form_level = db.Column(db.Integer)  # Optional default form this class belongs to (1-5)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # SMK Abdullah Munshi Form 1 streams, used to seed the table on first run.
+    DEFAULT_CLASSES = [
+        'Bestari', 'Efektif', 'Setia', 'Tekun', 'Arif', 'Rajin', 'Inovatif',
+    ]
+
+    def __repr__(self):
+        return f'<ClassGroup {self.name}>'
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'form_level': self.form_level,
+            'is_active': self.is_active,
+        }
+
+    @staticmethod
+    def seed_defaults():
+        """Insert the default class names if the table is empty. Idempotent."""
+        try:
+            if ClassGroup.query.first() is not None:
+                return
+            for name in ClassGroup.DEFAULT_CLASSES:
+                db.session.add(ClassGroup(name=name, form_level=1, is_active=True))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()

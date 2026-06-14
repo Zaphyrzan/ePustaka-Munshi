@@ -1,8 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap } from '../../api/client'
+
+const ADD_NEW_CLASS = '__add_new__'
 
 const EMPTY = {
   member_id: '',
@@ -23,6 +25,23 @@ export default function MemberFormPage() {
   const [form, setForm] = useState(EMPTY)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+
+  const { data: classGroups } = useQuery({
+    queryKey: ['class-groups'],
+    queryFn: () => unwrap<string[]>(api.get('/api/users/class-groups')),
+  })
+
+  function onClassChange(value: string) {
+    if (value === ADD_NEW_CLASS) {
+      const name = window.prompt('New class name (e.g. Bestari):')?.trim()
+      if (!name) return
+      api.post('/api/users/class-groups', { name }).catch(() => {})
+      queryClient.invalidateQueries({ queryKey: ['class-groups'] })
+      setForm((f) => ({ ...f, class_group: name }))
+    } else {
+      setForm((f) => ({ ...f, class_group: value }))
+    }
+  }
 
   useEffect(() => {
     if (!memberId) return
@@ -134,12 +153,22 @@ export default function MemberFormPage() {
               </div>
               <div className="col-md-4 mb-3">
                 <label className="form-label">Class group</label>
-                <input
-                  className="form-control"
+                <select
+                  className="form-select"
                   value={form.class_group}
-                  onChange={(e) => setForm({ ...form, class_group: e.target.value })}
-                  placeholder="Science 1"
-                />
+                  onChange={(e) => onClassChange(e.target.value)}
+                >
+                  <option value="">— none —</option>
+                  {(classGroups || []).map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                  {form.class_group && !(classGroups || []).includes(form.class_group) && (
+                    <option value={form.class_group}>{form.class_group}</option>
+                  )}
+                  <option value={ADD_NEW_CLASS}>+ Add new class…</option>
+                </select>
               </div>
             </>
           )}
