@@ -16,6 +16,8 @@ import UsersPage from './pages/users/UsersPage'
 import MemberFormPage from './pages/users/MemberFormPage'
 import StaffFormPage from './pages/users/StaffFormPage'
 import StudentPortalPage from './pages/student/StudentPortalPage'
+import StudentLoansPage from './pages/student/StudentLoansPage'
+import StudentLeaderboardPage from './pages/student/StudentLeaderboardPage'
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth()
@@ -59,6 +61,8 @@ export default function App() {
         <Route path="/users/staff/add" element={<StaffFormPage />} />
         <Route path="/users/staff/:userId/edit" element={<StaffFormPage />} />
         <Route path="/student" element={<StudentPortalPage />} />
+        <Route path="/student/loans" element={<StudentLoansPage />} />
+        <Route path="/student/leaderboard" element={<StudentLeaderboardPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
