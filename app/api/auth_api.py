@@ -195,12 +195,50 @@ def get_current_user():
         return ApiResponse.error(str(e), status_code=500)
 
 
+@bp.route('/me', methods=['PUT'])
+@login_required
+def update_me():
+    """Let the logged-in user update their own contact info.
+
+    Email (all users) and phone (members only) are editable; name and
+    login id / member id are NOT self-editable.
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+
+        if 'email' in data:
+            email = (data.get('email') or '').strip() or None
+            if email:
+                # Reject if another account of the same kind already uses it
+                if isinstance(current_user, User):
+                    clash = User.query.filter(User.email == email, User.id != current_user.id).first()
+                else:
+                    clash = Member.query.filter(Member.email == email, Member.id != current_user.id).first()
+                if clash:
+                    return ApiResponse.error('That email is already in use', status_code=409)
+            current_user.email = email
+
+        # Phone only exists on Member accounts
+        if 'phone' in data and not isinstance(current_user, User):
+            current_user.phone = (data.get('phone') or '').strip() or None
+
+        db.session.commit()
+
+        if isinstance(current_user, User):
+            return ApiResponse.success(UserSerializer.to_dict(current_user), message='Profile updated')
+        return ApiResponse.success(MemberSerializer.to_dict(current_user), message='Profile updated')
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Update profile error: {str(e)}')
+        return ApiResponse.error(str(e), status_code=500)
+
+
 @bp.route('/change-password', methods=['POST'])
 @login_required
 def change_password():
     """
     Change current user's password
-    
+
     Request JSON:
     {
         "current_password": "old_password",

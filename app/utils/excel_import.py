@@ -792,9 +792,10 @@ def get_class_groups():
         pass
 
     if not names:
-        return list(DEFAULT_CLASS_GROUPS)
+        return [c.upper() for c in DEFAULT_CLASS_GROUPS]
 
-    return sorted(names.values(), key=lambda s: s.lower())
+    # Classes are displayed UPPERCASE per school policy; de-dup case-insensitively.
+    return sorted({v.upper() for v in names.values()})
 
 
 def get_form_levels():

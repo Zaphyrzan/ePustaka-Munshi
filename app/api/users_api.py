@@ -11,6 +11,7 @@ from app import db
 from app.models import User, Member, Role, Permission, ClassGroup
 from app.models.circulation import Loan, LoanStatus
 from app.utils.serializers import UserSerializer, MemberSerializer, ApiResponse
+from app.utils.text_format import to_caps
 
 bp = Blueprint('api_users', __name__, url_prefix='/api/users')
 
@@ -395,13 +396,13 @@ def create_member():
         
         # Create member
         member = Member(
-            full_name=full_name,
+            full_name=to_caps(full_name),
             email=email,
             member_id=member_id,
             phone=data.get('phone', '').strip() or None,
             member_type=data.get('member_type', 'Student'),
             form_level=data.get('form_level') or 1,
-            class_group=data.get('class_group', '').strip() or None,
+            class_group=to_caps(data.get('class_group', '').strip()) or None,
             student_year=data.get('student_year'),
             is_active=True
         )
@@ -447,13 +448,13 @@ def update_member(member_id):
             member.email = email
         
         if 'full_name' in data:
-            member.full_name = data['full_name'].strip() or member.full_name
+            member.full_name = to_caps(data['full_name'].strip()) or member.full_name
         
         if 'phone' in data:
             member.phone = data['phone'].strip() or None
 
         if 'class_group' in data:
-            member.class_group = data['class_group'].strip() or None
+            member.class_group = to_caps(data['class_group'].strip()) or None
 
         if 'form_level' in data and _has_permission(Permission.MANAGE_MEMBERS):
             member.form_level = data.get('form_level') or member.form_level
@@ -599,7 +600,7 @@ def create_class_group():
             return ApiResponse.error('Permission denied', status_code=403)
 
         data = request.get_json() or {}
-        name = (data.get('name') or '').strip()
+        name = to_caps((data.get('name') or '').strip())  # classes stored UPPERCASE
         if not name:
             return ApiResponse.error('Class name is required', status_code=400)
         if len(name) > 64:
@@ -625,6 +626,38 @@ def create_class_group():
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'Create class group error: {str(e)}')
+        return ApiResponse.error(str(e), status_code=500)
+
+
+@bp.route('/class-groups/<path:name>', methods=['DELETE'])
+@login_required
+def delete_class_group(name):
+    """Delete a managed class by name (admin only).
+
+    Blocked if any member is still assigned to it, so deleting a class can
+    never orphan students. Reassign or clear those members first.
+    """
+    try:
+        if not _has_permission(Permission.MANAGE_MEMBERS):
+            return ApiResponse.error('Permission denied', status_code=403)
+
+        target = (name or '').strip()
+        in_use = Member.query.filter(func.lower(Member.class_group) == target.lower()).count()
+        if in_use:
+            return ApiResponse.error(
+                f'{in_use} member(s) are still in this class. Reassign them before deleting.',
+                status_code=409,
+            )
+
+        cg = ClassGroup.query.filter(func.lower(ClassGroup.name) == target.lower()).first()
+        if not cg:
+            return ApiResponse.error('Class not found', status_code=404)
+        db.session.delete(cg)
+        db.session.commit()
+        return ApiResponse.success(message=f'Class "{cg.name}" deleted')
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Delete class group error: {str(e)}')
         return ApiResponse.error(str(e), status_code=500)
 
 
