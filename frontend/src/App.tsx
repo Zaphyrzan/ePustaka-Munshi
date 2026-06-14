@@ -14,6 +14,7 @@ import OcrJobsPage from './pages/ocr/OcrJobsPage'
 import OcrReviewPage from './pages/ocr/OcrReviewPage'
 import UsersPage from './pages/users/UsersPage'
 import MemberFormPage from './pages/users/MemberFormPage'
+import StudentImportPage from './pages/users/StudentImportPage'
 import StaffFormPage from './pages/users/StaffFormPage'
 import StudentPortalPage from './pages/student/StudentPortalPage'
 import StudentSearchPage from './pages/student/StudentSearchPage'
@@ -72,6 +73,7 @@ export default function App() {
         <Route path="/ocr/:jobId/review" element={<StaffOnly><OcrReviewPage /></StaffOnly>} />
         <Route path="/users" element={<StaffOnly><UsersPage /></StaffOnly>} />
         <Route path="/users/members/add" element={<StaffOnly><MemberFormPage /></StaffOnly>} />
+        <Route path="/users/members/import" element={<StaffOnly><StudentImportPage /></StaffOnly>} />
         <Route path="/users/members/:memberId/edit" element={<StaffOnly><MemberFormPage /></StaffOnly>} />
         <Route path="/users/staff/add" element={<StaffOnly><StaffFormPage /></StaffOnly>} />
         <Route path="/users/staff/:userId/edit" element={<StaffOnly><StaffFormPage /></StaffOnly>} />

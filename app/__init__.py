@@ -183,6 +183,10 @@ def create_app(config_name=None):
         # Seed default roles if not exist
         from app.models.user import Role
         Role.insert_default_roles()
+
+        # Seed default class groups (SMK Munshi streams) if none exist
+        from app.models.member import ClassGroup
+        ClassGroup.seed_defaults()
         _sync_staff_accounts(app)
         _sync_postgres_sequences(app)
     

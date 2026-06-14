@@ -1,9 +1,35 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap } from '../../api/client'
 import type { Book, BookCopy } from '../../types'
+
+/** Curated default categories for a Malaysian school library. */
+const CURATED_CATEGORIES = [
+  'Fiction',
+  'Non-Fiction',
+  'Religion & Islamic Studies',
+  'Science',
+  'Mathematics',
+  'Technology & Computing',
+  'History',
+  'Geography',
+  'Language & Literature',
+  'Poetry',
+  'Reference',
+  'Dictionary & Encyclopedia',
+  'Biography',
+  'Arts & Music',
+  'Health & Sports',
+  'Comics & Graphic Novels',
+  'Magazines & Periodicals',
+  'Textbook',
+  "Children's Books",
+  'Motivation & Self-Help',
+]
+
+const OTHERS = 'Others'
 
 const EMPTY = {
   title: '',
@@ -27,10 +53,35 @@ export default function BookFormPage() {
   const [form, setForm] = useState(EMPTY)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [otherCategory, setOtherCategory] = useState(false)
+
+  const { data: existingCategories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => unwrap<string[]>(api.get('/api/catalog/categories')),
+  })
+
+  // Curated list + any categories already in the DB, de-duplicated case-insensitively.
+  const categoryOptions = (() => {
+    const seen = new Set<string>()
+    const out: string[] = []
+    for (const c of [...CURATED_CATEGORIES, ...(existingCategories || [])]) {
+      const key = c.trim().toUpperCase()
+      if (c.trim() && !seen.has(key)) {
+        seen.add(key)
+        out.push(c.trim())
+      }
+    }
+    return out.sort((a, b) => a.localeCompare(b))
+  })()
 
   useEffect(() => {
     if (!bookId) return
-    unwrap<{ book: Book; copies: BookCopy[] }>(api.get(`/api/catalog/books/${bookId}`)).then(({ book }) =>
+    unwrap<{ book: Book; copies: BookCopy[] }>(api.get(`/api/catalog/books/${bookId}`)).then(({ book }) => {
+      // If the saved category isn't one of the curated defaults, treat it as "Others"
+      const cat = book.category || ''
+      setOtherCategory(
+        !!cat && !CURATED_CATEGORIES.some((c) => c.toUpperCase() === cat.toUpperCase()),
+      )
       setForm({
         title: book.title || '',
         author: book.author || '',
@@ -42,8 +93,8 @@ export default function BookFormPage() {
         language: book.language || 'Malay',
         description: book.description || '',
         price: book.price != null ? String(book.price) : '',
-      }),
-    )
+      })
+    })
   }, [bookId])
 
   async function submit(e: FormEvent) {
@@ -96,7 +147,39 @@ export default function BookFormPage() {
           {field('ISBN', 'isbn')}
           {field(t('publisher'), 'publisher')}
           {field(t('year'), 'publication_year', { type: 'number', min: 1800, max: 2100 })}
-          {field(t('category'), 'category')}
+          <div className="col-md-6 mb-3">
+            <label className="form-label">{t('category')}</label>
+            <select
+              className="form-select"
+              value={otherCategory ? OTHERS : form.category}
+              onChange={(e) => {
+                const v = e.target.value
+                if (v === OTHERS) {
+                  setOtherCategory(true)
+                  setForm({ ...form, category: '' })
+                } else {
+                  setOtherCategory(false)
+                  setForm({ ...form, category: v })
+                }
+              }}
+            >
+              <option value="">— select —</option>
+              {categoryOptions.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+              <option value={OTHERS}>{OTHERS}…</option>
+            </select>
+            {otherCategory && (
+              <input
+                className="form-control mt-2"
+                placeholder="Enter category"
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+              />
+            )}
+          </div>
           {field('Call Number', 'call_number')}
           <div className="col-md-6 mb-3">
             <label className="form-label">Language</label>

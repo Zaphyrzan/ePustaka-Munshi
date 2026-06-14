@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { API_BASE, api, unwrap, type Paginated } from '../../api/client'
+import { api, unwrap, type Paginated } from '../../api/client'
 
 interface MemberRow {
   id: number
@@ -104,16 +104,14 @@ export default function UsersPage() {
                 <i className="bi bi-person-plus me-1" />
                 Add member
               </Link>
-              <a
+              <Link
+                to="/users/members/import"
                 className="btn btn-outline-secondary text-nowrap"
-                href={`${API_BASE}/users/students/import`}
-                target="_blank"
-                rel="noreferrer"
-                title="Excel import (opens classic page)"
+                title="Import students from an Excel file"
               >
                 <i className="bi bi-file-earmark-excel me-1" />
                 Import
-              </a>
+              </Link>
             </>
           ) : (
             <Link to="/users/staff/add" className="btn btn-success text-nowrap">

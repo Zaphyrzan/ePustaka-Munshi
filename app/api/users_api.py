@@ -8,7 +8,7 @@ from datetime import datetime
 from sqlalchemy import case, func
 from sqlalchemy.orm import joinedload
 from app import db
-from app.models import User, Member, Role, Permission
+from app.models import User, Member, Role, Permission, ClassGroup
 from app.models.circulation import Loan, LoanStatus
 from app.utils.serializers import UserSerializer, MemberSerializer, ApiResponse
 
@@ -568,6 +568,134 @@ def promote_member(member_id):
         return ApiResponse.success(MemberSerializer.to_dict(member), message=f'{member.full_name} promoted to Student Assistant')
     except Exception as e:
         db.session.rollback()
+        return ApiResponse.error(str(e), status_code=500)
+
+
+# ============ Class Groups ============
+
+@bp.route('/class-groups', methods=['GET'])
+@login_required
+def list_class_groups():
+    """Return the merged list of class names for the dropdown."""
+    try:
+        from app.utils.excel_import import get_class_groups
+        return ApiResponse.success(get_class_groups())
+    except Exception as e:
+        current_app.logger.error(f'List class groups error: {str(e)}')
+        return ApiResponse.error(str(e), status_code=500)
+
+
+@bp.route('/class-groups', methods=['POST'])
+@login_required
+def create_class_group():
+    """
+    Add a new class name so it appears in the dropdown even before any
+    member is assigned to it. Admin only.
+
+    Request JSON: {"name": "Bestari", "form_level": 1}
+    """
+    try:
+        if not _has_permission(Permission.MANAGE_MEMBERS):
+            return ApiResponse.error('Permission denied', status_code=403)
+
+        data = request.get_json() or {}
+        name = (data.get('name') or '').strip()
+        if not name:
+            return ApiResponse.error('Class name is required', status_code=400)
+        if len(name) > 64:
+            return ApiResponse.error('Class name cannot exceed 64 characters', status_code=400)
+
+        existing = ClassGroup.query.filter(func.lower(ClassGroup.name) == name.lower()).first()
+        if existing:
+            if not existing.is_active:
+                existing.is_active = True
+                db.session.commit()
+            return ApiResponse.success(existing.to_dict(), message='Class already exists')
+
+        form_level = data.get('form_level')
+        try:
+            form_level = int(form_level) if form_level not in (None, '') else None
+        except (ValueError, TypeError):
+            form_level = None
+
+        cg = ClassGroup(name=name, form_level=form_level, is_active=True)
+        db.session.add(cg)
+        db.session.commit()
+        return ApiResponse.success(cg.to_dict(), message='Class added', status_code=201)
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Create class group error: {str(e)}')
+        return ApiResponse.error(str(e), status_code=500)
+
+
+# ============ Student Excel Import ============
+
+@bp.route('/members/import/preview', methods=['POST'])
+@login_required
+def import_members_preview():
+    """
+    Parse an uploaded student Excel file and return a preview WITHOUT saving.
+
+    Accepts multipart/form-data with a 'file' field. Supports both the SMK
+    Munshi class-roster layout (one sheet per class, names in column A) and
+    structured header-column files.
+    """
+    try:
+        if not _has_permission(Permission.MANAGE_MEMBERS):
+            return ApiResponse.error('Permission denied', status_code=403)
+
+        if 'file' not in request.files:
+            return ApiResponse.error('No file uploaded', status_code=400)
+
+        from app.utils.excel_import import save_upload_file, parse_student_workbook, get_class_groups
+        filepath, error = save_upload_file(request.files['file'])
+        if error:
+            return ApiResponse.error(error, status_code=400)
+
+        sheets, error = parse_student_workbook(filepath)
+        if error:
+            return ApiResponse.error(error, status_code=400)
+
+        total = sum(len(s['students']) for s in sheets)
+        return ApiResponse.success({
+            'sheets': sheets,
+            'total': total,
+            'class_groups': get_class_groups(),
+        })
+    except Exception as e:
+        current_app.logger.error(f'Import preview error: {str(e)}')
+        return ApiResponse.error(str(e), status_code=500)
+
+
+@bp.route('/members/import/commit', methods=['POST'])
+@login_required
+def import_members_commit():
+    """
+    Create members from the (possibly edited) preview rows.
+
+    Request JSON: {"students": [{full_name, form_level, class_group, email, phone, member_type}, ...]}
+    """
+    try:
+        if not _has_permission(Permission.MANAGE_MEMBERS):
+            return ApiResponse.error('Permission denied', status_code=403)
+
+        data = request.get_json() or {}
+        students = data.get('students') or []
+        if not isinstance(students, list) or not students:
+            return ApiResponse.error('No students to import', status_code=400)
+        if len(students) > 5000:
+            return ApiResponse.error('Too many rows in one import (max 5000)', status_code=400)
+
+        from app.utils.excel_import import commit_student_records
+        success_count, errors, imported = commit_student_records(students)
+
+        return ApiResponse.success({
+            'imported': success_count,
+            'errors': errors,
+        }, message=f'Imported {success_count} student(s)')
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Import commit error: {str(e)}')
         return ApiResponse.error(str(e), status_code=500)
 
 
