@@ -268,15 +268,30 @@
 </head>
 <body>
     {% if current_user.is_authenticated %}
+    {#
+        Figure out WHO is logged in, then drive the whole sidebar from a few
+        simple flags. Two kinds of account can log in:
+          - Member : a borrower record (a student, or a staff member record)
+          - User   : a staff login (Administrator, Librarian, Student Assistant)
+    #}
+    {# Is this login linked to a borrower (Member) record? #}
     {% set is_member = linked_member is not none %}
+    {# Is this a promoted student helper? (a staff role, but still a student) #}
     {% set is_student_assistant = current_user.role and current_user.role.name == 'Student Assistant' %}
+    {# Can this person use the STAFF tools (dashboard, circulation, catalog...)? #}
     {% if is_member %}
+        {# A borrower counts as staff only if their member type is a staff type. #}
         {% set is_staff = linked_member.member_type in ['Staff', 'Student Assistant', 'Librarian', 'Teacher'] %}
     {% else %}
-        {% set is_staff = current_user.role and current_user.role.name != 'Student' %}
+        {# A User login counts as staff unless their role is the plain Student role. #}
+        {% set is_staff = current_user.role and current_user.role.name not in ['Student'] %}
     {% endif %}
-    <!-- Allow Student Assistant users to see both student and staff sections -->
-    {% set show_student_section = is_member or is_student_assistant %}
+    {#
+        Who sees the STUDENT PORTAL? Borrowers and student assistants, plus a
+        safety net: anyone who is NOT staff. This guarantees the sidebar is
+        never empty (the empty sidebar was the "barebone" student bug).
+    #}
+    {% set show_student_section = is_member or is_student_assistant or not is_staff %}
 
     <!-- Sidebar -->
     <nav class="sidebar">
@@ -294,8 +309,12 @@
         </div>
         
         <ul class="nav flex-column">
-            {% if is_member and not is_staff %}
-            <!-- ====== STUDENT ONLY (Member without Staff role) ====== -->
+            {# ============================================================
+                 STUDENT PORTAL  (students + student assistants)
+                 Shown to every borrower and assistant, and as a safety net
+                 to any non-staff account so the sidebar is never empty.
+               ============================================================ #}
+            {% if show_student_section %}
             <li class="sidebar-section">{{ t('student_portal') }}</li>
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'student.index' %}active{% endif %}" href="{{ url_for('student.index') }}">
@@ -315,85 +334,38 @@
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'student.leaderboard' %}active{% endif %}" href="{{ url_for('student.leaderboard') }}">
                     <i class="bi bi-trophy"></i> {{ t('leaderboard') }}
-                </a>
-            </li>
-            
-            {% elif (is_member and is_staff) or (is_staff and is_student_assistant and not is_member) %}
-            <!-- ====== STAFF MEMBER (Member with staff member_type) or STUDENT ASSISTANT - BOTH STUDENT + STAFF ====== -->
-            
-            <!-- Student Portal Section -->
-            <li class="sidebar-section">{{ t('student_portal') }}</li>
-            <li class="nav-item">
-                <a class="nav-link {% if request.endpoint == 'student.index' %}active{% endif %}" href="{{ url_for('student.index') }}">
-                    <i class="bi bi-house"></i> {{ t('home') }}
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {% if request.endpoint == 'student.search_books' %}active{% endif %}" href="{{ url_for('student.search_books') }}">
-                    <i class="bi bi-search"></i> {{ t('search_books') }}
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {% if request.endpoint == 'student.my_loans' %}active{% endif %}" href="{{ url_for('student.my_loans') }}">
-                    <i class="bi bi-journal-bookmark"></i> {{ t('my_loans') }}
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {% if request.endpoint == 'student.leaderboard' %}active{% endif %}" href="{{ url_for('student.leaderboard') }}">
-                    <i class="bi bi-trophy"></i> {{ t('leaderboard') }}
-                </a>
-            </li>
-            
-            {% if current_user.can(1) or current_user.can(2) %}
-            <li class="sidebar-section">{{ t('catalog') }}</li>
-            <li class="nav-item">
-                <a class="nav-link {% if 'catalog' in request.endpoint %}active{% endif %}" href="{{ url_for('catalog.index') }}">
-                    <i class="bi bi-book"></i> {{ t('books') }}
                 </a>
             </li>
             {% endif %}
 
-            <!-- Staff Section -->
+            {# ============================================================
+                 STAFF FUNCTIONS  (admins, librarians, student assistants)
+                 Each block is gated by a permission check, so a role only
+                 sees the tools it is allowed to use:
+                   - Student Assistant -> Dashboard + Catalog + Circulation
+                   - Librarian / Admin -> everything below
+               ============================================================ #}
+            {% if is_staff %}
+            <!-- Dashboard overview - shown to every staff user -->
             <li class="sidebar-section">{{ t('staff_functions') }}</li>
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
                     <i class="bi bi-speedometer2"></i> {{ t('dashboard') }}
                 </a>
             </li>
-            
-            <li class="sidebar-section">{{ t('circulation') }}</li>
-            <li class="nav-item">
-                <a class="nav-link {% if request.endpoint == 'circulation.checkout' %}active{% endif %}" href="{{ url_for('circulation.checkout') }}">
-                    <i class="bi bi-box-arrow-right"></i> {{ t('checkout') }}
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {% if request.endpoint == 'circulation.return_book' %}active{% endif %}" href="{{ url_for('circulation.return_book') }}">
-                    <i class="bi bi-box-arrow-in-left"></i> {{ t('return') }}
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {% if request.endpoint == 'circulation.active_loans' %}active{% endif %}" href="{{ url_for('circulation.active_loans') }}">
-                    <i class="bi bi-list-check"></i> {{ t('active_loans') }}
-                </a>
-            </li>
-            
-            {% elif is_staff %}
-            <!-- ====== STAFF/LIBRARIAN/ADMIN (User with non-Student role) ====== -->
-            <li class="nav-item">
-                <a class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
-                    <i class="bi bi-speedometer2"></i> {{ t('dashboard') }}
-                </a>
-            </li>
-            
+
+            {# Catalog - needs VIEW_CATALOG (1) or SEARCH (2). Assistants have this. #}
             {% if current_user.can(1) or current_user.can(2) %}
             <li class="sidebar-section">{{ t('catalog') }}</li>
             <li class="nav-item">
-                <a class="nav-link {% if 'catalog' in request.endpoint %}active{% endif %}" href="{{ url_for('catalog.index') }}">
+                <a class="nav-link {% if request.endpoint and 'catalog' in request.endpoint %}active{% endif %}" href="{{ url_for('catalog.index') }}">
                     <i class="bi bi-book"></i> {{ t('books') }}
                 </a>
             </li>
-            
+            {% endif %}
+
+            {# Circulation - needs CHECKOUT (32) or RETURN (64). Assistants have this. #}
+            {% if current_user.can(32) or current_user.can(64) %}
             <li class="sidebar-section">{{ t('circulation') }}</li>
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'circulation.checkout' %}active{% endif %}" href="{{ url_for('circulation.checkout') }}">
@@ -411,31 +383,34 @@
                 </a>
             </li>
             {% endif %}
-            
+
+            {# OCR digitization - needs OCR_DIGITIZE (512). Librarians/Admins only. #}
             {% if current_user.can(512) %}
             <li class="sidebar-section">{{ t('digitization') }}</li>
             <li class="nav-item">
-                <a class="nav-link {% if 'ocr' in request.endpoint %}active{% endif %}" href="{{ url_for('ocr.index') }}">
+                <a class="nav-link {% if request.endpoint and 'ocr' in request.endpoint %}active{% endif %}" href="{{ url_for('ocr.index') }}">
                     <i class="bi bi-file-earmark-text"></i> {{ t('ocr_digitization') }}
                 </a>
             </li>
             {% endif %}
-            
-            {% if current_user.can(128) %}
+
+            {# Management - manage members (128) and/or staff (256). Librarians/Admins. #}
+            {% if current_user.can(128) or current_user.can(256) %}
             <li class="sidebar-section">{{ t('management') }}</li>
+            {% if current_user.can(128) %}
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'users.member_list' %}active{% endif %}" href="{{ url_for('users.member_list') }}">
                     <i class="bi bi-people"></i> {{ t('members') }}
                 </a>
             </li>
             {% endif %}
-            
             {% if current_user.can(256) %}
             <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'users.staff_list' %}active{% endif %}" href="{{ url_for('users.staff_list') }}">
                     <i class="bi bi-person-badge"></i> {{ t('staff') }}
                 </a>
             </li>
+            {% endif %}
             {% endif %}
             {% endif %}
         </ul>
@@ -498,7 +473,9 @@
         </div>
     </div>
 
-    {% if is_member and not is_staff %}
+    {# ---- Mobile bottom bar: staff users get the staff bar, everyone else
+            gets the student bar. Exactly one bar is always shown. ---- #}
+    {% if not is_staff %}
     <nav class="member-mobile-nav d-lg-none fixed-bottom bg-white border-top shadow-lg px-2 py-2" aria-label="Student navigation">
         <a class="nav-link {% if request.endpoint == 'student.index' %}active{% endif %}" href="{{ url_for('student.index') }}">
             <i class="bi bi-house"></i>
@@ -517,36 +494,21 @@
             <span>{{ t('leaderboard') }}</span>
         </a>
     </nav>
-    {% endif %}
-
-    {% if is_staff %}
+    {% else %}
     <nav class="staff-mobile-nav d-lg-none fixed-bottom bg-white border-top shadow-lg px-2 py-2" aria-label="Staff navigation">
         <a class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
             <i class="bi bi-speedometer2"></i>
             <span>{{ t('dashboard') }}</span>
         </a>
-        {% if is_member or is_student_assistant %}
-        <a class="nav-link {% if 'catalog' in request.endpoint %}active{% endif %}" href="{{ url_for('catalog.index') }}">
+        {# Catalog - if the user can view/search the catalog (assistants can). #}
+        {% if current_user.can(1) or current_user.can(2) %}
+        <a class="nav-link {% if request.endpoint and 'catalog' in request.endpoint %}active{% endif %}" href="{{ url_for('catalog.index') }}">
             <i class="bi bi-book"></i>
             <span>{{ t('books') }}</span>
         </a>
-        <a class="nav-link {% if request.endpoint == 'circulation.checkout' %}active{% endif %}" href="{{ url_for('circulation.checkout') }}">
-            <i class="bi bi-box-arrow-right"></i>
-            <span>{{ t('checkout') }}</span>
-        </a>
-        <a class="nav-link {% if request.endpoint == 'circulation.return_book' %}active{% endif %}" href="{{ url_for('circulation.return_book') }}">
-            <i class="bi bi-box-arrow-in-left"></i>
-            <span>{{ t('return') }}</span>
-        </a>
-        <a class="nav-link {% if request.endpoint == 'circulation.active_loans' %}active{% endif %}" href="{{ url_for('circulation.active_loans') }}">
-            <i class="bi bi-list-check"></i>
-            <span>{{ t('active_loans') }}</span>
-        </a>
-        {% elif current_user.can(1) or current_user.can(2) %}
-        <a class="nav-link {% if 'catalog' in request.endpoint %}active{% endif %}" href="{{ url_for('catalog.index') }}">
-            <i class="bi bi-book"></i>
-            <span>{{ t('books') }}</span>
-        </a>
+        {% endif %}
+        {# Circulation - if the user can check out/return (assistants can). #}
+        {% if current_user.can(32) or current_user.can(64) %}
         <a class="nav-link {% if request.endpoint == 'circulation.checkout' %}active{% endif %}" href="{{ url_for('circulation.checkout') }}">
             <i class="bi bi-box-arrow-right"></i>
             <span>{{ t('checkout') }}</span>
