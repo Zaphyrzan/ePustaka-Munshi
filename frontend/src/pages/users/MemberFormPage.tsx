@@ -35,11 +35,25 @@ export default function MemberFormPage() {
     if (value === ADD_NEW_CLASS) {
       const name = window.prompt('New class name (e.g. Bestari):')?.trim()
       if (!name) return
-      api.post('/api/users/class-groups', { name }).catch(() => {})
+      api.post('/api/users/class-groups', { name: name.toUpperCase() }).catch(() => {})
       queryClient.invalidateQueries({ queryKey: ['class-groups'] })
-      setForm((f) => ({ ...f, class_group: name }))
+      setForm((f) => ({ ...f, class_group: name.toUpperCase() }))
     } else {
       setForm((f) => ({ ...f, class_group: value }))
+    }
+  }
+
+  async function deleteClass() {
+    const name = form.class_group
+    if (!name) return
+    if (!window.confirm(`Delete class "${name}" from the list?`)) return
+    try {
+      await unwrap(api.delete(`/api/users/class-groups/${encodeURIComponent(name)}`))
+      queryClient.invalidateQueries({ queryKey: ['class-groups'] })
+      setForm((f) => ({ ...f, class_group: '' }))
+    } catch (err) {
+      // e.g. 409 when members are still assigned to the class
+      alert(err instanceof Error ? err.message : 'Could not delete class')
     }
   }
 
@@ -153,22 +167,34 @@ export default function MemberFormPage() {
               </div>
               <div className="col-md-4 mb-3">
                 <label className="form-label">Class group</label>
-                <select
-                  className="form-select"
-                  value={form.class_group}
-                  onChange={(e) => onClassChange(e.target.value)}
-                >
-                  <option value="">— none —</option>
-                  {(classGroups || []).map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                  {form.class_group && !(classGroups || []).includes(form.class_group) && (
-                    <option value={form.class_group}>{form.class_group}</option>
+                <div className="input-group">
+                  <select
+                    className="form-select"
+                    value={form.class_group}
+                    onChange={(e) => onClassChange(e.target.value)}
+                  >
+                    <option value="">— none —</option>
+                    {(classGroups || []).map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                    {form.class_group && !(classGroups || []).includes(form.class_group) && (
+                      <option value={form.class_group}>{form.class_group}</option>
+                    )}
+                    <option value={ADD_NEW_CLASS}>+ Add new class…</option>
+                  </select>
+                  {form.class_group && (
+                    <button
+                      type="button"
+                      className="btn btn-outline-danger"
+                      title="Delete this class from the list"
+                      onClick={deleteClass}
+                    >
+                      <i className="bi bi-trash" />
+                    </button>
                   )}
-                  <option value={ADD_NEW_CLASS}>+ Add new class…</option>
-                </select>
+                </div>
               </div>
             </>
           )}

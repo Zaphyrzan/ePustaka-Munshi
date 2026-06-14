@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -34,21 +35,48 @@ function Field({ label, value }: { label: string; value?: string | null }) {
 
 export default function ProfilePage() {
   const { t } = useTranslation()
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['me-profile'],
     queryFn: () => unwrap<Me>(api.get('/api/auth/me')),
   })
+
+  const [editing, setEditing] = useState(false)
+  const [form, setForm] = useState({ email: '', phone: '' })
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState<{ kind: 'success' | 'danger'; text: string } | null>(null)
+
+  useEffect(() => {
+    if (data) setForm({ email: data.user.email || '', phone: data.user.phone || '' })
+  }, [data])
 
   if (isLoading || !data) return <div className="text-muted py-5 text-center">{t('loading')}</div>
 
   const u = data.user
   const isMember = data.user_type === 'student'
+
+  async function saveContact() {
+    setBusy(true)
+    setMsg(null)
+    try {
+      const payload: Record<string, string> = { email: form.email }
+      if (isMember) payload.phone = form.phone
+      await unwrap(api.put('/api/auth/me', payload))
+      await refetch()
+      setEditing(false)
+      setMsg({ kind: 'success', text: 'Profile updated' })
+    } catch (err) {
+      setMsg({ kind: 'danger', text: err instanceof Error ? err.message : t('error') })
+    } finally {
+      setBusy(false)
+    }
+  }
   const loginId = u.username || u.member_id || '—'
   const lastLogin = u.last_login ? new Date(u.last_login).toLocaleString('en-GB') : 'Never'
 
   return (
     <div className="mx-auto" style={{ maxWidth: 820 }}>
       <h3 className="mb-3">{t('profile')}</h3>
+      {msg && <div className={`alert alert-${msg.kind} py-2`}>{msg.text}</div>}
 
       {/* Header card */}
       <div className="card mb-4">
@@ -70,18 +98,63 @@ export default function ProfilePage() {
 
       {/* Account details */}
       <div className="card mb-4">
-        <div className="card-header bg-white">
+        <div className="card-header bg-white d-flex justify-content-between align-items-center">
           <h5 className="mb-0">
             <i className="bi bi-info-circle me-2" />
             Account Details
           </h5>
+          {!editing ? (
+            <button className="btn btn-outline-primary btn-sm" onClick={() => setEditing(true)}>
+              <i className="bi bi-pencil me-1" />
+              Edit contact
+            </button>
+          ) : (
+            <div className="d-flex gap-2">
+              <button className="btn btn-primary btn-sm" onClick={saveContact} disabled={busy}>
+                {busy ? t('loading') : 'Save'}
+              </button>
+              <button
+                className="btn btn-outline-secondary btn-sm"
+                onClick={() => {
+                  setEditing(false)
+                  setForm({ email: u.email || '', phone: u.phone || '' })
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
         </div>
         <div className="card-body">
           <div className="row">
             <Field label="Login ID" value={loginId} />
             <Field label="Full Name" value={u.full_name} />
-            <Field label="Email" value={u.email} />
-            {isMember && <Field label="Phone Number" value={u.phone} />}
+            {editing ? (
+              <div className="col-md-6 mb-3">
+                <label className="text-muted small">Email</label>
+                <input
+                  type="email"
+                  className="form-control"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                />
+              </div>
+            ) : (
+              <Field label="Email" value={u.email} />
+            )}
+            {isMember &&
+              (editing ? (
+                <div className="col-md-6 mb-3">
+                  <label className="text-muted small">Phone Number</label>
+                  <input
+                    className="form-control"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  />
+                </div>
+              ) : (
+                <Field label="Phone Number" value={u.phone} />
+              ))}
             {isMember && <Field label="Class" value={u.class_group || u.form_name} />}
             {isMember && (
               <Field label="Member Type" value={u.member_type === 'Student Assistant' ? 'Student Librarian' : u.member_type} />

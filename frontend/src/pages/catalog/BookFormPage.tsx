@@ -142,7 +142,36 @@ export default function BookFormPage() {
       {error && <div className="alert alert-danger py-2">{error}</div>}
       <form onSubmit={submit} className="card shadow-sm p-4">
         <div className="row">
-          {field(t('title'), 'title', { required: true })}
+          <div className="col-12 mb-3">
+            <label className="form-label">
+              {t('title')} <span className="text-danger">*</span>
+            </label>
+            <div className="input-group">
+              <input
+                className="form-control"
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                required
+              />
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
+                title="Convert title to UPPERCASE"
+                onClick={() =>
+                  setForm((f) => ({
+                    ...f,
+                    title: f.title.toUpperCase(),
+                    author: f.author.toUpperCase(),
+                    publisher: f.publisher.toUpperCase(),
+                  }))
+                }
+              >
+                <i className="bi bi-type me-1" />
+                UPPERCASE
+              </button>
+            </div>
+            <div className="form-text">Title, author and publisher are saved in capital letters automatically.</div>
+          </div>
           {field(t('author'), 'author')}
           {field('ISBN', 'isbn')}
           {field(t('publisher'), 'publisher')}
