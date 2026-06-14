@@ -40,7 +40,7 @@ export default function BookDetailPage() {
   })
 
   if (isLoading) return <div className="text-muted py-5 text-center">{t('loading')}</div>
-  if (!data) return <div className="alert alert-warning">Book not found</div>
+  if (!data) return <div className="alert alert-warning">{t('bookNotFound')}</div>
 
   const { book, copies } = data
 
@@ -94,7 +94,7 @@ export default function BookDetailPage() {
               <strong>{t('year')}:</strong> {book.publication_year || '—'}
             </div>
             <div className="col-md-3">
-              <strong>Call #:</strong> {book.call_number || '—'}
+              <strong>{t('callNo')}:</strong> {book.call_number || '—'}
             </div>
             <div className="col-md-2">
               <strong>{t('category')}:</strong> {book.category || '—'}
@@ -169,11 +169,11 @@ export default function BookDetailPage() {
         <table className="table mb-0 align-middle">
           <thead className="table-light">
             <tr>
-              <th>Accession #</th>
-              <th>Barcode</th>
-              <th>Status</th>
-              <th>Condition</th>
-              <th>Location</th>
+              <th>{t('accessionNo')}</th>
+              <th>{t('barcode')}</th>
+              <th>{t('status')}</th>
+              <th>{t('condition')}</th>
+              <th>{t('location')}</th>
             </tr>
           </thead>
           <tbody>

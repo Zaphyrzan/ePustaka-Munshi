@@ -14,7 +14,7 @@ export default function ChangePasswordPage() {
     setMsg(null)
     try {
       await unwrap(api.post('/api/auth/change-password', form))
-      setMsg({ kind: 'success', text: 'Password changed successfully' })
+      setMsg({ kind: 'success', text: t('passwordChanged') })
       setForm({ current_password: '', new_password: '', confirm_password: '' })
     } catch (err) {
       setMsg({ kind: 'danger', text: err instanceof Error ? err.message : t('error') })
@@ -25,11 +25,11 @@ export default function ChangePasswordPage() {
 
   return (
     <div className="mx-auto" style={{ maxWidth: 480 }}>
-      <h4 className="mb-3">Change Password</h4>
+      <h4 className="mb-3">{t('changePassword')}</h4>
       {msg && <div className={`alert alert-${msg.kind} py-2`}>{msg.text}</div>}
       <form onSubmit={submit} className="card shadow-sm p-4">
         <div className="mb-3">
-          <label className="form-label">Current password</label>
+          <label className="form-label">{t('currentPassword')}</label>
           <input
             type="password"
             className="form-control"
@@ -39,7 +39,7 @@ export default function ChangePasswordPage() {
           />
         </div>
         <div className="mb-3">
-          <label className="form-label">New password</label>
+          <label className="form-label">{t('newPassword')}</label>
           <input
             type="password"
             className="form-control"
@@ -50,7 +50,7 @@ export default function ChangePasswordPage() {
           />
         </div>
         <div className="mb-4">
-          <label className="form-label">Confirm new password</label>
+          <label className="form-label">{t('confirmNewPassword')}</label>
           <input
             type="password"
             className="form-control"
@@ -61,7 +61,7 @@ export default function ChangePasswordPage() {
           />
         </div>
         <button className="btn btn-primary" disabled={busy}>
-          {busy ? t('loading') : 'Change password'}
+          {busy ? t('loading') : t('changePassword')}
         </button>
       </form>
     </div>
