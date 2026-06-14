@@ -100,7 +100,7 @@ export default function StudentPortalPage() {
       {/* ---- Quick access buttons ---- */}
       <div className="row g-3 mb-4">
         <div className="col-12 col-sm-4">
-          <Link to="/catalog" className="btn btn-lg btn-primary w-100 py-3">
+          <Link to="/student/search" className="btn btn-lg btn-primary w-100 py-3">
             <i className="bi bi-search me-2" />
             {t('search')}
           </Link>
@@ -149,7 +149,7 @@ export default function StudentPortalPage() {
             {myLoans.length === 0 && (
               <tr>
                 <td colSpan={3} className="text-center text-muted py-4">
-                  {t('noBooksBorrowedYet')} <Link to="/catalog">{t('borrowABook')}</Link>
+                  {t('noBooksBorrowedYet')} <Link to="/student/search">{t('borrowABook')}</Link>
                 </td>
               </tr>
             )}
