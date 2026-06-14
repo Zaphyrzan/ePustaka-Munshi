@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { api, unwrap } from '../../api/client'
 import { loanBadge, type Loan } from '../../types'
 
@@ -22,6 +23,8 @@ function fmtDate(iso?: string) {
  * history of books already returned.
  */
 export default function StudentLoansPage() {
+  const { t } = useTranslation()
+
   const { data } = useQuery({
     queryKey: ['student-loans-full'],
     queryFn: () => unwrap<LoansData>(api.get('/api/student/loans')),
@@ -35,11 +38,11 @@ export default function StudentLoansPage() {
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h4 className="mb-0">
           <i className="bi bi-journal-bookmark me-2" />
-          My Loans
+          {t('myLoans')}
         </h4>
         <Link to="/student" className="btn btn-outline-secondary btn-sm">
           <i className="bi bi-arrow-left me-1" />
-          Back
+          {t('back')}
         </Link>
       </div>
 
@@ -49,7 +52,7 @@ export default function StudentLoansPage() {
           <div className="card border-0 shadow-sm bg-primary text-white h-100">
             <div className="card-body d-flex justify-content-between align-items-center">
               <div>
-                <div className="opacity-75 small">Currently Borrowed</div>
+                <div className="opacity-75 small">{t('currentlyBorrowed')}</div>
                 <div className="fs-2 fw-bold">{active.length}</div>
               </div>
               <i className="bi bi-journal-check fs-1 opacity-50" />
@@ -60,7 +63,7 @@ export default function StudentLoansPage() {
           <div className="card border-0 shadow-sm bg-secondary text-white h-100">
             <div className="card-body d-flex justify-content-between align-items-center">
               <div>
-                <div className="opacity-75 small">Returned</div>
+                <div className="opacity-75 small">{t('returned')}</div>
                 <div className="fs-2 fw-bold">{history.length}</div>
               </div>
               <i className="bi bi-clock-history fs-1 opacity-50" />
@@ -71,7 +74,7 @@ export default function StudentLoansPage() {
           <div className="card border-0 shadow-sm bg-success text-white h-100">
             <div className="card-body d-flex justify-content-between align-items-center">
               <div>
-                <div className="opacity-75 small">Total Loans</div>
+                <div className="opacity-75 small">{t('totalLoans')}</div>
                 <div className="fs-2 fw-bold">{active.length + history.length}</div>
               </div>
               <i className="bi bi-graph-up fs-1 opacity-50" />
@@ -85,20 +88,20 @@ export default function StudentLoansPage() {
         <div className="card-header bg-white d-flex justify-content-between align-items-center">
           <h5 className="mb-0">
             <i className="bi bi-journal-text me-2" />
-            Books Borrowed
+            {t('booksBorrowed')}
           </h5>
-          <span className="badge bg-primary">{active.length} books</span>
+          <span className="badge bg-primary">{t('booksCount', { count: active.length })}</span>
         </div>
         <div className="table-responsive">
           <table className="table mb-0 align-middle">
             <thead className="table-light">
               <tr>
-                <th>Book</th>
-                <th>Accession #</th>
-                <th>Loan date</th>
-                <th>Due date</th>
-                <th>Status</th>
-                <th className="text-end">Days left</th>
+                <th>{t('book')}</th>
+                <th>{t('accessionNo')}</th>
+                <th>{t('loanDate')}</th>
+                <th>{t('dueDate')}</th>
+                <th>{t('status')}</th>
+                <th className="text-end">{t('daysLeft')}</th>
               </tr>
             </thead>
             <tbody>
@@ -127,8 +130,7 @@ export default function StudentLoansPage() {
               {active.length === 0 && (
                 <tr>
                   <td colSpan={6} className="text-center text-muted py-4">
-                    No books borrowed.{' '}
-                    <Link to="/catalog">Search books</Link>
+                    {t('noBooks')} <Link to="/catalog">{t('searchBooks')}</Link>
                   </td>
                 </tr>
               )}
@@ -142,17 +144,17 @@ export default function StudentLoansPage() {
         <div className="card-header bg-white">
           <h5 className="mb-0">
             <i className="bi bi-clock-history me-2" />
-            Loan History
+            {t('loanHistory')}
           </h5>
         </div>
         <div className="table-responsive">
           <table className="table mb-0 align-middle">
             <thead className="table-light">
               <tr>
-                <th>Book</th>
-                <th>Loan date</th>
-                <th>Return date</th>
-                <th>Status</th>
+                <th>{t('book')}</th>
+                <th>{t('loanDate')}</th>
+                <th>{t('returnDate')}</th>
+                <th>{t('status')}</th>
               </tr>
             </thead>
             <tbody>
@@ -169,7 +171,7 @@ export default function StudentLoansPage() {
                   <td>
                     <span className="badge bg-secondary">
                       <i className="bi bi-check me-1" />
-                      Returned
+                      {t('returned')}
                     </span>
                   </td>
                 </tr>
@@ -177,7 +179,7 @@ export default function StudentLoansPage() {
               {history.length === 0 && (
                 <tr>
                   <td colSpan={4} className="text-center text-muted py-4">
-                    No loan history yet.
+                    {t('noLoanHistory')}
                   </td>
                 </tr>
               )}

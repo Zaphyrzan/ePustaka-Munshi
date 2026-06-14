@@ -63,12 +63,12 @@ export default function CatalogListPage() {
       <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <h3 className="mb-0">
           {t('catalog')}{' '}
-          {pg && <span className="fs-6 text-muted">({pg.total.toLocaleString()} books)</span>}
+          {pg && <span className="fs-6 text-muted">({t('booksCount', { count: pg.total })})</span>}
         </h3>
         {session?.user_type === 'staff' && (
           <Link to="/catalog/add" className="btn btn-success text-nowrap">
             <i className="bi bi-plus-lg me-1" />
-            Add book
+            {t('addBook')}
           </Link>
         )}
       </div>
@@ -93,7 +93,7 @@ export default function CatalogListPage() {
             value={category}
             onChange={(e) => update({ category: e.target.value, page: '1' })}
           >
-            <option value="">All categories</option>
+            <option value="">{t('allCategories')}</option>
             {categories?.map((c) => (
               <option key={c} value={c}>
                 {c}
@@ -109,7 +109,7 @@ export default function CatalogListPage() {
               onChange={(e) => update({ available: e.target.checked ? '1' : '', page: '1' })}
             />
             <label htmlFor="availOnly" className="form-check-label">
-              {t('available')} only
+              {t('availableOnly')}
             </label>
           </div>
           {(search || category || availableOnly) && (
@@ -120,7 +120,7 @@ export default function CatalogListPage() {
                 setParams({})
               }}
             >
-              Clear
+              {t('clear')}
             </button>
           )}
         </div>
@@ -137,7 +137,7 @@ export default function CatalogListPage() {
                   <th>{t('title')}</th>
                   <th>{t('author')}</th>
                   <th>{t('category')}</th>
-                  <th>Call No.</th>
+                  <th>{t('callNo')}</th>
                   <th className="text-center">{t('copies')}</th>
                   <th className="text-center">{t('available')}</th>
                 </tr>
@@ -164,7 +164,7 @@ export default function CatalogListPage() {
                 {data?.items.length === 0 && (
                   <tr>
                     <td colSpan={6} className="text-center text-muted py-4">
-                      No books found
+                      {t('noBooksFound')}
                     </td>
                   </tr>
                 )}

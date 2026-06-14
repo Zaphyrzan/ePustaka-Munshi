@@ -70,9 +70,9 @@ export default function StudentPortalPage() {
         <div className="alert alert-danger d-flex align-items-center" role="alert">
           <i className="bi bi-exclamation-triangle-fill me-2" />
           <div>
-            You have <strong>{overdueCount}</strong> overdue book{overdueCount === 1 ? '' : 's'}.{' '}
+            {t('overdueAlert', { count: overdueCount })}{' '}
             <Link to="/student/loans" className="alert-link">
-              View
+              {t('view')}
             </Link>
           </div>
         </div>
@@ -81,9 +81,9 @@ export default function StudentPortalPage() {
         <div className="alert alert-warning d-flex align-items-center" role="alert">
           <i className="bi bi-info-circle-fill me-2" />
           <div>
-            <strong>{dueSoon.length}</strong> book{dueSoon.length === 1 ? '' : 's'} due within 3 days.{' '}
+            {t('dueSoonAlert', { count: dueSoon.length })}{' '}
             <Link to="/student/loans" className="alert-link">
-              View
+              {t('view')}
             </Link>
           </div>
         </div>
@@ -91,10 +91,10 @@ export default function StudentPortalPage() {
 
       {/* ---- Quick stats ---- */}
       <div className="row g-3 mb-4">
-        <StatCard icon="bi-book" label="Total Books" value={totalBooks} color="primary" />
+        <StatCard icon="bi-book" label={t('totalBooks')} value={totalBooks} color="primary" />
         <StatCard icon="bi-check-circle" label={t('available')} value={availableBooks} color="success" />
-        <StatCard icon="bi-bookmark" label="Books Borrowed" value={borrowedCount} color="info" />
-        <StatCard icon="bi-exclamation-circle" label="Overdue" value={overdueCount} color="danger" />
+        <StatCard icon="bi-bookmark" label={t('booksBorrowed')} value={borrowedCount} color="info" />
+        <StatCard icon="bi-exclamation-circle" label={t('overdue')} value={overdueCount} color="danger" />
       </div>
 
       {/* ---- Quick access buttons ---- */}
@@ -108,13 +108,13 @@ export default function StudentPortalPage() {
         <div className="col-12 col-sm-4">
           <Link to="/student/loans" className="btn btn-lg btn-outline-primary w-100 py-3">
             <i className="bi bi-journal-bookmark me-2" />
-            My Loans
+            {t('myLoans')}
           </Link>
         </div>
         <div className="col-12 col-sm-4">
           <Link to="/student/leaderboard" className="btn btn-lg btn-outline-success w-100 py-3">
             <i className="bi bi-trophy me-2" />
-            Leaderboard
+            {t('leaderboard')}
           </Link>
         </div>
       </div>
@@ -122,15 +122,15 @@ export default function StudentPortalPage() {
       {/* ---- Currently borrowed (short list, full list on My Loans) ---- */}
       <h5 className="mb-3">
         <i className="bi bi-bookmark-check me-2" />
-        Currently Borrowed
+        {t('currentlyBorrowed')}
       </h5>
       <div className="card shadow-sm">
         <table className="table mb-0 align-middle">
           <thead className="table-light">
             <tr>
               <th>{t('title')}</th>
-              <th>Due date</th>
-              <th>Status</th>
+              <th>{t('dueDate')}</th>
+              <th>{t('status')}</th>
             </tr>
           </thead>
           <tbody>
@@ -149,8 +149,7 @@ export default function StudentPortalPage() {
             {myLoans.length === 0 && (
               <tr>
                 <td colSpan={3} className="text-center text-muted py-4">
-                  No books borrowed yet.{' '}
-                  <Link to="/catalog">Borrow a book</Link>
+                  {t('noBooksBorrowedYet')} <Link to="/catalog">{t('borrowABook')}</Link>
                 </td>
               </tr>
             )}
@@ -160,7 +159,7 @@ export default function StudentPortalPage() {
       {myLoans.length > 5 && (
         <div className="text-center mt-3">
           <Link to="/student/loans" className="btn btn-outline-primary btn-sm">
-            View all
+            {t('viewAll')}
           </Link>
         </div>
       )}

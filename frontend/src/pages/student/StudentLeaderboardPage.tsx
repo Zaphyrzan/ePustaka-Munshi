@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { api, unwrap } from '../../api/client'
 
 // ---- Shapes returned by GET /api/student/leaderboard ----
@@ -37,7 +38,7 @@ interface LeaderboardData {
 // Gold / silver / bronze for ranks 1-3.
 const MEDAL = ['#d4af37', '#c0c0c0', '#cd7f32']
 
-/** Round medal badge with an award icon (used in the table and the podium). */
+/** Round medal badge with an award icon (used in the main ranking table). */
 function Medal({ rank }: { rank: number }) {
   const color = MEDAL[rank - 1]
   if (!color) return <strong>{rank}</strong>
@@ -58,49 +59,66 @@ interface PodiumEntry {
 }
 
 /**
- * Classic 2-1-3 podium for a top-three ranking. First place sits in the
- * middle and is drawn larger; second and third flank it.
+ * Winner podium for a top-three ranking. First place sits in the middle on the
+ * tallest pedestal, flanked by second (left) and third (right). The rank shows
+ * on the pedestal block, and a coloured ring frames each avatar.
  */
 function Top3Podium({ title, icon, entries }: { title: string; icon: string; entries: PodiumEntry[] }) {
-  const order = [entries[1], entries[0], entries[2]] // render as 2nd, 1st, 3rd
-  const ranks = [2, 1, 3]
+  const { t } = useTranslation()
+  // Render order is 2nd, 1st, 3rd; pedestal height encodes the rank.
+  const slots = [
+    { e: entries[1], rank: 2, height: 52 },
+    { e: entries[0], rank: 1, height: 74 },
+    { e: entries[2], rank: 3, height: 38 },
+  ]
+
   return (
     <div className="card shadow-sm h-100">
       <div className="card-header bg-transparent fw-semibold">
         <i className={`bi ${icon} me-2`} />
         {title}
       </div>
-      <div className="card-body">
+      <div className="card-body pb-0">
         {entries.length === 0 ? (
-          <div className="text-muted text-center py-3">No data</div>
+          <div className="text-muted text-center py-3">{t('noData')}</div>
         ) : (
           <div className="d-flex justify-content-center align-items-end gap-2 text-center">
-            {order.map((e, i) => {
-              const rank = ranks[i]
+            {slots.map(({ e, rank, height }) => {
               if (!e) return <div key={rank} style={{ flex: 1 }} />
+              const color = MEDAL[rank - 1]
               const isFirst = rank === 1
-              const size = isFirst ? 60 : 46
+              const avatar = isFirst ? 52 : 42
               return (
                 <div key={rank} style={{ flex: 1, minWidth: 0 }}>
+                  {isFirst && <i className="bi bi-trophy-fill d-block mb-1" style={{ color, fontSize: 18 }} />}
                   <div
                     className="mx-auto d-flex align-items-center justify-content-center"
                     style={{
-                      width: size,
-                      height: size,
+                      width: avatar,
+                      height: avatar,
                       borderRadius: '50%',
-                      background: isFirst ? MEDAL[0] : '#f1f3f5',
-                      color: '#1f2a37',
-                      fontSize: isFirst ? 26 : 20,
+                      background: '#f1f3f5',
+                      border: `3px solid ${color}`,
+                      color: '#495057',
+                      fontSize: isFirst ? 24 : 18,
                     }}
                   >
                     <i className="bi bi-person-fill" />
                   </div>
-                  <div className="mt-1">
-                    <Medal rank={rank} />
-                  </div>
                   <div className="fw-semibold small text-truncate mt-1">{e.name}</div>
-                  {e.sub && <div className="text-muted text-truncate" style={{ fontSize: '0.75rem' }}>{e.sub}</div>}
+                  {e.sub && (
+                    <div className="text-muted text-truncate" style={{ fontSize: '0.72rem' }}>
+                      {e.sub}
+                    </div>
+                  )}
                   <div className="fw-bold text-primary">{e.value}</div>
+                  {/* Pedestal block - taller = higher rank */}
+                  <div
+                    className="rounded-top mt-1 mx-auto d-flex align-items-center justify-content-center fw-bold"
+                    style={{ height, width: '80%', background: color, color: rank === 3 ? '#fff' : '#1f2a37' }}
+                  >
+                    {rank}
+                  </div>
                 </div>
               )
             })}
@@ -112,7 +130,7 @@ function Top3Podium({ title, icon, entries }: { title: string; icon: string; ent
 }
 
 /**
- * Borrowing Leaderboard (mirrors the Flask student/leaderboard.html):
+ * Leaderboard (mirrors the Flask student/leaderboard.html):
  * top-3 podiums for students, classes and forms, plus the full student
  * ranking. Form/class filters narrow the ranking.
  *
@@ -120,6 +138,7 @@ function Top3Podium({ title, icon, entries }: { title: string; icon: string; ent
  * separate NILAM (reading) programme.
  */
 export default function StudentLeaderboardPage() {
+  const { t } = useTranslation()
   const [form, setForm] = useState<number | ''>('')
   const [klass, setKlass] = useState('') // "class" is a reserved word, so "klass"
 
@@ -152,12 +171,12 @@ export default function StudentLeaderboardPage() {
     value: s.borrow_count ?? 0,
   }))
   const classPodium: PodiumEntry[] = topClasses.map((c) => ({
-    name: `Form ${c.form_level} ${c.class_group ?? ''}`.trim(),
+    name: `${t('form')} ${c.form_level} ${c.class_group ?? ''}`.trim(),
     value: c.borrow_count ?? 0,
   }))
   const formPodium: PodiumEntry[] = topForms.map((f) => ({
-    name: `Form ${f.form_level}`,
-    sub: `${f.student_count ?? 0} students`,
+    name: `${t('form')} ${f.form_level}`,
+    sub: t('studentsCount', { count: f.student_count ?? 0 }),
     value: f.total_borrowed ?? 0,
   }))
 
@@ -165,19 +184,19 @@ export default function StudentLeaderboardPage() {
     <div>
       <h4 className="mb-3">
         <i className="bi bi-trophy me-2" />
-        Borrowing Leaderboard
+        {t('leaderboard')}
       </h4>
 
       {/* ---- Top-3 podiums: students, classes, forms ---- */}
       <div className="row g-3 mb-4">
         <div className="col-lg-4">
-          <Top3Podium title="Top 3 Students" icon="bi-person-fill" entries={studentPodium} />
+          <Top3Podium title={t('top3Students')} icon="bi-person-fill" entries={studentPodium} />
         </div>
         <div className="col-lg-4">
-          <Top3Podium title="Top 3 Classes" icon="bi-people-fill" entries={classPodium} />
+          <Top3Podium title={t('top3Classes')} icon="bi-people-fill" entries={classPodium} />
         </div>
         <div className="col-lg-4">
-          <Top3Podium title="Top 3 Forms" icon="bi-bar-chart" entries={formPodium} />
+          <Top3Podium title={t('top3Forms')} icon="bi-bar-chart" entries={formPodium} />
         </div>
       </div>
 
@@ -185,7 +204,7 @@ export default function StudentLeaderboardPage() {
       <div className="card shadow-sm mb-4">
         <div className="card-body d-flex flex-wrap align-items-end gap-3">
           <div>
-            <label className="form-label fw-semibold mb-1">Filter by Form</label>
+            <label className="form-label fw-semibold mb-1">{t('filterByForm')}</label>
             <select
               className="form-select"
               value={form}
@@ -194,10 +213,10 @@ export default function StudentLeaderboardPage() {
                 setKlass('') // reset class whenever the form changes
               }}
             >
-              <option value="">All forms</option>
+              <option value="">{t('allForms')}</option>
               {forms.map((f) => (
                 <option key={f} value={f}>
-                  Form {f}
+                  {t('form')} {f}
                 </option>
               ))}
             </select>
@@ -205,9 +224,9 @@ export default function StudentLeaderboardPage() {
 
           {form !== '' && classesInForm.length > 0 && (
             <div>
-              <label className="form-label fw-semibold mb-1">Filter by Class</label>
+              <label className="form-label fw-semibold mb-1">{t('filterByClass')}</label>
               <select className="form-select" value={klass} onChange={(e) => setKlass(e.target.value)}>
-                <option value="">All classes</option>
+                <option value="">{t('allClasses')}</option>
                 {classesInForm.map((c) => (
                   <option key={c} value={c}>
                     {c}
@@ -225,7 +244,7 @@ export default function StudentLeaderboardPage() {
                 setKlass('')
               }}
             >
-              Clear filters
+              {t('clearFilters')}
             </button>
           )}
         </div>
@@ -236,7 +255,7 @@ export default function StudentLeaderboardPage() {
         <div className="card-header bg-primary text-white">
           <h5 className="mb-0">
             <i className="bi bi-trophy me-2" />
-            {form !== '' ? `Form ${form}${klass ? ` - ${klass}` : ''}` : 'Best Borrowers'}
+            {form !== '' ? `${t('form')} ${form}${klass ? ` - ${klass}` : ''}` : t('bestBorrowers')}
           </h5>
         </div>
         <div className="table-responsive">
@@ -246,9 +265,9 @@ export default function StudentLeaderboardPage() {
                 <th style={{ width: 60 }} className="text-center">
                   #
                 </th>
-                <th>Name</th>
-                <th>Class</th>
-                <th className="text-end">Books Borrowed</th>
+                <th>{t('name')}</th>
+                <th>{t('studentClass')}</th>
+                <th className="text-end">{t('booksBorrowed')}</th>
               </tr>
             </thead>
             <tbody>
@@ -265,7 +284,7 @@ export default function StudentLeaderboardPage() {
               {students.length === 0 && (
                 <tr>
                   <td colSpan={4} className="text-center text-muted py-5">
-                    No borrowing data yet.
+                    {t('noBorrowingData')}
                   </td>
                 </tr>
               )}
@@ -277,7 +296,7 @@ export default function StudentLeaderboardPage() {
       <div className="mt-4">
         <Link to="/student" className="btn btn-outline-secondary btn-sm">
           <i className="bi bi-arrow-left me-1" />
-          Back to home
+          {t('backToHome')}
         </Link>
       </div>
     </div>

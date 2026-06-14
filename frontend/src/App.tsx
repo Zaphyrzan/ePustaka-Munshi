@@ -32,6 +32,19 @@ function Protected({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+/** Send each role to its own landing page (students must NOT see the staff dashboard). */
+function HomeRedirect() {
+  const { session } = useAuth()
+  return <Navigate to={session?.user_type === 'student' ? '/student' : '/dashboard'} replace />
+}
+
+/** Guard staff-only pages: a student who reaches one is bounced to their portal. */
+function StaffOnly({ children }: { children: React.ReactNode }) {
+  const { session } = useAuth()
+  if (session?.user_type === 'student') return <Navigate to="/student" replace />
+  return <>{children}</>
+}
+
 export default function App() {
   return (
     <Routes>
@@ -43,23 +56,24 @@ export default function App() {
           </Protected>
         }
       >
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/" element={<HomeRedirect />} />
+        <Route path="/dashboard" element={<StaffOnly><DashboardPage /></StaffOnly>} />
         <Route path="/change-password" element={<ChangePasswordPage />} />
+        {/* Catalog browse/detail is open to students; create/edit is staff-only */}
         <Route path="/catalog" element={<CatalogListPage />} />
-        <Route path="/catalog/add" element={<BookFormPage />} />
+        <Route path="/catalog/add" element={<StaffOnly><BookFormPage /></StaffOnly>} />
         <Route path="/catalog/:bookId" element={<BookDetailPage />} />
-        <Route path="/catalog/:bookId/edit" element={<BookFormPage />} />
-        <Route path="/circulation" element={<LoansPage />} />
-        <Route path="/circulation/checkout" element={<CheckoutPage />} />
-        <Route path="/circulation/return" element={<ReturnPage />} />
-        <Route path="/ocr" element={<OcrJobsPage />} />
-        <Route path="/ocr/:jobId/review" element={<OcrReviewPage />} />
-        <Route path="/users" element={<UsersPage />} />
-        <Route path="/users/members/add" element={<MemberFormPage />} />
-        <Route path="/users/members/:memberId/edit" element={<MemberFormPage />} />
-        <Route path="/users/staff/add" element={<StaffFormPage />} />
-        <Route path="/users/staff/:userId/edit" element={<StaffFormPage />} />
+        <Route path="/catalog/:bookId/edit" element={<StaffOnly><BookFormPage /></StaffOnly>} />
+        <Route path="/circulation" element={<StaffOnly><LoansPage /></StaffOnly>} />
+        <Route path="/circulation/checkout" element={<StaffOnly><CheckoutPage /></StaffOnly>} />
+        <Route path="/circulation/return" element={<StaffOnly><ReturnPage /></StaffOnly>} />
+        <Route path="/ocr" element={<StaffOnly><OcrJobsPage /></StaffOnly>} />
+        <Route path="/ocr/:jobId/review" element={<StaffOnly><OcrReviewPage /></StaffOnly>} />
+        <Route path="/users" element={<StaffOnly><UsersPage /></StaffOnly>} />
+        <Route path="/users/members/add" element={<StaffOnly><MemberFormPage /></StaffOnly>} />
+        <Route path="/users/members/:memberId/edit" element={<StaffOnly><MemberFormPage /></StaffOnly>} />
+        <Route path="/users/staff/add" element={<StaffOnly><StaffFormPage /></StaffOnly>} />
+        <Route path="/users/staff/:userId/edit" element={<StaffOnly><StaffFormPage /></StaffOnly>} />
         <Route path="/student" element={<StudentPortalPage />} />
         <Route path="/student/loans" element={<StudentLoansPage />} />
         <Route path="/student/leaderboard" element={<StudentLeaderboardPage />} />
