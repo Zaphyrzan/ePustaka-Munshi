@@ -505,9 +505,14 @@ def update_member(member_id):
         if 'is_active' in data:
             if _has_permission(Permission.MANAGE_MEMBERS):
                 member.is_active = bool(data['is_active'])
-        
+                # Keep a promoted member's operator login in sync (linked by
+                # username == member_id) so deactivating also locks Admin access.
+                op = User.query.filter_by(username=member.member_id).first()
+                if op:
+                    op.is_active = member.is_active
+
         db.session.commit()
-        
+
         return ApiResponse.success(MemberSerializer.to_dict(member), message='Member updated successfully')
     
     except Exception as e:
