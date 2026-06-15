@@ -22,15 +22,29 @@ interface StaffRow {
   email?: string
   is_active?: boolean
   role?: { name: string }
+  promoted_member_type?: string | null
+  linked_member_id?: number | null
+}
+
+const MEMBER_BADGE: Record<string, string> = {
+  Student: 'bg-info text-dark',
+  Staff: 'bg-primary',
+  External: 'bg-secondary',
+}
+const ROLE_BADGE: Record<string, string> = {
+  Administrator: 'bg-danger',
+  Librarian: 'bg-primary',
+  'Library Prefect': 'bg-warning text-dark',
 }
 
 export default function UsersPage() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
-  const [tab, setTab] = useState<'members' | 'staff'>('members')
+  const [tab, setTab] = useState<'members' | 'admin'>('members')
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
+  const [roleFilter, setRoleFilter] = useState('')
   const [msg, setMsg] = useState<{ kind: 'success' | 'danger'; text: string } | null>(null)
 
   const { data: members, isLoading: loadingMembers } = useQuery({
@@ -46,11 +60,13 @@ export default function UsersPage() {
   })
 
   const { data: staff, isLoading: loadingStaff } = useQuery({
-    queryKey: ['staff', page, search],
+    queryKey: ['staff', page, search, roleFilter],
     queryFn: () =>
-      unwrap<Paginated<StaffRow>>(api.get('/api/users/staff', { params: { page, per_page: 20, search } })),
+      unwrap<Paginated<StaffRow>>(
+        api.get('/api/users/staff', { params: { page, per_page: 20, search, ...(roleFilter && { role: roleFilter }) } }),
+      ),
     placeholderData: keepPreviousData,
-    enabled: tab === 'staff',
+    enabled: tab === 'admin',
   })
 
   function act(fn: () => Promise<unknown>, confirmText?: string) {
@@ -72,10 +88,10 @@ export default function UsersPage() {
     <div>
       <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <h4 className="mb-0">{t('users')}</h4>
-        <div className="d-flex gap-2">
+        <div className="d-flex gap-2 flex-wrap">
           <input
             className="form-control"
-            style={{ width: 260 }}
+            style={{ width: 240 }}
             placeholder={t('search')}
             value={search}
             onChange={(e) => {
@@ -87,16 +103,15 @@ export default function UsersPage() {
             <>
               <select
                 className="form-select"
-                style={{ width: 200 }}
+                style={{ width: 170 }}
                 value={typeFilter}
                 onChange={(e) => {
                   setTypeFilter(e.target.value)
                   setPage(1)
                 }}
               >
-                <option value="">All members</option>
+                <option value="">All types</option>
                 <option value="Student">Students</option>
-                <option value="Student Assistant">Library Prefects</option>
                 <option value="Staff">Staff / Teacher</option>
                 <option value="External">External</option>
               </select>
@@ -114,10 +129,26 @@ export default function UsersPage() {
               </Link>
             </>
           ) : (
-            <Link to="/users/staff/add" className="btn btn-success text-nowrap">
-              <i className="bi bi-person-plus me-1" />
-              Add staff
-            </Link>
+            <>
+              <select
+                className="form-select"
+                style={{ width: 180 }}
+                value={roleFilter}
+                onChange={(e) => {
+                  setRoleFilter(e.target.value)
+                  setPage(1)
+                }}
+              >
+                <option value="">All roles</option>
+                <option value="Administrator">Administrators</option>
+                <option value="Librarian">Librarians</option>
+                <option value="Library Prefect">Library Prefects</option>
+              </select>
+              <Link to="/users/staff/add" className="btn btn-success text-nowrap">
+                <i className="bi bi-person-plus me-1" />
+                Add staff
+              </Link>
+            </>
           )}
         </div>
       </div>
@@ -134,19 +165,19 @@ export default function UsersPage() {
             }}
           >
             <i className="bi bi-people me-1" />
-            Library Members
+            Members
           </button>
         </li>
         <li className="nav-item">
           <button
-            className={`nav-link ${tab === 'staff' ? 'active' : ''}`}
+            className={`nav-link ${tab === 'admin' ? 'active' : ''}`}
             onClick={() => {
-              setTab('staff')
+              setTab('admin')
               setPage(1)
             }}
           >
             <i className="bi bi-person-badge me-1" />
-            Staff Accounts
+            Administration
           </button>
         </li>
       </ul>
@@ -154,7 +185,7 @@ export default function UsersPage() {
       {isLoading ? (
         <div className="text-muted py-5 text-center">{t('loading')}</div>
       ) : tab === 'members' ? (
-        <div className="card shadow-sm">
+        <div className="card">
           <table className="table table-hover mb-0 align-middle">
             <thead className="table-light">
               <tr>
@@ -167,77 +198,72 @@ export default function UsersPage() {
               </tr>
             </thead>
             <tbody>
-              {members?.items.map((m) => (
-                <tr key={m.id}>
-                  <td>{m.member_id}</td>
-                  <td>
-                    {m.full_name}
-                    {m.is_active === false && <span className="badge bg-secondary ms-2">inactive</span>}
-                  </td>
-                  <td>
-                    {(() => {
-                      const type = m.member_type || 'Student'
-                      const cls =
-                        type === 'Student Assistant'
-                          ? 'bg-warning text-dark'
-                          : type === 'Student'
-                            ? 'bg-info text-dark'
-                            : type === 'External'
-                              ? 'bg-secondary'
-                              : 'bg-primary'
-                      const label = type === 'Student Assistant' ? 'Library Prefect' : type
-                      return <span className={`badge ${cls}`}>{label}</span>
-                    })()}
-                  </td>
-                  <td>
-                    {m.form_level ? `Form ${m.form_level}` : '—'}
-                    {m.class_group ? ` ${m.class_group}` : ''}
-                  </td>
-                  <td className="text-center">{m.active_loans_count ?? 0}</td>
-                  <td className="text-end text-nowrap">
-                    <Link to={`/users/members/${m.id}/edit`} className="btn btn-outline-primary btn-sm me-1">
-                      Edit
-                    </Link>
-                    {m.member_type === 'Student' ? (
+              {members?.items.map((m) => {
+                const type = m.member_type || 'Student'
+                return (
+                  <tr key={m.id}>
+                    <td>{m.member_id}</td>
+                    <td>
+                      {m.full_name}
+                      {m.is_active === false && <span className="badge bg-secondary ms-2">inactive</span>}
+                    </td>
+                    <td>
+                      <span className={`badge ${MEMBER_BADGE[type] || 'bg-secondary'}`}>{type}</span>
+                    </td>
+                    <td>
+                      {m.form_level ? `Form ${m.form_level}` : '—'}
+                      {m.class_group ? ` ${m.class_group}` : ''}
+                    </td>
+                    <td className="text-center">{m.active_loans_count ?? 0}</td>
+                    <td className="text-end text-nowrap">
+                      <Link to={`/users/members/${m.id}/edit`} className="btn btn-outline-primary btn-sm me-1">
+                        Edit
+                      </Link>
+                      {type === 'Student' && (
+                        <button
+                          className="btn btn-outline-info btn-sm me-1"
+                          title="Promote to Library Prefect"
+                          onClick={() =>
+                            act(
+                              () => unwrap(api.post(`/api/users/members/${m.id}/promote`)),
+                              `Promote ${m.full_name} to Library Prefect? They move to Administration.`,
+                            )
+                          }
+                        >
+                          <i className="bi bi-arrow-up-circle me-1" />
+                          Prefect
+                        </button>
+                      )}
+                      {type === 'Staff' && (
+                        <button
+                          className="btn btn-outline-info btn-sm me-1"
+                          title="Promote to Librarian"
+                          onClick={() =>
+                            act(
+                              () => unwrap(api.post(`/api/users/members/${m.id}/promote`)),
+                              `Promote ${m.full_name} to Librarian? They move to Administration.`,
+                            )
+                          }
+                        >
+                          <i className="bi bi-arrow-up-circle me-1" />
+                          Librarian
+                        </button>
+                      )}
                       <button
-                        className="btn btn-outline-info btn-sm me-1"
-                        title="Promote to Library Prefect"
+                        className="btn btn-outline-danger btn-sm"
                         onClick={() =>
                           act(
-                            () => unwrap(api.post(`/api/users/members/${m.id}/promote`)),
-                            `Promote ${m.full_name} to Library Prefect?`,
+                            () => unwrap(api.delete(`/api/users/members/${m.id}`)),
+                            `Delete member ${m.full_name}? This cannot be undone.`,
                           )
                         }
                       >
-                        <i className="bi bi-arrow-up-circle" />
+                        <i className="bi bi-trash" />
                       </button>
-                    ) : (
-                      m.member_type === 'Student Assistant' && (
-                        <button
-                          className="btn btn-outline-warning btn-sm me-1"
-                          title="Demote to Student"
-                          onClick={() =>
-                            act(() => unwrap(api.post(`/api/users/members/${m.id}/demote`)), `Demote ${m.full_name}?`)
-                          }
-                        >
-                          <i className="bi bi-arrow-down-circle" />
-                        </button>
-                      )
-                    )}
-                    <button
-                      className="btn btn-outline-danger btn-sm"
-                      onClick={() =>
-                        act(
-                          () => unwrap(api.delete(`/api/users/members/${m.id}`)),
-                          `Delete member ${m.full_name}? This cannot be undone.`,
-                        )
-                      }
-                    >
-                      <i className="bi bi-trash" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                  </tr>
+                )
+              })}
               {members?.items.length === 0 && (
                 <tr>
                   <td colSpan={6} className="text-center text-muted py-4">
@@ -249,7 +275,7 @@ export default function UsersPage() {
           </table>
         </div>
       ) : (
-        <div className="card shadow-sm">
+        <div className="card">
           <table className="table table-hover mb-0 align-middle">
             <thead className="table-light">
               <tr>
@@ -267,33 +293,59 @@ export default function UsersPage() {
                   <td>
                     {u.full_name || '—'}
                     {u.is_active === false && <span className="badge bg-secondary ms-2">inactive</span>}
+                    {u.promoted_member_type && (
+                      <span className="badge bg-light text-muted ms-2" title="Promoted from a library member">
+                        promoted
+                      </span>
+                    )}
                   </td>
                   <td>{u.email || '—'}</td>
                   <td>
-                    <span className="badge bg-primary">{u.role?.name || '—'}</span>
+                    <span className={`badge ${ROLE_BADGE[u.role?.name || ''] || 'bg-secondary'}`}>
+                      {u.role?.name || '—'}
+                    </span>
                   </td>
                   <td className="text-end text-nowrap">
-                    <Link to={`/users/staff/${u.id}/edit`} className="btn btn-outline-primary btn-sm me-1">
-                      Edit
-                    </Link>
-                    <button
-                      className="btn btn-outline-danger btn-sm"
-                      onClick={() =>
-                        act(
-                          () => unwrap(api.delete(`/api/users/staff/${u.id}`)),
-                          `Delete staff account ${u.username}?`,
-                        )
-                      }
-                    >
-                      <i className="bi bi-trash" />
-                    </button>
+                    {u.promoted_member_type ? (
+                      // Promoted member: manage via demote (returns them to Members)
+                      <button
+                        className="btn btn-outline-warning btn-sm me-1"
+                        title="Demote back to a regular member"
+                        onClick={() =>
+                          act(
+                            () => unwrap(api.post(`/api/users/members/${u.linked_member_id}/demote`)),
+                            `Demote ${u.full_name}? They return to the Members list.`,
+                          )
+                        }
+                      >
+                        <i className="bi bi-arrow-down-circle me-1" />
+                        Demote
+                      </button>
+                    ) : (
+                      <>
+                        <Link to={`/users/staff/${u.id}/edit`} className="btn btn-outline-primary btn-sm me-1">
+                          Edit
+                        </Link>
+                        <button
+                          className="btn btn-outline-danger btn-sm"
+                          onClick={() =>
+                            act(
+                              () => unwrap(api.delete(`/api/users/staff/${u.id}`)),
+                              `Delete staff account ${u.username}?`,
+                            )
+                          }
+                        >
+                          <i className="bi bi-trash" />
+                        </button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}
               {staff?.items.length === 0 && (
                 <tr>
                   <td colSpan={5} className="text-center text-muted py-4">
-                    No staff
+                    No administration accounts
                   </td>
                 </tr>
               )}

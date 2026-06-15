@@ -1,6 +1,6 @@
 """
 User, Role, and Permission models
-Supports RBAC: Librarian, Student Assistant, Student
+Supports RBAC: Librarian, Library Prefect, Student
 """
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -66,7 +66,7 @@ class Role(db.Model):
                 Permission.SEARCH,
                 Permission.BORROW
             ],
-            'Student Assistant': [
+            'Library Prefect': [
                 Permission.VIEW_CATALOG,
                 Permission.SEARCH,
                 Permission.MANAGE_CATALOG,

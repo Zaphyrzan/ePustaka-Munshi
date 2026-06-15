@@ -5,7 +5,7 @@ import { useAuth } from '../auth/AuthContext'
 import { API_BASE } from '../api/client'
 import { setLanguage } from '../i18n'
 
-const STAFF_ROLES = ['Administrator', 'Librarian', 'Student Assistant']
+const STAFF_ROLES = ['Administrator', 'Librarian', 'Library Prefect']
 const LOGO = `${API_BASE}/static/images/Lencana_Sekolah_Menengah_Kebangsaan_Abdullah_Munshi.jpg`
 
 interface NavItem {

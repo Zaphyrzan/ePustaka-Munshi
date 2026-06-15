@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap } from '../../api/client'
 
-const ROLES = ['Administrator', 'Librarian', 'Student Assistant']
+const ROLES = ['Administrator', 'Librarian', 'Library Prefect']
 
 const EMPTY = { username: '', full_name: '', email: '', role: 'Librarian', password: '', is_active: true }
 

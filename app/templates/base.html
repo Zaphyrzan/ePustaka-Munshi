@@ -272,16 +272,16 @@
         Figure out WHO is logged in, then drive the whole sidebar from a few
         simple flags. Two kinds of account can log in:
           - Member : a borrower record (a student, or a staff member record)
-          - User   : a staff login (Administrator, Librarian, Student Assistant)
+          - User   : a staff login (Administrator, Librarian, Library Prefect)
     #}
     {# Is this login linked to a borrower (Member) record? #}
     {% set is_member = linked_member is not none %}
     {# Is this a promoted student helper? (a staff role, but still a student) #}
-    {% set is_student_assistant = current_user.role and current_user.role.name == 'Student Assistant' %}
+    {% set is_student_assistant = current_user.role and current_user.role.name == 'Library Prefect' %}
     {# Can this person use the STAFF tools (dashboard, circulation, catalog...)? #}
     {% if is_member %}
         {# A borrower counts as staff only if their member type is a staff type. #}
-        {% set is_staff = linked_member.member_type in ['Staff', 'Student Assistant', 'Librarian', 'Teacher'] %}
+        {% set is_staff = linked_member.member_type in ['Staff', 'Library Prefect', 'Librarian', 'Teacher'] %}
     {% else %}
         {# A User login counts as staff unless their role is the plain Student role. #}
         {% set is_staff = current_user.role and current_user.role.name not in ['Student'] %}
@@ -342,7 +342,7 @@
                  STAFF FUNCTIONS  (admins, librarians, student assistants)
                  Each block is gated by a permission check, so a role only
                  sees the tools it is allowed to use:
-                   - Student Assistant -> Dashboard + Catalog + Circulation
+                   - Library Prefect -> Dashboard + Catalog + Circulation
                    - Librarian / Admin -> everything below
                ============================================================ #}
             {% if is_staff %}

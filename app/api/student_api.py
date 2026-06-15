@@ -319,7 +319,7 @@ def leaderboard():
         limit = min(max(request.args.get('limit', 100, type=int), 1), 200)
 
         student_filter = [
-            Member.member_type.in_(['Student', 'Student Assistant']),
+            Member.member_type.in_(['Student', 'Library Prefect']),
             Member.is_active == True,  # noqa: E712 (SQLAlchemy comparison)
         ]
         loan_join = db.and_(

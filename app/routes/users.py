@@ -383,7 +383,7 @@ def add_member():
             phone = None
         
         # Get and validate member_type
-        valid_member_types = ['Student', 'Staff', 'Teacher', 'Librarian', 'Admin', 'Student Assistant', 'External']
+        valid_member_types = ['Student', 'Staff', 'Teacher', 'Librarian', 'Admin', 'Library Prefect', 'External']
         member_type = request.form.get('member_type', 'Student')
         if member_type not in valid_member_types:
             flash('Invalid member type', 'error')
@@ -525,7 +525,7 @@ def edit_member(member_id):
             phone = None
         
         # Get and validate member_type
-        valid_member_types = ['Student', 'Staff', 'Teacher', 'Librarian', 'Admin', 'Student Assistant', 'External']
+        valid_member_types = ['Student', 'Staff', 'Teacher', 'Librarian', 'Admin', 'Library Prefect', 'External']
         member_type = request.form.get('member_type', 'Student')
         if member_type not in valid_member_types:
             flash('Invalid member type', 'error')
@@ -1054,14 +1054,14 @@ def api_form_levels():
 @login_required
 @permission_required(Permission.MANAGE_USERS)
 def promote_to_staff(member_id):
-    """Promote a member to staff (Student Assistant)"""
+    """Promote a member to staff (Library Prefect)"""
     # Get member
     member = Member.query.get_or_404(member_id)
-    role = Role.query.filter_by(name='Student Assistant').first()
+    role = Role.query.filter_by(name='Library Prefect').first()
     
-    # Change member type but keep form_level/class_group: a Student Assistant
+    # Change member type but keep form_level/class_group: a Library Prefect
     # is still a student in their class and must stay in the NILAM leaderboard.
-    member.member_type = 'Student Assistant'
+    member.member_type = 'Library Prefect'
 
     # Keep a matching staff User row so checkout/return audit fields can reference users.id
     user = User.query.get(member.id)
