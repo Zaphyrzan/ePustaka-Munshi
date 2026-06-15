@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { api, unwrap } from '../../api/client'
+import { API_BASE, api, unwrap } from '../../api/client'
 import { useAuth } from '../../auth/AuthContext'
 import type { Book, BookCopy } from '../../types'
 
@@ -65,10 +65,15 @@ export default function BookDetailPage() {
                   <i className="bi bi-pencil me-1" />
                   Edit
                 </Link>
-                <Link to={`/catalog/${book.id}/print-barcodes`} className="btn btn-outline-secondary btn-sm">
+                <a
+                  href={`${API_BASE}/catalog/book/${book.id}/print-barcodes`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn btn-outline-secondary btn-sm"
+                >
                   <i className="bi bi-printer me-1" />
                   Print barcodes
-                </Link>
+                </a>
                 <button
                   className="btn btn-outline-danger btn-sm"
                   onClick={() => {

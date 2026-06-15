@@ -176,49 +176,6 @@ a {
   }
 }
 
-/* ---- Barcode label sheet (print) ---- */
-.barcode-sheet {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
-}
-.barcode-label {
-  border: 1px dashed #adb5bd;
-  border-radius: 6px;
-  padding: 0.5rem;
-  text-align: center;
-  page-break-inside: avoid;
-}
-.barcode-label-title {
-  font-size: 0.7rem;
-  font-weight: 600;
-  margin-bottom: 0.25rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.barcode-label-acc {
-  font-size: 0.7rem;
-  color: #495057;
-}
-
-@media print {
-  .app-sidebar,
-  .app-topbar,
-  .no-print {
-    display: none !important;
-  }
-  .app-main {
-    margin-left: 0 !important;
-  }
-  .app-content {
-    padding: 0 !important;
-  }
-  .barcode-label {
-    border-color: #000;
-  }
-}
-
 /* Student "Search Books" cards - subtle lift on hover (customer-facing) */
 .book-card {
   border: 1px solid #dee2e6;

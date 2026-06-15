@@ -8,7 +8,6 @@ import ProfilePage from './pages/ProfilePage'
 import CatalogListPage from './pages/catalog/CatalogListPage'
 import BookDetailPage from './pages/catalog/BookDetailPage'
 import BookFormPage from './pages/catalog/BookFormPage'
-import PrintBarcodesPage from './pages/catalog/PrintBarcodesPage'
 import LoansPage from './pages/circulation/LoansPage'
 import CheckoutPage from './pages/circulation/CheckoutPage'
 import ReturnPage from './pages/circulation/ReturnPage'
@@ -69,7 +68,6 @@ export default function App() {
         <Route path="/catalog/add" element={<StaffOnly><BookFormPage /></StaffOnly>} />
         <Route path="/catalog/:bookId" element={<BookDetailPage />} />
         <Route path="/catalog/:bookId/edit" element={<StaffOnly><BookFormPage /></StaffOnly>} />
-        <Route path="/catalog/:bookId/print-barcodes" element={<StaffOnly><PrintBarcodesPage /></StaffOnly>} />
         <Route path="/circulation" element={<StaffOnly><LoansPage /></StaffOnly>} />
         <Route path="/circulation/checkout" element={<StaffOnly><CheckoutPage /></StaffOnly>} />
         <Route path="/circulation/return" element={<StaffOnly><ReturnPage /></StaffOnly>} />
