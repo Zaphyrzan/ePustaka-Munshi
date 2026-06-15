@@ -16,6 +16,18 @@ export default function BookDetailPage() {
 
   const [showAddCopy, setShowAddCopy] = useState(false)
   const [copyForm, setCopyForm] = useState({ condition: 'Good', location: '', notes: '' })
+  const [editId, setEditId] = useState<number | null>(null)
+  const [editForm, setEditForm] = useState({ status: 'available', condition: 'Good', location: '', notes: '' })
+
+  function startEdit(c: BookCopy) {
+    setEditId(c.id)
+    setEditForm({
+      status: c.status || 'available',
+      condition: c.condition || 'Good',
+      location: c.location || '',
+      notes: (c as BookCopy & { notes?: string }).notes || '',
+    })
+  }
 
   const { data, isLoading } = useQuery({
     queryKey: ['book', bookId],
@@ -38,6 +50,22 @@ export default function BookDetailPage() {
       navigate('/catalog')
     },
   })
+
+  const updateCopy = useMutation({
+    mutationFn: (id: number) => unwrap(api.put(`/api/catalog/copies/${id}`, editForm)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['book', bookId] })
+      setEditId(null)
+    },
+  })
+
+  const deleteCopy = useMutation({
+    mutationFn: (id: number) => unwrap(api.delete(`/api/catalog/copies/${id}`)),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['book', bookId] }),
+    onError: (err) => alert(err instanceof Error ? err.message : 'Could not delete copy'),
+  })
+
+  const COPY_STATUSES = ['available', 'on_loan', 'reserved', 'lost', 'damaged', 'withdrawn']
 
   if (isLoading) return <div className="text-muted py-5 text-center">{t('loading')}</div>
   if (!data) return <div className="alert alert-warning">{t('bookNotFound')}</div>
@@ -174,22 +202,91 @@ export default function BookDetailPage() {
               <th>{t('status')}</th>
               <th>{t('condition')}</th>
               <th>{t('location')}</th>
+              {isStaff && <th className="text-end">Actions</th>}
             </tr>
           </thead>
           <tbody>
-            {copies.map((copy) => (
-              <tr key={copy.id}>
-                <td>{copy.accession_number}</td>
-                <td className="font-monospace">{copy.barcode || '—'}</td>
-                <td>
-                  <span className={`badge ${copy.status === 'available' ? 'bg-success' : 'bg-warning text-dark'}`}>
-                    {copy.status}
-                  </span>
-                </td>
-                <td>{copy.condition || '—'}</td>
-                <td>{copy.location || '—'}</td>
-              </tr>
-            ))}
+            {copies.map((copy) =>
+              editId === copy.id ? (
+                <tr key={copy.id} className="table-warning">
+                  <td>{copy.accession_number}</td>
+                  <td className="font-monospace">{copy.barcode || '—'}</td>
+                  <td>
+                    <select
+                      className="form-select form-select-sm"
+                      value={editForm.status}
+                      onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                    >
+                      {COPY_STATUSES.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td>
+                    <select
+                      className="form-select form-select-sm"
+                      value={editForm.condition}
+                      onChange={(e) => setEditForm({ ...editForm, condition: e.target.value })}
+                    >
+                      <option>Good</option>
+                      <option>Fair</option>
+                      <option>Poor</option>
+                    </select>
+                  </td>
+                  <td>
+                    <input
+                      className="form-control form-control-sm"
+                      placeholder="Shelf"
+                      value={editForm.location}
+                      onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                    />
+                  </td>
+                  <td className="text-end text-nowrap">
+                    <button
+                      className="btn btn-success btn-sm me-1"
+                      onClick={() => updateCopy.mutate(copy.id)}
+                      disabled={updateCopy.isPending}
+                    >
+                      Save
+                    </button>
+                    <button className="btn btn-outline-secondary btn-sm" onClick={() => setEditId(null)}>
+                      Cancel
+                    </button>
+                  </td>
+                </tr>
+              ) : (
+                <tr key={copy.id}>
+                  <td>{copy.accession_number}</td>
+                  <td className="font-monospace">{copy.barcode || '—'}</td>
+                  <td>
+                    <span className={`badge ${copy.status === 'available' ? 'bg-success' : 'bg-warning text-dark'}`}>
+                      {copy.status}
+                    </span>
+                  </td>
+                  <td>{copy.condition || '—'}</td>
+                  <td>{copy.location || '—'}</td>
+                  {isStaff && (
+                    <td className="text-end text-nowrap">
+                      <button className="btn btn-outline-primary btn-sm me-1" onClick={() => startEdit(copy)}>
+                        <i className="bi bi-pencil" />
+                      </button>
+                      <button
+                        className="btn btn-outline-danger btn-sm"
+                        title="Delete copy"
+                        onClick={() => {
+                          if (confirm(`Delete copy ${copy.accession_number}? This cannot be undone.`))
+                            deleteCopy.mutate(copy.id)
+                        }}
+                      >
+                        <i className="bi bi-trash" />
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ),
+            )}
           </tbody>
         </table>
       </div>

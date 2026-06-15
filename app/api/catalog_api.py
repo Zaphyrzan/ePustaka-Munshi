@@ -106,9 +106,19 @@ def list_books():
                 BookCopy.status == CopyStatus.AVAILABLE.value
             ).distinct()
         
-        # Sort by title
-        query = query.order_by(Book.title)
-        
+        # Sorting (clickable column headers in the UI)
+        sort = request.args.get('sort', 'title')
+        order = request.args.get('order', 'asc')
+        sort_map = {
+            'title': Book.title,
+            'author': Book.author,
+            'category': Book.category,
+            'call_number': Book.call_number,
+            'year': Book.publication_year,
+        }
+        col = sort_map.get(sort, Book.title)
+        query = query.order_by(col.asc() if order == 'asc' else col.desc())
+
         # Get total count before pagination
         total = query.count()
         
@@ -481,4 +491,45 @@ def update_copy(copy_id):
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'Update copy error: {str(e)}')
+        return ApiResponse.error(str(e), status_code=500)
+
+
+@bp.route('/copies/<int:copy_id>', methods=['DELETE'])
+@login_required
+def delete_copy(copy_id):
+    """Delete a physical copy. Only copies with no loan history can be removed,
+    so the borrowing audit trail is preserved."""
+    try:
+        if not (hasattr(current_user, 'can') and current_user.can(Permission.MANAGE_COPIES)):
+            return ApiResponse.error('Insufficient permissions', status_code=403)
+
+        copy = BookCopy.query.get(copy_id)
+        if not copy:
+            return ApiResponse.error('Copy not found', status_code=404)
+
+        from app.models import Loan, LoanStatus
+        active = Loan.query.filter(
+            Loan.copy_id == copy.id,
+            Loan.status.in_([LoanStatus.ACTIVE.value, LoanStatus.OVERDUE.value]),
+        ).count()
+        if active:
+            return ApiResponse.error('Cannot delete a copy that is currently on loan', status_code=409)
+
+        # copy_id on loans is NOT NULL, so deleting a copy with history would
+        # break the audit trail — block it instead.
+        history = Loan.query.filter_by(copy_id=copy.id).count()
+        if history:
+            return ApiResponse.error(
+                f'This copy has {history} loan record(s) and cannot be deleted. '
+                'Mark it as Lost or Damaged instead.',
+                status_code=409,
+            )
+
+        accession = copy.accession_number
+        db.session.delete(copy)
+        db.session.commit()
+        return ApiResponse.success(message=f'Copy {accession} deleted')
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Delete copy error: {str(e)}')
         return ApiResponse.error(str(e), status_code=500)
