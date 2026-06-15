@@ -525,20 +525,47 @@ def update_member(member_id):
 @bp.route('/members/<int:member_id>', methods=['DELETE'])
 @login_required
 def delete_member(member_id):
-    """Delete a member (blocked while they have active loans)"""
+    """Delete a member with safety checks (mirrors the old Flask flow):
+    blocked while loans are outstanding, requires the admin's password, and
+    logs the deletion reason. Historical loan records are preserved.
+    """
     try:
         if not _has_permission(Permission.MANAGE_USERS):
             return ApiResponse.error('Insufficient permissions', status_code=403)
         member = Member.query.get(member_id)
         if not member:
             return ApiResponse.error('Member not found', status_code=404)
+
+        data = request.get_json(silent=True) or {}
         from app.models import Loan, LoanStatus
+
         active = Loan.query.filter(
             Loan.member_id == member.id,
             Loan.status.in_([LoanStatus.ACTIVE.value, LoanStatus.OVERDUE.value]),
         ).count()
         if active:
             return ApiResponse.error(f'Member has {active} active loan(s)', status_code=409)
+
+        # Safety: confirm the admin's own password before a permanent delete.
+        if not current_user.check_password(data.get('current_password', '')):
+            return ApiResponse.error('Current password is incorrect. Deletion cancelled.', status_code=403)
+
+        reason = (data.get('deletion_reason') or '').strip()[:200] or 'Admin deletion'
+        total_loans = Loan.query.filter_by(member_id=member.id).count()
+        current_app.logger.warning(
+            f'[DELETION] Member {member.member_id} ({member.full_name}) deleted by '
+            f'{current_user.username}; reason="{reason}"; loan history={total_loans}'
+        )
+
+        # Remove a linked operator account (promoted Prefect/Librarian) so it
+        # doesn't linger in Administration. Detach it from loan audit columns
+        # first to keep referential integrity.
+        op = User.query.filter_by(username=member.member_id).first()
+        if op and op.id != current_user.id:
+            Loan.query.filter_by(checkout_by=op.id).update({'checkout_by': None})
+            Loan.query.filter_by(return_by=op.id).update({'return_by': None})
+            db.session.delete(op)
+
         db.session.delete(member)
         db.session.commit()
         return ApiResponse.success(message='Member deleted')
@@ -550,7 +577,10 @@ def delete_member(member_id):
 @bp.route('/staff/<int:user_id>', methods=['DELETE'])
 @login_required
 def delete_staff(user_id):
-    """Delete a staff account (cannot delete yourself)"""
+    """Delete a staff account (cannot delete yourself). Requires the admin's
+    password and logs the deletion reason; loan audit links are detached so
+    historical loans are preserved.
+    """
     try:
         if not _has_permission(Permission.MANAGE_USERS):
             return ApiResponse.error('Insufficient permissions', status_code=403)
@@ -559,6 +589,21 @@ def delete_staff(user_id):
         user = User.query.get(user_id)
         if not user:
             return ApiResponse.error('Staff not found', status_code=404)
+
+        data = request.get_json(silent=True) or {}
+        if not current_user.check_password(data.get('current_password', '')):
+            return ApiResponse.error('Current password is incorrect. Deletion cancelled.', status_code=403)
+
+        reason = (data.get('deletion_reason') or '').strip()[:200] or 'Admin deletion'
+        current_app.logger.warning(
+            f'[DELETION] Staff {user.username} ({user.full_name}) deleted by '
+            f'{current_user.username}; reason="{reason}"'
+        )
+
+        from app.models import Loan
+        Loan.query.filter_by(checkout_by=user.id).update({'checkout_by': None})
+        Loan.query.filter_by(return_by=user.id).update({'return_by': None})
+
         db.session.delete(user)
         db.session.commit()
         return ApiResponse.success(message='Staff account deleted')
