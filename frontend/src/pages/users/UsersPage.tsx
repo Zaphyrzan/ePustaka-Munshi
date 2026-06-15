@@ -307,20 +307,29 @@ export default function UsersPage() {
                   </td>
                   <td className="text-end text-nowrap">
                     {u.promoted_member_type ? (
-                      // Promoted member: manage via demote (returns them to Members)
-                      <button
-                        className="btn btn-outline-warning btn-sm me-1"
-                        title="Demote back to a regular member"
-                        onClick={() =>
-                          act(
-                            () => unwrap(api.post(`/api/users/members/${u.linked_member_id}/demote`)),
-                            `Demote ${u.full_name}? They return to the Members list.`,
-                          )
-                        }
-                      >
-                        <i className="bi bi-arrow-down-circle me-1" />
-                        Demote
-                      </button>
+                      // Promoted member: edit their info on the member record
+                      // (source of truth); manage rank via demote.
+                      <>
+                        <Link
+                          to={`/users/members/${u.linked_member_id}/edit`}
+                          className="btn btn-outline-primary btn-sm me-1"
+                        >
+                          Edit
+                        </Link>
+                        <button
+                          className="btn btn-outline-warning btn-sm me-1"
+                          title="Demote back to a regular member"
+                          onClick={() =>
+                            act(
+                              () => unwrap(api.post(`/api/users/members/${u.linked_member_id}/demote`)),
+                              `Demote ${u.full_name}? They return to the Members list.`,
+                            )
+                          }
+                        >
+                          <i className="bi bi-arrow-down-circle me-1" />
+                          Demote
+                        </button>
+                      </>
                     ) : (
                       <>
                         <Link to={`/users/staff/${u.id}/edit`} className="btn btn-outline-primary btn-sm me-1">

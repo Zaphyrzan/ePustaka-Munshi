@@ -15,6 +15,7 @@ const EMPTY = {
   form_level: '1',
   class_group: '',
   password: '',
+  is_active: true,
 }
 
 export default function MemberFormPage() {
@@ -59,7 +60,9 @@ export default function MemberFormPage() {
 
   useEffect(() => {
     if (!memberId) return
-    unwrap<typeof EMPTY & { form_level?: number }>(api.get(`/api/users/members/${memberId}`)).then((m) =>
+    unwrap<typeof EMPTY & { form_level?: number; is_active?: boolean }>(
+      api.get(`/api/users/members/${memberId}`),
+    ).then((m) =>
       setForm({
         member_id: m.member_id || '',
         full_name: m.full_name || '',
@@ -69,6 +72,7 @@ export default function MemberFormPage() {
         form_level: m.form_level ? String(m.form_level) : '1',
         class_group: m.class_group || '',
         password: '',
+        is_active: m.is_active !== false,
       }),
     )
   }, [memberId])
@@ -153,6 +157,7 @@ export default function MemberFormPage() {
               <option value="Student">Student</option>
               <option value="Library Prefect">Library Prefect</option>
               <option value="Staff">Staff / Teacher</option>
+              <option value="Librarian">Librarian</option>
               <option value="External">External</option>
             </select>
           </div>
@@ -215,6 +220,23 @@ export default function MemberFormPage() {
               onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
           </div>
+          {memberId && (
+            <div className="col-md-6 mb-3 d-flex align-items-end">
+              <div className="form-check">
+                <input
+                  id="member-active"
+                  type="checkbox"
+                  className="form-check-input"
+                  checked={form.is_active}
+                  onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
+                />
+                <label htmlFor="member-active" className="form-check-label">
+                  Active account
+                  <span className="text-muted small d-block">Uncheck to deactivate (blocks login &amp; borrowing)</span>
+                </label>
+              </div>
+            </div>
+          )}
         </div>
         <div className="d-flex gap-2">
           <button className="btn btn-primary" disabled={busy}>
