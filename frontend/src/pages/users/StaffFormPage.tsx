@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap } from '../../api/client'
+import DeleteAccountDialog, { type DeleteTarget } from '../../components/DeleteAccountDialog'
 
 const ROLES = ['Administrator', 'Librarian', 'Library Prefect']
 
@@ -16,6 +17,7 @@ export default function StaffFormPage() {
   const [form, setForm] = useState(EMPTY)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [del, setDel] = useState<DeleteTarget | null>(null)
 
   useEffect(() => {
     if (!userId) return
@@ -126,8 +128,27 @@ export default function StaffFormPage() {
           <button type="button" className="btn btn-outline-secondary" onClick={() => navigate('/users')}>
             Cancel
           </button>
+          {userId && (
+            <button
+              type="button"
+              className="btn btn-outline-danger ms-auto"
+              onClick={() => setDel({ kind: 'staff', ids: [Number(userId)], label: `${form.full_name || form.username} (${form.username})` })}
+            >
+              <i className="bi bi-trash me-1" />
+              Delete account
+            </button>
+          )}
         </div>
       </form>
+
+      <DeleteAccountDialog
+        target={del}
+        onClose={() => setDel(null)}
+        onDeleted={() => {
+          queryClient.invalidateQueries({ queryKey: ['staff'] })
+          navigate('/users')
+        }}
+      />
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap } from '../../api/client'
+import DeleteAccountDialog, { type DeleteTarget } from '../../components/DeleteAccountDialog'
 
 const ADD_NEW_CLASS = '__add_new__'
 
@@ -26,6 +27,7 @@ export default function MemberFormPage() {
   const [form, setForm] = useState(EMPTY)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [del, setDel] = useState<DeleteTarget | null>(null)
 
   const { data: classGroups } = useQuery({
     queryKey: ['class-groups'],
@@ -245,8 +247,27 @@ export default function MemberFormPage() {
           <button type="button" className="btn btn-outline-secondary" onClick={() => navigate('/users')}>
             Cancel
           </button>
+          {memberId && (
+            <button
+              type="button"
+              className="btn btn-outline-danger ms-auto"
+              onClick={() => setDel({ kind: 'member', ids: [Number(memberId)], label: `${form.full_name} (${form.member_id})` })}
+            >
+              <i className="bi bi-trash me-1" />
+              Delete member
+            </button>
+          )}
         </div>
       </form>
+
+      <DeleteAccountDialog
+        target={del}
+        onClose={() => setDel(null)}
+        onDeleted={() => {
+          queryClient.invalidateQueries({ queryKey: ['members'] })
+          navigate('/users')
+        }}
+      />
     </div>
   )
 }

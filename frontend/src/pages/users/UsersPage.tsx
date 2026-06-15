@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Paginated } from '../../api/client'
+import DeleteAccountDialog, { type DeleteTarget } from '../../components/DeleteAccountDialog'
 
 interface MemberRow {
   id: number
@@ -37,6 +38,37 @@ const ROLE_BADGE: Record<string, string> = {
   'Library Prefect': 'bg-warning text-dark',
 }
 
+const GRADUATED = '__graduated__'
+
+/** A clickable, sortable column header. */
+function SortTh({
+  label,
+  field,
+  sort,
+  order,
+  onSort,
+  className,
+}: {
+  label: string
+  field: string
+  sort: string
+  order: 'asc' | 'desc'
+  onSort: (field: string) => void
+  className?: string
+}) {
+  const active = sort === field
+  return (
+    <th className={className} style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => onSort(field)}>
+      {label}{' '}
+      {active ? (
+        <i className={`bi bi-caret-${order === 'asc' ? 'up' : 'down'}-fill small`} />
+      ) : (
+        <i className="bi bi-arrow-down-up small text-muted opacity-50" />
+      )}
+    </th>
+  )
+}
+
 export default function UsersPage() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
@@ -45,46 +77,36 @@ export default function UsersPage() {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [roleFilter, setRoleFilter] = useState('')
+  const [sort, setSort] = useState('created_at')
+  const [order, setOrder] = useState<'asc' | 'desc'>('desc')
+  const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [del, setDel] = useState<DeleteTarget | null>(null)
   const [msg, setMsg] = useState<{ kind: 'success' | 'danger'; text: string } | null>(null)
 
-  // Detailed delete: confirm with a reason + the admin's password.
-  const [del, setDel] = useState<{ kind: 'member' | 'staff'; id: number; name: string } | null>(null)
-  const [delReason, setDelReason] = useState('')
-  const [delPassword, setDelPassword] = useState('')
-  const [delBusy, setDelBusy] = useState(false)
-  const [delError, setDelError] = useState('')
+  const graduated = typeFilter === GRADUATED
 
-  function openDelete(kind: 'member' | 'staff', id: number, name: string) {
-    setDel({ kind, id, name })
-    setDelReason('')
-    setDelPassword('')
-    setDelError('')
-  }
-
-  async function confirmDelete() {
-    if (!del) return
-    setDelBusy(true)
-    setDelError('')
-    const url = del.kind === 'member' ? `/api/users/members/${del.id}` : `/api/users/staff/${del.id}`
-    try {
-      await unwrap(api.delete(url, { data: { deletion_reason: delReason, current_password: delPassword } }))
-      queryClient.invalidateQueries({ queryKey: ['members'] })
-      queryClient.invalidateQueries({ queryKey: ['staff'] })
-      setMsg({ kind: 'success', text: `${del.name} deleted` })
-      setDel(null)
-    } catch (err) {
-      setDelError(err instanceof Error ? err.message : t('error'))
-    } finally {
-      setDelBusy(false)
+  function onSort(field: string) {
+    if (sort === field) setOrder(order === 'asc' ? 'desc' : 'asc')
+    else {
+      setSort(field)
+      setOrder('asc')
     }
+    setPage(1)
   }
 
   const { data: members, isLoading: loadingMembers } = useQuery({
-    queryKey: ['members', page, search, typeFilter],
+    queryKey: ['members', page, search, typeFilter, sort, order],
     queryFn: () =>
       unwrap<Paginated<MemberRow>>(
         api.get('/api/users/members', {
-          params: { page, per_page: 20, search, ...(typeFilter && { type: typeFilter }) },
+          params: {
+            page,
+            per_page: 20,
+            search,
+            sort,
+            order,
+            ...(graduated ? { graduated: true } : typeFilter ? { type: typeFilter } : {}),
+          },
         }),
       ),
     placeholderData: keepPreviousData,
@@ -92,10 +114,12 @@ export default function UsersPage() {
   })
 
   const { data: staff, isLoading: loadingStaff } = useQuery({
-    queryKey: ['staff', page, search, roleFilter],
+    queryKey: ['staff', page, search, roleFilter, sort, order],
     queryFn: () =>
       unwrap<Paginated<StaffRow>>(
-        api.get('/api/users/staff', { params: { page, per_page: 20, search, ...(roleFilter && { role: roleFilter }) } }),
+        api.get('/api/users/staff', {
+          params: { page, per_page: 20, search, sort, order, ...(roleFilter && { role: roleFilter }) },
+        }),
       ),
     placeholderData: keepPreviousData,
     enabled: tab === 'admin',
@@ -113,8 +137,39 @@ export default function UsersPage() {
       .catch((err) => setMsg({ kind: 'danger', text: err instanceof Error ? err.message : t('error') }))
   }
 
+  function switchTab(next: 'members' | 'admin') {
+    setTab(next)
+    setPage(1)
+    setSort('created_at')
+    setOrder('desc')
+    setSelected(new Set())
+  }
+
+  function toggleSelect(id: number) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleSelectAll() {
+    const ids = members?.items.map((m) => m.id) || []
+    setSelected((prev) => (ids.every((id) => prev.has(id)) ? new Set() : new Set(ids)))
+  }
+
+  function onDeleted(message: string) {
+    setMsg({ kind: 'success', text: message })
+    setDel(null)
+    setSelected(new Set())
+    queryClient.invalidateQueries({ queryKey: ['members'] })
+    queryClient.invalidateQueries({ queryKey: ['staff'] })
+  }
+
   const pg = tab === 'members' ? members?.pagination : staff?.pagination
   const isLoading = tab === 'members' ? loadingMembers : loadingStaff
+  const allChecked = !!members?.items.length && members.items.every((m) => selected.has(m.id))
 
   return (
     <div>
@@ -135,17 +190,19 @@ export default function UsersPage() {
             <>
               <select
                 className="form-select"
-                style={{ width: 170 }}
+                style={{ width: 190 }}
                 value={typeFilter}
                 onChange={(e) => {
                   setTypeFilter(e.target.value)
                   setPage(1)
+                  setSelected(new Set())
                 }}
               >
                 <option value="">All types</option>
                 <option value="Student">Students</option>
                 <option value="Staff">Staff / Teacher</option>
                 <option value="External">External</option>
+                <option value={GRADUATED}>🎓 Graduated (Form 5)</option>
               </select>
               <Link to="/users/members/add" className="btn btn-success text-nowrap">
                 <i className="bi bi-person-plus me-1" />
@@ -189,30 +246,38 @@ export default function UsersPage() {
 
       <ul className="nav nav-tabs mb-3">
         <li className="nav-item">
-          <button
-            className={`nav-link ${tab === 'members' ? 'active' : ''}`}
-            onClick={() => {
-              setTab('members')
-              setPage(1)
-            }}
-          >
+          <button className={`nav-link ${tab === 'members' ? 'active' : ''}`} onClick={() => switchTab('members')}>
             <i className="bi bi-people me-1" />
             Members
           </button>
         </li>
         <li className="nav-item">
-          <button
-            className={`nav-link ${tab === 'admin' ? 'active' : ''}`}
-            onClick={() => {
-              setTab('admin')
-              setPage(1)
-            }}
-          >
+          <button className={`nav-link ${tab === 'admin' ? 'active' : ''}`} onClick={() => switchTab('admin')}>
             <i className="bi bi-person-badge me-1" />
             Administration
           </button>
         </li>
       </ul>
+
+      {graduated && (
+        <div className="alert alert-warning d-flex justify-content-between align-items-center py-2">
+          <span>
+            <i className="bi bi-mortarboard me-1" />
+            Showing Form 5 students — review before clearing them out at year end.
+          </span>
+          {selected.size > 0 && (
+            <button
+              className="btn btn-danger btn-sm"
+              onClick={() =>
+                setDel({ kind: 'member', ids: [...selected], label: `${selected.size} graduated student(s)` })
+              }
+            >
+              <i className="bi bi-trash me-1" />
+              Delete selected ({selected.size})
+            </button>
+          )}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="text-muted py-5 text-center">{t('loading')}</div>
@@ -221,10 +286,15 @@ export default function UsersPage() {
           <table className="table table-hover mb-0 align-middle">
             <thead className="table-light">
               <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Form / Class</th>
+                {graduated && (
+                  <th style={{ width: 36 }}>
+                    <input type="checkbox" className="form-check-input" checked={allChecked} onChange={toggleSelectAll} />
+                  </th>
+                )}
+                <SortTh label="ID" field="member_id" sort={sort} order={order} onSort={onSort} />
+                <SortTh label="Name" field="full_name" sort={sort} order={order} onSort={onSort} />
+                <SortTh label="Type" field="member_type" sort={sort} order={order} onSort={onSort} />
+                <SortTh label="Form / Class" field="form_level" sort={sort} order={order} onSort={onSort} />
                 <th className="text-center">Loans</th>
                 <th className="text-end">Actions</th>
               </tr>
@@ -234,6 +304,16 @@ export default function UsersPage() {
                 const type = m.member_type || 'Student'
                 return (
                   <tr key={m.id}>
+                    {graduated && (
+                      <td>
+                        <input
+                          type="checkbox"
+                          className="form-check-input"
+                          checked={selected.has(m.id)}
+                          onChange={() => toggleSelect(m.id)}
+                        />
+                      </td>
+                    )}
                     <td>{m.member_id}</td>
                     <td>
                       {m.full_name}
@@ -284,7 +364,7 @@ export default function UsersPage() {
                       <button
                         className="btn btn-outline-danger btn-sm"
                         title="Delete member"
-                        onClick={() => openDelete('member', m.id, `${m.full_name} (${m.member_id})`)}
+                        onClick={() => setDel({ kind: 'member', ids: [m.id], label: `${m.full_name} (${m.member_id})` })}
                       >
                         <i className="bi bi-trash" />
                       </button>
@@ -294,7 +374,7 @@ export default function UsersPage() {
               })}
               {members?.items.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="text-center text-muted py-4">
+                  <td colSpan={graduated ? 7 : 6} className="text-center text-muted py-4">
                     No members
                   </td>
                 </tr>
@@ -307,10 +387,10 @@ export default function UsersPage() {
           <table className="table table-hover mb-0 align-middle">
             <thead className="table-light">
               <tr>
-                <th>Username</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
+                <SortTh label="Username" field="username" sort={sort} order={order} onSort={onSort} />
+                <SortTh label="Name" field="full_name" sort={sort} order={order} onSort={onSort} />
+                <SortTh label="Email" field="email" sort={sort} order={order} onSort={onSort} />
+                <SortTh label="Role" field="role" sort={sort} order={order} onSort={onSort} />
                 <th className="text-end">Actions</th>
               </tr>
             </thead>
@@ -366,7 +446,7 @@ export default function UsersPage() {
                         <button
                           className="btn btn-outline-danger btn-sm"
                           title="Delete account"
-                          onClick={() => openDelete('staff', u.id, `${u.full_name || u.username} (${u.username})`)}
+                          onClick={() => setDel({ kind: 'staff', ids: [u.id], label: `${u.full_name || u.username} (${u.username})` })}
                         >
                           <i className="bi bi-trash" />
                         </button>
@@ -401,61 +481,7 @@ export default function UsersPage() {
         </nav>
       )}
 
-      {del && (
-        <>
-          <div className="modal-backdrop fade show" />
-          <div className="modal fade show d-block" tabIndex={-1} role="dialog">
-            <div className="modal-dialog modal-dialog-centered" role="document">
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title text-danger">
-                    <i className="bi bi-exclamation-triangle me-2" />
-                    Delete account
-                  </h5>
-                  <button type="button" className="btn-close" onClick={() => setDel(null)} disabled={delBusy} />
-                </div>
-                <div className="modal-body">
-                  <p className="mb-3">
-                    You are about to permanently delete <strong>{del.name}</strong>. Historical loan records are kept
-                    for audit. This cannot be undone.
-                  </p>
-                  {delError && <div className="alert alert-danger py-2">{delError}</div>}
-                  <div className="mb-3">
-                    <label className="form-label">Reason for deletion</label>
-                    <textarea
-                      className="form-control"
-                      rows={2}
-                      maxLength={200}
-                      placeholder="e.g. Graduated and left the school"
-                      value={delReason}
-                      onChange={(e) => setDelReason(e.target.value)}
-                    />
-                  </div>
-                  <div className="mb-1">
-                    <label className="form-label">Confirm your password</label>
-                    <input
-                      type="password"
-                      autoComplete="current-password"
-                      className="form-control"
-                      placeholder="Your account password"
-                      value={delPassword}
-                      onChange={(e) => setDelPassword(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-outline-secondary" onClick={() => setDel(null)} disabled={delBusy}>
-                    Cancel
-                  </button>
-                  <button type="button" className="btn btn-danger" onClick={confirmDelete} disabled={delBusy || !delPassword}>
-                    {delBusy ? t('loading') : 'Delete permanently'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+      <DeleteAccountDialog target={del} onClose={() => setDel(null)} onDeleted={onDeleted} />
     </div>
   )
 }
