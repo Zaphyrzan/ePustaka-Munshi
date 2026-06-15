@@ -111,9 +111,20 @@ def list_staff():
         active = request.args.get('active', '').lower()
         if active in ['true', 'false']:
             query = query.filter(User.is_active == (active == 'true'))
-        
-        query = query.order_by(User.created_at.desc())
-        
+
+        # Sorting (clickable column headers in the UI)
+        sort = request.args.get('sort', 'created_at')
+        order = request.args.get('order', 'desc' if sort == 'created_at' else 'asc')
+        sort_map = {
+            'username': User.username,
+            'full_name': User.full_name,
+            'email': User.email,
+            'role': Role.name,
+            'created_at': User.created_at,
+        }
+        col = sort_map.get(sort, User.created_at)
+        query = query.order_by(col.asc() if order == 'asc' else col.desc())
+
         total = query.count()
         offset = (page - 1) * per_page
         users = query.offset(offset).limit(per_page).all()
@@ -342,8 +353,23 @@ def list_members():
         elif request.args.get('include_operators', '').lower() != 'true':
             query = query.filter(Member.member_type.notin_(['Library Prefect', 'Librarian']))
 
-        query = query.order_by(Member.created_at.desc())
-        
+        # Graduated filter: Form 5 students are candidates for year-end clearing.
+        if request.args.get('graduated', '').lower() == 'true':
+            query = query.filter(Member.member_type == 'Student', Member.form_level >= 5)
+
+        # Sorting (clickable column headers in the UI)
+        sort = request.args.get('sort', 'created_at')
+        order = request.args.get('order', 'desc' if sort == 'created_at' else 'asc')
+        sort_map = {
+            'member_id': Member.member_id,
+            'full_name': Member.full_name,
+            'member_type': Member.member_type,
+            'form_level': Member.form_level,
+            'created_at': Member.created_at,
+        }
+        col = sort_map.get(sort, Member.created_at)
+        query = query.order_by(col.asc() if order == 'asc' else col.desc())
+
         total = query.count()
         offset = (page - 1) * per_page
         members = query.offset(offset).limit(per_page).all()
@@ -569,6 +595,55 @@ def delete_member(member_id):
         db.session.delete(member)
         db.session.commit()
         return ApiResponse.success(message='Member deleted')
+    except Exception as e:
+        db.session.rollback()
+        return ApiResponse.error(str(e), status_code=500)
+
+
+@bp.route('/members/bulk-delete', methods=['POST'])
+@login_required
+def bulk_delete_members():
+    """Delete several members at once (e.g. clearing graduated students).
+    Requires the admin's password and a reason; members with active loans are
+    skipped and reported back so nothing is lost silently.
+    """
+    try:
+        if not _has_permission(Permission.MANAGE_USERS):
+            return ApiResponse.error('Insufficient permissions', status_code=403)
+        data = request.get_json(silent=True) or {}
+        ids = data.get('ids') or []
+        if not isinstance(ids, list) or not ids:
+            return ApiResponse.error('No members selected', status_code=400)
+        if not current_user.check_password(data.get('current_password', '')):
+            return ApiResponse.error('Current password is incorrect. Deletion cancelled.', status_code=403)
+        reason = (data.get('deletion_reason') or '').strip()[:200] or 'Bulk deletion (graduated)'
+
+        from app.models import Loan, LoanStatus
+        deleted, skipped = [], []
+        for member in Member.query.filter(Member.id.in_(ids)).all():
+            active = Loan.query.filter(
+                Loan.member_id == member.id,
+                Loan.status.in_([LoanStatus.ACTIVE.value, LoanStatus.OVERDUE.value]),
+            ).count()
+            if active:
+                skipped.append(member.member_id)
+                continue
+            current_app.logger.warning(
+                f'[DELETION] Member {member.member_id} ({member.full_name}) bulk-deleted by '
+                f'{current_user.username}; reason="{reason}"'
+            )
+            op = User.query.filter_by(username=member.member_id).first()
+            if op and op.id != current_user.id:
+                Loan.query.filter_by(checkout_by=op.id).update({'checkout_by': None})
+                Loan.query.filter_by(return_by=op.id).update({'return_by': None})
+                db.session.delete(op)
+            db.session.delete(member)
+            deleted.append(member.member_id)
+        db.session.commit()
+        msg = f'{len(deleted)} member(s) deleted'
+        if skipped:
+            msg += f'; {len(skipped)} skipped (active loans): {", ".join(skipped)}'
+        return ApiResponse.success({'deleted': deleted, 'skipped': skipped}, message=msg)
     except Exception as e:
         db.session.rollback()
         return ApiResponse.error(str(e), status_code=500)
