@@ -28,6 +28,9 @@ export default function MemberFormPage() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [del, setDel] = useState<DeleteTarget | null>(null)
+  // When editing, the record is fetched; show a loading state instead of a
+  // blank form (a cold serverless call can take a second or two).
+  const [loading, setLoading] = useState(!!memberId)
 
   const { data: classGroups } = useQuery({
     queryKey: ['class-groups'],
@@ -62,21 +65,25 @@ export default function MemberFormPage() {
 
   useEffect(() => {
     if (!memberId) return
+    setLoading(true)
     unwrap<typeof EMPTY & { form_level?: number; is_active?: boolean }>(
       api.get(`/api/users/members/${memberId}`),
-    ).then((m) =>
-      setForm({
-        member_id: m.member_id || '',
-        full_name: m.full_name || '',
-        email: m.email || '',
-        phone: m.phone || '',
-        member_type: m.member_type || 'Student',
-        form_level: m.form_level ? String(m.form_level) : '1',
-        class_group: m.class_group || '',
-        password: '',
-        is_active: m.is_active !== false,
-      }),
     )
+      .then((m) =>
+        setForm({
+          member_id: m.member_id || '',
+          full_name: m.full_name || '',
+          email: m.email || '',
+          phone: m.phone || '',
+          member_type: m.member_type || 'Student',
+          form_level: m.form_level ? String(m.form_level) : '1',
+          class_group: m.class_group || '',
+          password: '',
+          is_active: m.is_active !== false,
+        }),
+      )
+      .catch((err) => setError(err instanceof Error ? err.message : t('error')))
+      .finally(() => setLoading(false))
   }, [memberId])
 
   async function submit(e: FormEvent) {
@@ -102,6 +109,18 @@ export default function MemberFormPage() {
     } finally {
       setBusy(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="mx-auto" style={{ maxWidth: 640 }}>
+        <h4 className="mb-3">Edit Member</h4>
+        <div className="card shadow-sm p-5 text-center text-muted">
+          <div className="spinner-border text-primary mx-auto mb-3" role="status" />
+          <div>{t('loading')}</div>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -18,21 +18,26 @@ export default function StaffFormPage() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [del, setDel] = useState<DeleteTarget | null>(null)
+  const [loading, setLoading] = useState(!!userId)
 
   useEffect(() => {
     if (!userId) return
+    setLoading(true)
     unwrap<{ username: string; full_name?: string; email?: string; role?: { name: string }; is_active?: boolean }>(
       api.get(`/api/users/staff/${userId}`),
-    ).then((u) =>
-      setForm({
-        username: u.username || '',
-        full_name: u.full_name || '',
-        email: u.email || '',
-        role: u.role?.name || 'Librarian',
-        password: '',
-        is_active: u.is_active !== false,
-      }),
     )
+      .then((u) =>
+        setForm({
+          username: u.username || '',
+          full_name: u.full_name || '',
+          email: u.email || '',
+          role: u.role?.name || 'Librarian',
+          password: '',
+          is_active: u.is_active !== false,
+        }),
+      )
+      .catch((err) => setError(err instanceof Error ? err.message : t('error')))
+      .finally(() => setLoading(false))
   }, [userId])
 
   async function submit(e: FormEvent) {
@@ -51,6 +56,18 @@ export default function StaffFormPage() {
     } finally {
       setBusy(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="mx-auto" style={{ maxWidth: 560 }}>
+        <h4 className="mb-3">Edit Staff Account</h4>
+        <div className="card shadow-sm p-5 text-center text-muted">
+          <div className="spinner-border text-primary mx-auto mb-3" role="status" />
+          <div>{t('loading')}</div>
+        </div>
+      </div>
+    )
   }
 
   return (
