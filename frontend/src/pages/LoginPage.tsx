@@ -2,9 +2,10 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
-import { API_BASE } from '../api/client'
 
-const LOGO = `${API_BASE}/static/images/Lencana_Sekolah_Menengah_Kebangsaan_Abdullah_Munshi.jpg`
+// Served straight from the CDN (frontend/public), so it never waits on the
+// Flask serverless function to cold-start.
+const LOGO = '/images/school-logo.jpg'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -33,16 +34,14 @@ export default function LoginPage() {
     <div className="login-page">
       <div className="login-card">
         <div className="text-center mb-4">
-          <img
-            src={LOGO}
-            alt="SMK Abdullah Munshi"
-            className="rounded mb-3"
-            style={{ width: 72, height: 72, objectFit: 'contain' }}
-          />
+          <img src={LOGO} alt="SMK Abdullah Munshi" className="login-logo mb-3" />
           <h4 className="mb-1 fw-bold" style={{ color: 'var(--primary-color)' }}>
             {t('appName')}
           </h4>
           <p className="text-muted small mb-0">SMK Abdullah Munshi</p>
+          <p className="text-muted mb-0" style={{ fontSize: '0.75rem' }}>
+            Library Management System
+          </p>
         </div>
         {error && <div className="alert alert-danger py-2">{error}</div>}
         <form onSubmit={handleSubmit}>
