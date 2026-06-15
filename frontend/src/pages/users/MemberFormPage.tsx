@@ -77,9 +77,13 @@ export default function MemberFormPage() {
     e.preventDefault()
     setBusy(true)
     setError('')
+    // Students and Student Librarians keep their form/class (they are still
+    // students in a class); other types have no form level.
+    const hasClass = form.member_type === 'Student' || form.member_type === 'Student Assistant'
     const payload: Record<string, unknown> = {
       ...form,
-      form_level: form.member_type === 'Student' ? Number(form.form_level) : null,
+      form_level: hasClass ? Number(form.form_level) : null,
+      class_group: hasClass ? form.class_group : null,
     }
     if (!form.password) delete payload.password
     try {
@@ -133,6 +137,8 @@ export default function MemberFormPage() {
             <label className="form-label">Phone</label>
             <input
               className="form-control"
+              type="tel"
+              autoComplete="off"
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
             />
@@ -144,12 +150,13 @@ export default function MemberFormPage() {
               value={form.member_type}
               onChange={(e) => setForm({ ...form, member_type: e.target.value })}
             >
-              <option>Student</option>
-              <option>Staff</option>
-              <option>External</option>
+              <option value="Student">Student</option>
+              <option value="Student Assistant">Student Librarian</option>
+              <option value="Staff">Staff / Teacher</option>
+              <option value="External">External</option>
             </select>
           </div>
-          {form.member_type === 'Student' && (
+          {(form.member_type === 'Student' || form.member_type === 'Student Assistant') && (
             <>
               <div className="col-md-4 mb-3">
                 <label className="form-label">Form level</label>
@@ -202,6 +209,7 @@ export default function MemberFormPage() {
             <label className="form-label">{memberId ? 'New password (leave blank to keep)' : 'Password (optional)'}</label>
             <input
               type="password"
+              autoComplete="new-password"
               className="form-control"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
