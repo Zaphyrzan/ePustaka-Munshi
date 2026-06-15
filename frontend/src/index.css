@@ -99,7 +99,10 @@ body {
   color: var(--primary-color) !important;
 }
 .bg-primary {
-  background-color: var(--primary-color) !important;
+  /* Opacity-aware so Bootstrap's .bg-opacity-* utilities still work
+     (e.g. the soft-tinted stat-card icons). #1a3a6e = rgb(26, 58, 110).
+     Don't set --bs-bg-opacity here, or it would override .bg-opacity-*. */
+  background-color: rgba(26, 58, 110, var(--bs-bg-opacity, 1)) !important;
 }
 a {
   color: var(--primary-color);
@@ -142,10 +145,21 @@ a {
 .login-card {
   background: #fff;
   border-radius: 15px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-  padding: 2.5rem;
+  border-top: 4px solid var(--accent-color); /* gold school accent */
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.28);
+  padding: 2.75rem 2.5rem;
   width: 100%;
-  max-width: 400px;
+  max-width: 410px;
+}
+
+.login-logo {
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+  padding: 6px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 /* ---- Responsive: collapse sidebar on small screens ---- */

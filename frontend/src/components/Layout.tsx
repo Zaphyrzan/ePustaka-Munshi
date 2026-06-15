@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
-import { API_BASE } from '../api/client'
 import { setLanguage } from '../i18n'
 
 const STAFF_ROLES = ['Administrator', 'Librarian', 'Library Prefect']
-const LOGO = `${API_BASE}/static/images/Lencana_Sekolah_Menengah_Kebangsaan_Abdullah_Munshi.jpg`
+// Served straight from the CDN (frontend/public), not the Flask function.
+const LOGO = '/images/school-logo.jpg'
 
 interface NavItem {
   to: string
