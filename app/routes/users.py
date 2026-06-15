@@ -1098,7 +1098,7 @@ def promote_to_staff(member_id):
 
     db.session.commit()
     
-    flash(f'{member.full_name} promoted to Student Assistant', 'success')
+    flash(f'{member.full_name} promoted to Library Prefect', 'success')
     return redirect(request.referrer or url_for('users.member_list'))
 
 

@@ -83,7 +83,7 @@ export default function CheckoutPage() {
                     <span className="text-muted small fw-normal">({member.member_id})</span>
                   </h6>
                   <div className="small text-muted">
-                    {member.member_type === 'Student Assistant' ? 'Student Librarian' : member.member_type || 'Student'}
+                    {member.member_type === 'Student Assistant' ? 'Library Prefect' : member.member_type || 'Student'}
                     {member.form_name ? ` • ${member.form_name}` : ''}
                     {member.class_group ? ` ${member.class_group}` : ''}
                   </div>
