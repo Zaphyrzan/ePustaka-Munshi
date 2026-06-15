@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { API_BASE, api, unwrap } from '../../api/client'
+import { api, unwrap } from '../../api/client'
 import { useAuth } from '../../auth/AuthContext'
 import type { Book, BookCopy } from '../../types'
 
@@ -65,15 +65,10 @@ export default function BookDetailPage() {
                   <i className="bi bi-pencil me-1" />
                   Edit
                 </Link>
-                <a
-                  href={`${API_BASE}/catalog/book/${book.id}/print-barcodes`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn btn-outline-secondary btn-sm"
-                >
+                <Link to={`/catalog/${book.id}/print-barcodes`} className="btn btn-outline-secondary btn-sm">
                   <i className="bi bi-printer me-1" />
                   Print barcodes
-                </a>
+                </Link>
                 <button
                   className="btn btn-outline-danger btn-sm"
                   onClick={() => {
@@ -180,17 +175,7 @@ export default function BookDetailPage() {
             {copies.map((copy) => (
               <tr key={copy.id}>
                 <td>{copy.accession_number}</td>
-                <td>
-                  {copy.barcode ? (
-                    <img
-                      src={`${API_BASE}/catalog/api/barcode/${copy.barcode}`}
-                      alt={copy.barcode}
-                      style={{ height: 40 }}
-                    />
-                  ) : (
-                    '—'
-                  )}
-                </td>
+                <td className="font-monospace">{copy.barcode || '—'}</td>
                 <td>
                   <span className={`badge ${copy.status === 'available' ? 'bg-success' : 'bg-warning text-dark'}`}>
                     {copy.status}
