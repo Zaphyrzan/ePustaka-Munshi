@@ -4,6 +4,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Paginated } from '../../api/client'
 import { useAuth } from '../../auth/AuthContext'
+import SortHeader from '../../components/SortHeader'
 import type { Book } from '../../types'
 
 export default function CatalogListPage() {
@@ -14,6 +15,8 @@ export default function CatalogListPage() {
   const search = params.get('search') || ''
   const category = params.get('category') || ''
   const availableOnly = params.get('available') === '1'
+  const sort = params.get('sort') || 'title'
+  const order = (params.get('order') as 'asc' | 'desc') || 'asc'
   const [searchInput, setSearchInput] = useState(search)
 
   // Update one or more query params, always resetting to page 1
@@ -22,9 +25,16 @@ export default function CatalogListPage() {
     if (search) merged.search = search
     if (category) merged.category = category
     if (availableOnly) merged.available = '1'
+    if (sort !== 'title') merged.sort = sort
+    if (order !== 'asc') merged.order = order
     Object.assign(merged, next)
     Object.keys(merged).forEach((k) => merged[k] === '' && delete merged[k])
     setParams(merged)
+  }
+
+  function onSort(field: string) {
+    if (sort === field) update({ order: order === 'asc' ? 'desc' : 'asc', page: '1' })
+    else update({ sort: field, order: 'asc', page: '1' })
   }
 
   const { data: categories } = useQuery({
@@ -34,7 +44,7 @@ export default function CatalogListPage() {
   })
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['books', page, search, category, availableOnly],
+    queryKey: ['books', page, search, category, availableOnly, sort, order],
     queryFn: () =>
       unwrap<Paginated<Book>>(
         api.get('/api/catalog/books', {
@@ -42,6 +52,8 @@ export default function CatalogListPage() {
             page,
             per_page: 20,
             search,
+            sort,
+            order,
             ...(category && { category }),
             ...(availableOnly && { available_only: 'true' }),
           },
@@ -134,10 +146,10 @@ export default function CatalogListPage() {
             <table className="table table-hover mb-0 align-middle">
               <thead className="table-light">
                 <tr>
-                  <th>{t('title')}</th>
-                  <th>{t('author')}</th>
-                  <th>{t('category')}</th>
-                  <th>{t('callNo')}</th>
+                  <SortHeader label={t('title')} field="title" sort={sort} order={order} onSort={onSort} />
+                  <SortHeader label={t('author')} field="author" sort={sort} order={order} onSort={onSort} />
+                  <SortHeader label={t('category')} field="category" sort={sort} order={order} onSort={onSort} />
+                  <SortHeader label={t('callNo')} field="call_number" sort={sort} order={order} onSort={onSort} />
                   <th className="text-center">{t('copies')}</th>
                   <th className="text-center">{t('available')}</th>
                 </tr>
