@@ -96,7 +96,7 @@ class Member(UserMixin, db.Model):
     @property
     def is_staff(self):
         """Check if member is staff (Staff, Teacher, Librarian, etc.) - cannot borrow"""
-        staff_types = ['Staff', 'Teacher', 'Librarian', 'Admin', 'Student Assistant']
+        staff_types = ['Staff', 'Teacher', 'Librarian', 'Admin', 'Library Prefect']
         return self.member_type in staff_types
     
     @property
@@ -140,10 +140,10 @@ class Member(UserMixin, db.Model):
         if self.member_type == 'Student':
             return False
         # Staff members can do checkout/return/view catalog/search
-        # Student Assistants also manage the catalog.
-        if self.member_type in ['Staff', 'Student Assistant', 'Librarian', 'Teacher']:
+        # Library Prefects also manage the catalog.
+        if self.member_type in ['Staff', 'Library Prefect', 'Librarian', 'Teacher']:
             allowed = [Permission.CHECKOUT, Permission.RETURN, Permission.VIEW_CATALOG, Permission.SEARCH]
-            if self.member_type == 'Student Assistant':
+            if self.member_type == 'Library Prefect':
                 allowed.append(Permission.MANAGE_CATALOG)
                 allowed.append(Permission.MANAGE_COPIES)
             return perm in allowed
@@ -157,7 +157,7 @@ class Member(UserMixin, db.Model):
                 # Map common member_type values to role names used by
                 # the staff `Role` model so templates and permission
                 # checks behave consistently for staff-like members.
-                staff_like = ['Librarian', 'Admin', 'Staff', 'Teacher', 'Student Assistant']
+                staff_like = ['Librarian', 'Admin', 'Staff', 'Teacher', 'Library Prefect']
                 if member_type == 'Student' or not member_type:
                     self.name = 'Student'
                 elif member_type in staff_like:
@@ -167,7 +167,7 @@ class Member(UserMixin, db.Model):
                     self.name = member_type
                 else:
                     # Fallback: treat unknown types as student assistant
-                    self.name = 'Student Assistant'
+                    self.name = 'Library Prefect'
         
         return DummyRole(self.member_type)
     

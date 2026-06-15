@@ -10,7 +10,7 @@ export interface AuthUser {
 
 export interface AuthSession {
   user: AuthUser
-  role: string // Administrator | Librarian | Student Assistant | Student
+  role: string // Administrator | Librarian | Library Prefect | Student
   user_type: 'staff' | 'student'
 }
 

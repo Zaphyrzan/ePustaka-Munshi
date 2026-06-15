@@ -68,7 +68,7 @@ def _sync_staff_accounts(app):
     from app.models.member import Member
     from app.models.user import Role, User
 
-    staff_role = Role.query.filter_by(name='Student Assistant').first()
+    staff_role = Role.query.filter_by(name='Library Prefect').first()
     staff_members = Member.query.filter(Member.member_type != 'Student').all()
 
     for member in staff_members:

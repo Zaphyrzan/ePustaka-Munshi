@@ -239,7 +239,7 @@ def leaderboard():
     # Get all forms that have students
     forms = db.session.query(Member.form_level).distinct().filter(
         Member.form_level.isnot(None),
-        Member.member_type.in_(['Student', 'Student Assistant']),
+        Member.member_type.in_(['Student', 'Library Prefect']),
         Member.is_active == True
     ).order_by(Member.form_level).all()
     forms = [f[0] for f in forms if f[0]]
@@ -249,7 +249,7 @@ def leaderboard():
     if selected_form:
         classes_in_form = db.session.query(Member.class_group).distinct().filter(
             Member.form_level == selected_form,
-            Member.member_type.in_(['Student', 'Student Assistant']),
+            Member.member_type.in_(['Student', 'Library Prefect']),
             Member.is_active == True,
             Member.class_group.isnot(None)
         ).order_by(Member.class_group).all()
@@ -266,7 +266,7 @@ def leaderboard():
     ).outerjoin(Loan, 
         db.and_(Loan.member_id == Member.id, Loan.status.in_([LoanStatus.ACTIVE.value, LoanStatus.RETURNED.value, LoanStatus.OVERDUE.value]))
     ).filter(
-        Member.member_type.in_(['Student', 'Student Assistant']),
+        Member.member_type.in_(['Student', 'Library Prefect']),
         Member.is_active == True
     )
     
@@ -298,7 +298,7 @@ def leaderboard():
             LoanStatus.OVERDUE.value
         ]))
     ).filter(
-        Member.member_type.in_(['Student', 'Student Assistant']),
+        Member.member_type.in_(['Student', 'Library Prefect']),
         Member.is_active == True,
         Member.class_group.isnot(None)
     )
@@ -322,7 +322,7 @@ def leaderboard():
     ).outerjoin(Loan,
         db.and_(Loan.member_id == Member.id, Loan.status.in_([LoanStatus.ACTIVE.value, LoanStatus.RETURNED.value, LoanStatus.OVERDUE.value]))
     ).filter(
-        Member.member_type.in_(['Student', 'Student Assistant']),
+        Member.member_type.in_(['Student', 'Library Prefect']),
         Member.form_level.isnot(None),
         Member.is_active == True
     ).group_by(Member.form_level).order_by(Member.form_level).all()
@@ -344,7 +344,7 @@ def leaderboard():
         ).outerjoin(Loan,
             db.and_(Loan.member_id == Member.id, Loan.status.in_([LoanStatus.ACTIVE.value, LoanStatus.RETURNED.value, LoanStatus.OVERDUE.value]))
         ).filter(
-            Member.member_type.in_(['Student', 'Student Assistant']),
+            Member.member_type.in_(['Student', 'Library Prefect']),
             Member.form_level == selected_form,
             Member.is_active == True
         ).group_by(Member.id, Member.full_name, Member.class_group).order_by(func.count(Loan.id).desc()).first()
@@ -358,7 +358,7 @@ def leaderboard():
         ).outerjoin(Loan,
             db.and_(Loan.member_id == Member.id, Loan.status.in_([LoanStatus.ACTIVE.value, LoanStatus.RETURNED.value, LoanStatus.OVERDUE.value]))
         ).filter(
-            Member.member_type.in_(['Student', 'Student Assistant']),
+            Member.member_type.in_(['Student', 'Library Prefect']),
             Member.form_level == selected_form,
             Member.is_active == True,
             Member.class_group.isnot(None)

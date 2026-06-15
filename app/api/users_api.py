@@ -5,7 +5,7 @@ Handles staff and student account management
 from flask import Blueprint, request, current_app
 from flask_login import login_required, current_user
 from datetime import datetime
-from sqlalchemy import case, func
+from sqlalchemy import case, func, exists, and_
 from sqlalchemy.orm import joinedload
 from app import db
 from app.models import User, Member, Role, Permission, ClassGroup
@@ -74,9 +74,22 @@ def list_staff():
         if page < 1:
             page = 1
         
-        # Build query with role relationship
-        query = User.query.options(joinedload(User.role))
-        
+        # Build query with role relationship. The Administration tab only shows
+        # operators: exclude role "Student" (legacy/seed rows) and exclude
+        # "demoted leftovers" — a User whose linked Member is now a regular
+        # type (Student/Staff/External), i.e. they were demoted off the team.
+        # A promoted account's username IS the member's member_id (set on promote),
+        # which is the reliable link (User.id can coincidentally collide).
+        is_regular_member = exists().where(
+            and_(Member.member_id == User.username, Member.member_type.in_(['Student', 'Staff', 'External']))
+        )
+        query = (
+            User.query.options(joinedload(User.role))
+            .join(Role)
+            .filter(Role.name != 'Student')
+            .filter(~is_regular_member)
+        )
+
         # Search filter
         search = request.args.get('search', '').strip()
         if search:
@@ -85,11 +98,14 @@ def list_staff():
                 (User.username.ilike(search_term)) |
                 (User.full_name.ilike(search_term))
             )
-        
-        # Role filter
+
+        # Role filter — by id or by name (Administrator / Librarian / Library Prefect)
         role_id = request.args.get('role_id', type=int)
         if role_id:
             query = query.filter(User.role_id == role_id)
+        role_name = request.args.get('role', '').strip()
+        if role_name:
+            query = query.filter(Role.name == role_name)
         
         # Active filter
         active = request.args.get('active', '').lower()
@@ -101,8 +117,25 @@ def list_staff():
         total = query.count()
         offset = (page - 1) * per_page
         users = query.offset(offset).limit(per_page).all()
-        
-        items = [UserSerializer.to_dict(user) for user in users]
+
+        # Annotate which operators are promoted members (username == member_id,
+        # member is an operator type) so Administration can offer "demote".
+        usernames = [u.username for u in users]
+        promoted = {}  # username -> (member_type, member_db_id)
+        if usernames:
+            for m in Member.query.filter(
+                Member.member_id.in_(usernames),
+                Member.member_type.in_(['Library Prefect', 'Librarian']),
+            ).all():
+                promoted[m.member_id] = (m.member_type, m.id)
+
+        items = []
+        for user in users:
+            d = UserSerializer.to_dict(user)
+            info = promoted.get(user.username)
+            d['promoted_member_type'] = info[0] if info else None  # None = real staff account
+            d['linked_member_id'] = info[1] if info else None
+            items.append(d)
         total_pages = (total + per_page - 1) // per_page
         
         return ApiResponse.success({
@@ -300,10 +333,14 @@ def list_members():
         if active in ['true', 'false']:
             query = query.filter(Member.is_active == (active == 'true'))
 
-        # Member type filter (Student | Student Assistant | Staff | External)
+        # Member type filter (Student | Staff | External). Promoted operators
+        # (Library Prefect, Librarian) live in the Administration tab, so the
+        # Members list excludes them unless explicitly requested by type.
         member_type = request.args.get('type', '').strip()
         if member_type:
             query = query.filter(Member.member_type == member_type)
+        elif request.args.get('include_operators', '').lower() != 'true':
+            query = query.filter(Member.member_type.notin_(['Library Prefect', 'Librarian']))
 
         query = query.order_by(Member.created_at.desc())
         
@@ -525,10 +562,17 @@ def delete_staff(user_id):
         return ApiResponse.error(str(e), status_code=500)
 
 
+# A borrower is promoted onto the library team: a Student becomes a Library
+# Prefect, a Staff/Teacher becomes a Librarian. Both get a linked operator
+# account with the matching role so they can run the system.
+_PROMOTE_MAP = {'Student': 'Library Prefect', 'Staff': 'Librarian'}
+_DEMOTE_MAP = {'Library Prefect': 'Student', 'Librarian': 'Staff'}
+
+
 @bp.route('/members/<int:member_id>/promote', methods=['POST'])
 @login_required
 def promote_member(member_id):
-    """Promote a member to Student Assistant (mirrors users.promote_to_staff)"""
+    """Promote a member onto the library team (Student->Library Prefect, Staff->Librarian)."""
     try:
         if not _has_permission(Permission.MANAGE_USERS):
             return ApiResponse.error('Insufficient permissions', status_code=403)
@@ -536,11 +580,18 @@ def promote_member(member_id):
         member = Member.query.get(member_id)
         if not member:
             return ApiResponse.error('Member not found', status_code=404)
-        role = Role.query.filter_by(name='Student Assistant').first()
 
-        # A Student Assistant is still a student in their class — keep
-        # form_level and class_group so they remain in the NILAM leaderboard.
-        member.member_type = 'Student Assistant'
+        target_type = _PROMOTE_MAP.get(member.member_type)
+        if not target_type:
+            return ApiResponse.error(
+                'Only Students (-> Library Prefect) and Staff (-> Librarian) can be promoted',
+                status_code=400,
+            )
+        role = Role.query.filter_by(name=target_type).first()
+
+        # Keep form_level/class_group (a Library Prefect is still a student in
+        # their class, so they remain on the NILAM leaderboard).
+        member.member_type = target_type
 
         user = User.query.get(member.id)
         if user is None:
@@ -566,7 +617,7 @@ def promote_member(member_id):
             if member.password_hash:
                 user.password_hash = member.password_hash
         db.session.commit()
-        return ApiResponse.success(MemberSerializer.to_dict(member), message=f'{member.full_name} promoted to Library Prefect')
+        return ApiResponse.success(MemberSerializer.to_dict(member), message=f'{member.full_name} promoted to {target_type}')
     except Exception as e:
         db.session.rollback()
         return ApiResponse.error(str(e), status_code=500)
@@ -735,20 +786,27 @@ def import_members_commit():
 @bp.route('/members/<int:member_id>/demote', methods=['POST'])
 @login_required
 def demote_member(member_id):
-    """Demote a Student Assistant back to Student (mirrors users.demote_from_staff)"""
+    """Demote off the team (Library Prefect->Student, Librarian->Staff)."""
     try:
         if not _has_permission(Permission.MANAGE_USERS):
             return ApiResponse.error('Insufficient permissions', status_code=403)
         member = Member.query.get(member_id)
         if not member:
             return ApiResponse.error('Member not found', status_code=404)
-        member.member_type = 'Student'
-        member.form_level = 1
+
+        target_type = _DEMOTE_MAP.get(member.member_type)
+        if not target_type:
+            return ApiResponse.error('This member is not on the library team', status_code=400)
+
+        member.member_type = target_type
+        if target_type == 'Student' and not member.form_level:
+            member.form_level = 1
+        # Disable the linked operator account; their borrower login still works
         user = User.query.get(member.id)
         if user:
             user.is_active = False
         db.session.commit()
-        return ApiResponse.success(MemberSerializer.to_dict(member), message=f'{member.full_name} demoted to Student')
+        return ApiResponse.success(MemberSerializer.to_dict(member), message=f'{member.full_name} demoted to {target_type}')
     except Exception as e:
         db.session.rollback()
         return ApiResponse.error(str(e), status_code=500)

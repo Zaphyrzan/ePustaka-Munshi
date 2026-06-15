@@ -79,7 +79,7 @@ export default function MemberFormPage() {
     setError('')
     // Students and Library Prefects keep their form/class (they are still
     // students in a class); other types have no form level.
-    const hasClass = form.member_type === 'Student' || form.member_type === 'Student Assistant'
+    const hasClass = form.member_type === 'Student' || form.member_type === 'Library Prefect'
     const payload: Record<string, unknown> = {
       ...form,
       form_level: hasClass ? Number(form.form_level) : null,
@@ -151,12 +151,12 @@ export default function MemberFormPage() {
               onChange={(e) => setForm({ ...form, member_type: e.target.value })}
             >
               <option value="Student">Student</option>
-              <option value="Student Assistant">Library Prefect</option>
+              <option value="Library Prefect">Library Prefect</option>
               <option value="Staff">Staff / Teacher</option>
               <option value="External">External</option>
             </select>
           </div>
-          {(form.member_type === 'Student' || form.member_type === 'Student Assistant') && (
+          {(form.member_type === 'Student' || form.member_type === 'Library Prefect') && (
             <>
               <div className="col-md-4 mb-3">
                 <label className="form-label">Form level</label>

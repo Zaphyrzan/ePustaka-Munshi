@@ -157,7 +157,7 @@ export default function ProfilePage() {
               ))}
             {isMember && <Field label="Class" value={u.class_group || u.form_name} />}
             {isMember && (
-              <Field label="Member Type" value={u.member_type === 'Student Assistant' ? 'Library Prefect' : u.member_type} />
+              <Field label="Member Type" value={u.member_type === 'Library Prefect' ? 'Library Prefect' : u.member_type} />
             )}
             <Field label="Role" value={data.role} />
             <div className="col-md-6 mb-3">

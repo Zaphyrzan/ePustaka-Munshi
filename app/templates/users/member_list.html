@@ -91,7 +91,7 @@
                                         <i class="bi bi-arrow-up-circle"></i>
                                     </button>
                                 </form>
-                            {% elif member.member_type in ['Staff', 'Student Assistant', 'Teacher'] %}
+                            {% elif member.member_type in ['Staff', 'Library Prefect', 'Teacher'] %}
                                 {# Demote button for staff members #}
                                 <form method="POST" action="{{ url_for('users.demote_from_staff', member_id=member.id) }}" style="display: inline;">
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Demote to Student" onclick="return confirm('Demote {{ member.full_name }} to regular Student?')">
@@ -150,7 +150,7 @@
                                             <i class="bi bi-arrow-up-circle"></i>
                                         </button>
                                     </form>
-                                {% elif member.member_type in ['Staff', 'Student Assistant', 'Teacher'] %}
+                                {% elif member.member_type in ['Staff', 'Library Prefect', 'Teacher'] %}
                                     <form method="POST" action="{{ url_for('users.demote_from_staff', member_id=member.id) }}" class="flex-fill">
                                         <button type="submit" class="btn btn-sm btn-outline-danger w-100" onclick="return confirm('Demote {{ member.full_name }} to regular Student?')">
                                             <i class="bi bi-arrow-down-circle"></i>

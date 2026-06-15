@@ -33,7 +33,7 @@ def login():
         "message": "Login successful",
         "data": {
             "user": {...},
-            "role": "Administrator|Librarian|Student Assistant|Student"
+            "role": "Administrator|Librarian|Library Prefect|Student"
         }
     }
     """
@@ -165,7 +165,7 @@ def get_current_user():
         "success": true,
         "data": {
             "user": {...},
-            "role": "Administrator|Librarian|Student|Student Assistant",
+            "role": "Administrator|Librarian|Student|Library Prefect",
             "user_type": "staff|student"
         }
     }
