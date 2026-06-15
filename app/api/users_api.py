@@ -566,7 +566,7 @@ def promote_member(member_id):
             if member.password_hash:
                 user.password_hash = member.password_hash
         db.session.commit()
-        return ApiResponse.success(MemberSerializer.to_dict(member), message=f'{member.full_name} promoted to Student Assistant')
+        return ApiResponse.success(MemberSerializer.to_dict(member), message=f'{member.full_name} promoted to Library Prefect')
     except Exception as e:
         db.session.rollback()
         return ApiResponse.error(str(e), status_code=500)

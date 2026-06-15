@@ -77,7 +77,7 @@ export default function MemberFormPage() {
     e.preventDefault()
     setBusy(true)
     setError('')
-    // Students and Student Librarians keep their form/class (they are still
+    // Students and Library Prefects keep their form/class (they are still
     // students in a class); other types have no form level.
     const hasClass = form.member_type === 'Student' || form.member_type === 'Student Assistant'
     const payload: Record<string, unknown> = {
@@ -151,7 +151,7 @@ export default function MemberFormPage() {
               onChange={(e) => setForm({ ...form, member_type: e.target.value })}
             >
               <option value="Student">Student</option>
-              <option value="Student Assistant">Student Librarian</option>
+              <option value="Student Assistant">Library Prefect</option>
               <option value="Staff">Staff / Teacher</option>
               <option value="External">External</option>
             </select>

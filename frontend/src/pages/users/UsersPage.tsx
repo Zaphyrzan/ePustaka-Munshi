@@ -96,7 +96,7 @@ export default function UsersPage() {
               >
                 <option value="">All members</option>
                 <option value="Student">Students</option>
-                <option value="Student Assistant">Student Librarians</option>
+                <option value="Student Assistant">Library Prefects</option>
                 <option value="Staff">Staff / Teacher</option>
                 <option value="External">External</option>
               </select>
@@ -185,7 +185,7 @@ export default function UsersPage() {
                             : type === 'External'
                               ? 'bg-secondary'
                               : 'bg-primary'
-                      const label = type === 'Student Assistant' ? 'Student Librarian' : type
+                      const label = type === 'Student Assistant' ? 'Library Prefect' : type
                       return <span className={`badge ${cls}`}>{label}</span>
                     })()}
                   </td>
@@ -201,11 +201,11 @@ export default function UsersPage() {
                     {m.member_type === 'Student' ? (
                       <button
                         className="btn btn-outline-info btn-sm me-1"
-                        title="Promote to Student Assistant"
+                        title="Promote to Library Prefect"
                         onClick={() =>
                           act(
                             () => unwrap(api.post(`/api/users/members/${m.id}/promote`)),
-                            `Promote ${m.full_name} to Student Assistant?`,
+                            `Promote ${m.full_name} to Library Prefect?`,
                           )
                         }
                       >
