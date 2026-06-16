@@ -34,7 +34,7 @@ export default function CheckoutPage() {
       setTimeout(() => barcodeRef.current?.focus(), 50)
     } catch {
       setMember(null)
-      setMsg({ kind: 'danger', text: 'Member not found' })
+      setMsg({ kind: 'danger', text: t('memberNotFound') })
     }
   }
 
@@ -53,15 +53,17 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="mx-auto" style={{ maxWidth: 640 }}>
+    <div>
       <h4 className="mb-3">
         <i className="bi bi-box-arrow-right me-2" />
         {t('checkout')}
       </h4>
+      <div className="row g-4">
+        <div className="col-lg-7">
       {msg && <div className={`alert alert-${msg.kind} py-2`}>{msg.text}</div>}
 
       <form onSubmit={lookupMember} className="card shadow-sm p-4 mb-3">
-        <label className="form-label fw-bold">1. Member ID (scan card or type)</label>
+        <label className="form-label fw-bold">1. {t('memberIdLabel')}</label>
         <div className="d-flex gap-2">
           <input
             className="form-control"
@@ -71,7 +73,7 @@ export default function CheckoutPage() {
             autoFocus
             required
           />
-          <button className="btn btn-primary">Find</button>
+          <button className="btn btn-primary">{t('find')}</button>
         </div>
         {member && (
           <div className={`card mt-3 mb-0 border ${member.can_borrow ? 'border-success' : 'border-danger'}`}>
@@ -89,9 +91,9 @@ export default function CheckoutPage() {
                   </div>
                 </div>
                 {member.can_borrow ? (
-                  <span className="badge bg-success fs-6">✓ Can Borrow</span>
+                  <span className="badge bg-success fs-6">✓ {t('canBorrow')}</span>
                 ) : (
-                  <span className="badge bg-danger fs-6">✗ Cannot Borrow</span>
+                  <span className="badge bg-danger fs-6">✗ {t('cannotBorrow')}</span>
                 )}
               </div>
               <div className="d-flex gap-4 mt-2 small">
@@ -122,7 +124,7 @@ export default function CheckoutPage() {
       </form>
 
       <form onSubmit={doCheckout} className="card shadow-sm p-4">
-        <label className="form-label fw-bold">2. Book barcode (scan)</label>
+        <label className="form-label fw-bold">2. {t('bookBarcodeLabel')}</label>
         <div className="d-flex gap-2">
           <input
             ref={barcodeRef}
@@ -134,13 +136,41 @@ export default function CheckoutPage() {
             required
           />
           <button className="btn btn-success" disabled={!member || !member.can_borrow}>
-            {t('checkout')}
+            <i className="bi bi-check-circle me-1" />
+            {t('processCheckout')}
           </button>
         </div>
         {member && !member.can_borrow && (
-          <div className="small text-danger mt-2">Checkout disabled — this member is not eligible to borrow.</div>
+          <div className="small text-danger mt-2">{t('cannotBorrow')}</div>
         )}
       </form>
+        </div>
+
+        {/* Instructions */}
+        <div className="col-lg-5">
+          <div className="card shadow-sm">
+            <div className="card-header bg-white">
+              <h6 className="mb-0">
+                <i className="bi bi-info-circle me-2" />
+                {t('instructions')}
+              </h6>
+            </div>
+            <div className="card-body">
+              <ol className="ps-3 mb-3 small">
+                <li className="mb-2">{t('coStep1')}</li>
+                <li className="mb-2">{t('coStep2')}</li>
+                <li className="mb-2">{t('coStep3')}</li>
+                <li className="mb-2">{t('coStep4')}</li>
+                <li>{t('coStep5')}</li>
+              </ol>
+              <div className="alert alert-light border small mb-0">
+                <i className="bi bi-lightbulb me-1 text-warning" />
+                {t('coNote')}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
