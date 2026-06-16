@@ -218,16 +218,25 @@ a {
 }
 
 @media print {
+  @page {
+    margin: 1cm;
+  }
+  body {
+    margin: 0 !important;
+  }
   .app-sidebar,
   .app-topbar,
   .no-print {
     display: none !important;
   }
   .app-main {
-    margin-left: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
   }
   .app-content {
     padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
   }
   .barcode-label {
     border-color: #000;
