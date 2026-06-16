@@ -11,6 +11,9 @@ export interface OcrJob {
   status: string
   page_count?: number
   created_at?: string
+  completed_at?: string
+  original_filename?: string
+  source_type?: string
   result_count: number
   reviewed_count: number
   committed_count: number
@@ -196,7 +199,9 @@ export default function OcrJobsPage() {
                 <tr key={job.id}>
                   <td>{job.id}</td>
                   <td>
-                    <span className="fw-semibold">{job.job_name}</span>
+                    <Link to={`/ocr/${job.id}`} className="fw-semibold text-decoration-none">
+                      {job.job_name}
+                    </Link>
                     {job.error_message && <div className="small text-danger">{job.error_message.slice(0, 80)}</div>}
                   </td>
                   <td>
@@ -216,8 +221,8 @@ export default function OcrJobsPage() {
                       </button>
                     )}
                     {job.result_count > 0 && (
-                      <Link to={`/ocr/${job.id}/review`} className="btn btn-success btn-sm me-1">
-                        Review
+                      <Link to={`/ocr/${job.id}`} className="btn btn-success btn-sm me-1">
+                        {t('view')}
                       </Link>
                     )}
                     <button

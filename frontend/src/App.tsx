@@ -13,6 +13,7 @@ import LoansPage from './pages/circulation/LoansPage'
 import CheckoutPage from './pages/circulation/CheckoutPage'
 import ReturnPage from './pages/circulation/ReturnPage'
 import OcrJobsPage from './pages/ocr/OcrJobsPage'
+import OcrJobDetailPage from './pages/ocr/OcrJobDetailPage'
 import OcrReviewPage from './pages/ocr/OcrReviewPage'
 import UsersPage from './pages/users/UsersPage'
 import MemberFormPage from './pages/users/MemberFormPage'
@@ -74,6 +75,7 @@ export default function App() {
         <Route path="/circulation/checkout" element={<StaffOnly><CheckoutPage /></StaffOnly>} />
         <Route path="/circulation/return" element={<StaffOnly><ReturnPage /></StaffOnly>} />
         <Route path="/ocr" element={<StaffOnly><OcrJobsPage /></StaffOnly>} />
+        <Route path="/ocr/:jobId" element={<StaffOnly><OcrJobDetailPage /></StaffOnly>} />
         <Route path="/ocr/:jobId/review" element={<StaffOnly><OcrReviewPage /></StaffOnly>} />
         <Route path="/users" element={<StaffOnly><UsersPage /></StaffOnly>} />
         <Route path="/users/members/add" element={<StaffOnly><MemberFormPage /></StaffOnly>} />
