@@ -13,7 +13,8 @@ interface MemberRow {
   form_level?: number
   class_group?: string
   is_active?: boolean
-  active_loans_count?: number
+  active_loans?: number
+  overdue_loans?: number
 }
 
 interface StaffRow {
@@ -198,15 +199,15 @@ export default function UsersPage() {
                   setSelected(new Set())
                 }}
               >
-                <option value="">All types</option>
-                <option value="Student">Students</option>
-                <option value="Staff">Staff / Teacher</option>
-                <option value="External">External</option>
-                <option value={GRADUATED}>🎓 Graduated (Form 5)</option>
+                <option value="">{t('allTypes')}</option>
+                <option value="Student">{t('students')}</option>
+                <option value="Staff">{t('staffTeacher')}</option>
+                <option value="External">{t('external')}</option>
+                <option value={GRADUATED}>🎓 {t('graduatedFilter')}</option>
               </select>
               <Link to="/users/members/add" className="btn btn-success text-nowrap">
                 <i className="bi bi-person-plus me-1" />
-                Add member
+                {t('addMember')}
               </Link>
               <Link
                 to="/users/members/import"
@@ -214,7 +215,7 @@ export default function UsersPage() {
                 title="Import students from an Excel file"
               >
                 <i className="bi bi-file-earmark-excel me-1" />
-                Import
+                {t('import')}
               </Link>
             </>
           ) : (
@@ -228,14 +229,14 @@ export default function UsersPage() {
                   setPage(1)
                 }}
               >
-                <option value="">All roles</option>
-                <option value="Administrator">Administrators</option>
-                <option value="Librarian">Librarians</option>
-                <option value="Library Prefect">Library Prefects</option>
+                <option value="">{t('allRoles')}</option>
+                <option value="Administrator">{t('administrators')}</option>
+                <option value="Librarian">{t('librarians')}</option>
+                <option value="Library Prefect">{t('libraryPrefects')}</option>
               </select>
               <Link to="/users/staff/add" className="btn btn-success text-nowrap">
                 <i className="bi bi-person-plus me-1" />
-                Add staff
+                {t('addStaff')}
               </Link>
             </>
           )}
@@ -248,13 +249,13 @@ export default function UsersPage() {
         <li className="nav-item">
           <button className={`nav-link ${tab === 'members' ? 'active' : ''}`} onClick={() => switchTab('members')}>
             <i className="bi bi-people me-1" />
-            Members
+            {t('membersTab')}
           </button>
         </li>
         <li className="nav-item">
           <button className={`nav-link ${tab === 'admin' ? 'active' : ''}`} onClick={() => switchTab('admin')}>
             <i className="bi bi-person-badge me-1" />
-            Administration
+            {t('administration')}
           </button>
         </li>
       </ul>
@@ -263,7 +264,7 @@ export default function UsersPage() {
         <div className="alert alert-warning d-flex justify-content-between align-items-center py-2">
           <span>
             <i className="bi bi-mortarboard me-1" />
-            Showing Form 5 students — review before clearing them out at year end.
+            {t('graduatedHint')}
           </span>
           {selected.size > 0 && (
             <button
@@ -273,7 +274,7 @@ export default function UsersPage() {
               }
             >
               <i className="bi bi-trash me-1" />
-              Delete selected ({selected.size})
+              {t('deleteSelected')} ({selected.size})
             </button>
           )}
         </div>
@@ -292,11 +293,11 @@ export default function UsersPage() {
                   </th>
                 )}
                 <SortTh label="ID" field="member_id" sort={sort} order={order} onSort={onSort} />
-                <SortTh label="Name" field="full_name" sort={sort} order={order} onSort={onSort} />
-                <SortTh label="Type" field="member_type" sort={sort} order={order} onSort={onSort} />
-                <SortTh label="Form / Class" field="form_level" sort={sort} order={order} onSort={onSort} />
-                <th className="text-center">Loans</th>
-                <th className="text-end">Actions</th>
+                <SortTh label={t('name')} field="full_name" sort={sort} order={order} onSort={onSort} />
+                <SortTh label={t('type')} field="member_type" sort={sort} order={order} onSort={onSort} />
+                <SortTh label={t('formClass')} field="form_level" sort={sort} order={order} onSort={onSort} />
+                <th className="text-center">{t('loans')}</th>
+                <th className="text-end">{t('actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -317,7 +318,7 @@ export default function UsersPage() {
                     <td>{m.member_id}</td>
                     <td>
                       {m.full_name}
-                      {m.is_active === false && <span className="badge bg-secondary ms-2">inactive</span>}
+                      {m.is_active === false && <span className="badge bg-secondary ms-2">{t('inactive')}</span>}
                     </td>
                     <td>
                       <span className={`badge ${MEMBER_BADGE[type] || 'bg-secondary'}`}>{type}</span>
@@ -326,48 +327,67 @@ export default function UsersPage() {
                       {m.form_level ? `Form ${m.form_level}` : '—'}
                       {m.class_group ? ` ${m.class_group}` : ''}
                     </td>
-                    <td className="text-center">{m.active_loans_count ?? 0}</td>
-                    <td className="text-end text-nowrap">
-                      <Link to={`/users/members/${m.id}/edit`} className="btn btn-outline-primary btn-sm me-1">
-                        Edit
-                      </Link>
-                      {type === 'Student' && (
-                        <button
-                          className="btn btn-outline-info btn-sm me-1"
-                          title="Promote to Library Prefect"
-                          onClick={() =>
-                            act(
-                              () => unwrap(api.post(`/api/users/members/${m.id}/promote`)),
-                              `Promote ${m.full_name} to Library Prefect? They move to Administration.`,
-                            )
-                          }
-                        >
-                          <i className="bi bi-arrow-up-circle me-1" />
-                          Prefect
-                        </button>
+                    <td className="text-center">
+                      {(m.active_loans ?? 0) > 0 ? (
+                        <span className="badge bg-primary">{m.active_loans}</span>
+                      ) : (
+                        <span className="text-muted">0</span>
                       )}
-                      {type === 'Staff' && (
-                        <button
-                          className="btn btn-outline-info btn-sm me-1"
-                          title="Promote to Librarian"
-                          onClick={() =>
-                            act(
-                              () => unwrap(api.post(`/api/users/members/${m.id}/promote`)),
-                              `Promote ${m.full_name} to Librarian? They move to Administration.`,
-                            )
-                          }
-                        >
-                          <i className="bi bi-arrow-up-circle me-1" />
-                          Librarian
-                        </button>
+                      {(m.overdue_loans ?? 0) > 0 && (
+                        <span className="badge bg-danger ms-1" title="Overdue">
+                          {m.overdue_loans}
+                        </span>
                       )}
-                      <button
-                        className="btn btn-outline-danger btn-sm"
-                        title="Delete member"
-                        onClick={() => setDel({ kind: 'member', ids: [m.id], label: `${m.full_name} (${m.member_id})` })}
-                      >
-                        <i className="bi bi-trash" />
-                      </button>
+                    </td>
+                    <td>
+                      <div className="d-flex gap-1 justify-content-end">
+                        <Link
+                          to={`/users/members/${m.id}/edit`}
+                          className="btn btn-outline-primary btn-sm text-nowrap"
+                          style={{ width: 80 }}
+                        >
+                          {t('edit')}
+                        </Link>
+                        <div style={{ width: 128 }}>
+                          {type === 'Student' && (
+                            <button
+                              className="btn btn-outline-info btn-sm w-100 text-nowrap"
+                              title="Promote to Library Prefect"
+                              onClick={() =>
+                                act(
+                                  () => unwrap(api.post(`/api/users/members/${m.id}/promote`)),
+                                  `Promote ${m.full_name} to Library Prefect? They move to Administration.`,
+                                )
+                              }
+                            >
+                              <i className="bi bi-arrow-up-circle me-1" />
+                              {t('prefect')}
+                            </button>
+                          )}
+                          {type === 'Staff' && (
+                            <button
+                              className="btn btn-outline-info btn-sm w-100 text-nowrap"
+                              title="Promote to Librarian"
+                              onClick={() =>
+                                act(
+                                  () => unwrap(api.post(`/api/users/members/${m.id}/promote`)),
+                                  `Promote ${m.full_name} to Librarian? They move to Administration.`,
+                                )
+                              }
+                            >
+                              <i className="bi bi-arrow-up-circle me-1" />
+                              {t('librarianRole')}
+                            </button>
+                          )}
+                        </div>
+                        <button
+                          className="btn btn-outline-danger btn-sm"
+                          title={t('delete')}
+                          onClick={() => setDel({ kind: 'member', ids: [m.id], label: `${m.full_name} (${m.member_id})` })}
+                        >
+                          <i className="bi bi-trash" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )
@@ -375,7 +395,7 @@ export default function UsersPage() {
               {members?.items.length === 0 && (
                 <tr>
                   <td colSpan={graduated ? 7 : 6} className="text-center text-muted py-4">
-                    No members
+                    {t('noMembers')}
                   </td>
                 </tr>
               )}
@@ -387,11 +407,11 @@ export default function UsersPage() {
           <table className="table table-hover mb-0 align-middle">
             <thead className="table-light">
               <tr>
-                <SortTh label="Username" field="username" sort={sort} order={order} onSort={onSort} />
-                <SortTh label="Name" field="full_name" sort={sort} order={order} onSort={onSort} />
-                <SortTh label="Email" field="email" sort={sort} order={order} onSort={onSort} />
-                <SortTh label="Role" field="role" sort={sort} order={order} onSort={onSort} />
-                <th className="text-end">Actions</th>
+                <SortTh label={t('username').split(' / ')[0]} field="username" sort={sort} order={order} onSort={onSort} />
+                <SortTh label={t('name')} field="full_name" sort={sort} order={order} onSort={onSort} />
+                <SortTh label={t('email')} field="email" sort={sort} order={order} onSort={onSort} />
+                <SortTh label={t('role')} field="role" sort={sort} order={order} onSort={onSort} />
+                <th className="text-end">{t('actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -400,10 +420,10 @@ export default function UsersPage() {
                   <td>{u.username}</td>
                   <td>
                     {u.full_name || '—'}
-                    {u.is_active === false && <span className="badge bg-secondary ms-2">inactive</span>}
+                    {u.is_active === false && <span className="badge bg-secondary ms-2">{t('inactive')}</span>}
                     {u.promoted_member_type && (
                       <span className="badge bg-light text-muted ms-2" title="Promoted from a library member">
-                        promoted
+                        {t('promoted')}
                       </span>
                     )}
                   </td>
@@ -413,52 +433,61 @@ export default function UsersPage() {
                       {u.role?.name || '—'}
                     </span>
                   </td>
-                  <td className="text-end text-nowrap">
-                    {u.promoted_member_type ? (
-                      // Promoted member: edit their info on the member record
-                      // (source of truth); manage rank via demote.
-                      <>
-                        <Link
-                          to={`/users/members/${u.linked_member_id}/edit`}
-                          className="btn btn-outline-primary btn-sm me-1"
-                        >
-                          Edit
-                        </Link>
-                        <button
-                          className="btn btn-outline-warning btn-sm me-1"
-                          title="Demote back to a regular member"
-                          onClick={() =>
-                            act(
-                              () => unwrap(api.post(`/api/users/members/${u.linked_member_id}/demote`)),
-                              `Demote ${u.full_name}? They return to the Members list.`,
-                            )
-                          }
-                        >
-                          <i className="bi bi-arrow-down-circle me-1" />
-                          Demote
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <Link to={`/users/staff/${u.id}/edit`} className="btn btn-outline-primary btn-sm me-1">
-                          Edit
-                        </Link>
-                        <button
-                          className="btn btn-outline-danger btn-sm"
-                          title="Delete account"
-                          onClick={() => setDel({ kind: 'staff', ids: [u.id], label: `${u.full_name || u.username} (${u.username})` })}
-                        >
-                          <i className="bi bi-trash" />
-                        </button>
-                      </>
-                    )}
+                  <td>
+                    <div className="d-flex gap-1 justify-content-end">
+                      {u.promoted_member_type ? (
+                        // Promoted member: edit their info on the member record
+                        // (source of truth); manage rank via demote.
+                        <>
+                          <Link
+                            to={`/users/members/${u.linked_member_id}/edit`}
+                            className="btn btn-outline-primary btn-sm text-nowrap"
+                            style={{ width: 80 }}
+                          >
+                            {t('edit')}
+                          </Link>
+                          <button
+                            className="btn btn-outline-warning btn-sm text-nowrap"
+                            style={{ width: 128 }}
+                            title="Demote back to a regular member"
+                            onClick={() =>
+                              act(
+                                () => unwrap(api.post(`/api/users/members/${u.linked_member_id}/demote`)),
+                                `Demote ${u.full_name}? They return to the Members list.`,
+                              )
+                            }
+                          >
+                            <i className="bi bi-arrow-down-circle me-1" />
+                            {t('demote')}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <Link
+                            to={`/users/staff/${u.id}/edit`}
+                            className="btn btn-outline-primary btn-sm text-nowrap"
+                            style={{ width: 80 }}
+                          >
+                            {t('edit')}
+                          </Link>
+                          <div style={{ width: 128 }} />
+                          <button
+                            className="btn btn-outline-danger btn-sm"
+                            title={t('delete')}
+                            onClick={() => setDel({ kind: 'staff', ids: [u.id], label: `${u.full_name || u.username} (${u.username})` })}
+                          >
+                            <i className="bi bi-trash" />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
               {staff?.items.length === 0 && (
                 <tr>
                   <td colSpan={5} className="text-center text-muted py-4">
-                    No administration accounts
+                    {t('noAdminAccounts')}
                   </td>
                 </tr>
               )}

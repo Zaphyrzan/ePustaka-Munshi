@@ -80,14 +80,14 @@ export default function DashboardPage() {
       ) : (
         <>
           <div className="row g-4 mb-4">
-            <StatCard icon="bi-book" label="Total Books" value={data.stats.total_books} color="primary" />
+            <StatCard icon="bi-book" label={t('totalBooks')} value={data.stats.total_books} color="primary" />
             <StatCard
               icon="bi-check-circle"
-              label="Available Copies"
+              label={t('availableCopies')}
               value={`${data.stats.available_copies} / ${data.stats.total_copies}`}
               color="success"
             />
-            <StatCard icon="bi-people" label="Active Members" value={data.stats.total_members} color="info" />
+            <StatCard icon="bi-people" label={t('activeMembers')} value={data.stats.total_members} color="info" />
             <StatCard icon="bi-arrow-left-right" label={t('activeLoans')} value={data.stats.active_loans} color="warning" />
           </div>
 
@@ -96,9 +96,9 @@ export default function DashboardPage() {
             <div className="col-lg-8">
               <div className="card">
                 <div className="card-header bg-transparent d-flex justify-content-between align-items-center">
-                  <h6 className="mb-0">Recent Activity</h6>
+                  <h6 className="mb-0">{t('recentActivity')}</h6>
                   <Link to="/circulation" className="btn btn-sm btn-outline-primary">
-                    View All
+                    {t('viewAll')}
                   </Link>
                 </div>
                 <div className="card-body p-0">
@@ -106,11 +106,11 @@ export default function DashboardPage() {
                     <table className="table table-hover mb-0">
                       <thead className="table-light">
                         <tr>
-                          <th>Action</th>
-                          <th>Book</th>
-                          <th>Member</th>
-                          <th>Handled By</th>
-                          <th>Date</th>
+                          <th>{t('action')}</th>
+                          <th>{t('book')}</th>
+                          <th>{t('member')}</th>
+                          <th>{t('handledBy')}</th>
+                          <th>{t('date')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -118,7 +118,7 @@ export default function DashboardPage() {
                           <tr key={i}>
                             <td>
                               <span className={`badge ${a.type === 'checkout' ? 'bg-primary' : 'bg-success'}`}>
-                                {a.type === 'checkout' ? 'Checkout' : 'Return'}
+                                {a.type === 'checkout' ? t('checkout') : t('return')}
                               </span>
                             </td>
                             <td>{a.book.length > 40 ? a.book.slice(0, 40) + '…' : a.book}</td>
@@ -132,7 +132,7 @@ export default function DashboardPage() {
                         {data.activity.length === 0 && (
                           <tr>
                             <td colSpan={5} className="text-center text-muted py-4">
-                              No recent activity
+                              {t('noRecentActivity')}
                             </td>
                           </tr>
                         )}
@@ -148,7 +148,7 @@ export default function DashboardPage() {
               {data.stats.overdue_loans > 0 && (
                 <div className="card border-danger mb-4">
                   <div className="card-header bg-danger text-white">
-                    <i className="bi bi-exclamation-triangle me-1" /> Overdue Books: {data.stats.overdue_loans}
+                    <i className="bi bi-exclamation-triangle me-1" /> {t('overdue')}: {data.stats.overdue_loans}
                   </div>
                   <div className="card-body">
                     <ul className="list-unstyled mb-3">
@@ -163,7 +163,7 @@ export default function DashboardPage() {
                       ))}
                     </ul>
                     <Link to="/circulation" className="btn btn-sm btn-outline-danger w-100">
-                      View All Overdue
+                      {t('viewAll')}
                     </Link>
                   </div>
                 </div>
@@ -171,21 +171,21 @@ export default function DashboardPage() {
 
               <div className="card">
                 <div className="card-header bg-transparent">
-                  <h6 className="mb-0">Quick Actions</h6>
+                  <h6 className="mb-0">{t('quickActions')}</h6>
                 </div>
                 <div className="card-body">
                   <div className="d-grid gap-2">
                     <Link to="/circulation/checkout" className="btn btn-primary">
-                      <i className="bi bi-box-arrow-right me-1" /> Checkout Book
+                      <i className="bi bi-box-arrow-right me-1" /> {t('checkoutBook')}
                     </Link>
                     <Link to="/circulation/return" className="btn btn-success">
-                      <i className="bi bi-box-arrow-in-left me-1" /> Return Book
+                      <i className="bi bi-box-arrow-in-left me-1" /> {t('returnBook')}
                     </Link>
                     <Link to="/catalog/add" className="btn btn-outline-secondary">
-                      <i className="bi bi-plus-circle me-1" /> Add New Book
+                      <i className="bi bi-plus-circle me-1" /> {t('addNewBook')}
                     </Link>
                     <Link to="/users/members/add" className="btn btn-outline-secondary">
-                      <i className="bi bi-person-plus me-1" /> Add New Member
+                      <i className="bi bi-person-plus me-1" /> {t('addNewMember')}
                     </Link>
                   </div>
                 </div>
