@@ -124,6 +124,12 @@ export default function BookDetailPage() {
                     <th className="text-muted fw-normal">{t('language')}</th>
                     <td>{book.language || '—'}</td>
                   </tr>
+                  {book.price != null && (
+                    <tr>
+                      <th className="text-muted fw-normal">{t('price')}</th>
+                      <td className="text-success fw-semibold">RM {Number(book.price).toFixed(2)}</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -145,23 +151,34 @@ export default function BookDetailPage() {
               <div className="text-muted">{t('copiesAvailable')}</div>
             </div>
           </div>
-          {isStaff && (
-            <div className="d-grid gap-2">
-              <Link to={`/catalog/${book.id}/print-barcodes`} className="btn btn-outline-secondary">
-                <i className="bi bi-printer me-1" />
-                {t('printBarcodes')}
-              </Link>
-              <button
-                className="btn btn-outline-danger"
-                onClick={() => {
-                  if (confirm(`Delete "${book.title}" and all its copies?`)) deleteBook.mutate()
-                }}
-              >
-                <i className="bi bi-trash me-1" />
-                {t('delete')}
-              </button>
+
+          <div className="card shadow-sm">
+            <div className="card-header bg-white">
+              <h6 className="mb-0">{t('quickActions')}</h6>
             </div>
-          )}
+            <div className="card-body d-grid gap-2">
+              <Link to="/catalog" className="btn btn-outline-secondary">
+                ← {t('backToCatalog')}
+              </Link>
+              {isStaff && (
+                <>
+                  <Link to="/circulation/checkout" className="btn btn-primary">
+                    <i className="bi bi-box-arrow-right me-1" />
+                    {t('checkoutCopy')}
+                  </Link>
+                  <button
+                    className="btn btn-outline-danger btn-sm"
+                    onClick={() => {
+                      if (confirm(`Delete "${book.title}" and all its copies?`)) deleteBook.mutate()
+                    }}
+                  >
+                    <i className="bi bi-trash me-1" />
+                    {t('delete')}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -170,10 +187,16 @@ export default function BookDetailPage() {
           {t('copies')} ({copies.length})
         </h5>
         {isStaff && (
-          <button className="btn btn-success btn-sm" onClick={() => setShowAddCopy((v) => !v)}>
-            <i className={`bi ${showAddCopy ? 'bi-x-lg' : 'bi-plus-lg'} me-1`} />
-            {showAddCopy ? t('cancel') : t('addCopy')}
-          </button>
+          <div className="d-flex gap-2">
+            <Link to={`/catalog/${book.id}/print-barcodes`} className="btn btn-info btn-sm text-white">
+              <i className="bi bi-printer me-1" />
+              {t('printBarcodes')}
+            </Link>
+            <button className="btn btn-success btn-sm" onClick={() => setShowAddCopy((v) => !v)}>
+              <i className={`bi ${showAddCopy ? 'bi-x-lg' : 'bi-plus-lg'} me-1`} />
+              {showAddCopy ? t('cancel') : t('addCopy')}
+            </button>
+          </div>
         )}
       </div>
 

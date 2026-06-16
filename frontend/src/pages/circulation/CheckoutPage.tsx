@@ -65,14 +65,19 @@ export default function CheckoutPage() {
       <form onSubmit={lookupMember} className="card shadow-sm p-4 mb-3">
         <label className="form-label fw-bold">1. {t('memberIdLabel')}</label>
         <div className="d-flex gap-2 align-items-start">
-          <input
-            className="form-control flex-grow-1"
-            value={memberCode}
-            onChange={(e) => setMemberCode(e.target.value)}
-            placeholder="STU0001"
-            autoFocus
-            required
-          />
+          <div className="input-group flex-grow-1">
+            <span className="input-group-text">
+              <i className="bi bi-person-vcard" />
+            </span>
+            <input
+              className="form-control"
+              value={memberCode}
+              onChange={(e) => setMemberCode(e.target.value)}
+              placeholder="STU0001"
+              autoFocus
+              required
+            />
+          </div>
           <button className="btn btn-primary text-nowrap">{t('find')}</button>
         </div>
         {member && (
@@ -126,15 +131,20 @@ export default function CheckoutPage() {
       <form onSubmit={doCheckout} className="card shadow-sm p-4">
         <label className="form-label fw-bold">2. {t('bookBarcodeLabel')}</label>
         <div className="d-flex gap-2 align-items-start">
-          <input
-            ref={barcodeRef}
-            className="form-control flex-grow-1"
-            value={barcode}
-            onChange={(e) => setBarcode(e.target.value)}
-            placeholder="Scan book barcode"
-            disabled={!member || !member.can_borrow}
-            required
-          />
+          <div className="input-group flex-grow-1">
+            <span className="input-group-text">
+              <i className="bi bi-upc-scan" />
+            </span>
+            <input
+              ref={barcodeRef}
+              className="form-control"
+              value={barcode}
+              onChange={(e) => setBarcode(e.target.value)}
+              placeholder="Scan book barcode"
+              disabled={!member || !member.can_borrow}
+              required
+            />
+          </div>
           <button className="btn btn-success text-nowrap" disabled={!member || !member.can_borrow}>
             <i className="bi bi-check-circle me-1" />
             {t('processCheckout')}
