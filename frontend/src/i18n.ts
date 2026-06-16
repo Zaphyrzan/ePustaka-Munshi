@@ -40,6 +40,9 @@ const resources = {
       error: 'Something went wrong',
       welcomeBack: 'Welcome back',
       invalidLogin: 'Invalid username or password',
+      forgotPassword: 'Forgot your password?',
+      forgotPasswordHelp:
+        'Please contact your library administrator or librarian to reset your password. They can set a new one for you from the Users page.',
       // --- Student portal: home ---
       myLoans: 'My Loans',
       leaderboard: 'Leaderboard',
@@ -147,6 +150,9 @@ const resources = {
       error: 'Berlaku ralat',
       welcomeBack: 'Selamat kembali',
       invalidLogin: 'Nama pengguna atau kata laluan salah',
+      forgotPassword: 'Lupa kata laluan?',
+      forgotPasswordHelp:
+        'Sila hubungi pentadbir perpustakaan atau pustakawan anda untuk menetapkan semula kata laluan. Mereka boleh menetapkan kata laluan baharu untuk anda melalui halaman Pengguna.',
       // --- Portal pelajar: utama ---
       myLoans: 'Pinjaman Saya',
       leaderboard: 'Papan Pendahulu',

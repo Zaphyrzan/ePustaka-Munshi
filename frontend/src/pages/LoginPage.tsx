@@ -15,6 +15,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [showHelp, setShowHelp] = useState(false)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -69,6 +70,22 @@ export default function LoginPage() {
               {busy ? t('loading') : t('login')}
             </button>
           </form>
+
+          <div className="text-center mt-3">
+            <button
+              type="button"
+              className="btn btn-link btn-sm text-muted text-decoration-none p-0"
+              onClick={() => setShowHelp((v) => !v)}
+            >
+              {t('forgotPassword')}
+            </button>
+          </div>
+          {showHelp && (
+            <div className="alert alert-info small mt-2 mb-0">
+              <i className="bi bi-info-circle me-1" />
+              {t('forgotPasswordHelp')}
+            </div>
+          )}
       </div>
     </div>
   )
