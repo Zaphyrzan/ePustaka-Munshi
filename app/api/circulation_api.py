@@ -53,10 +53,17 @@ def list_loans():
             joinedload(Loan.return_staff)
         )
         
-        # Filter by status
+        # Filter by status. "Overdue" is derived from the due date (the stored
+        # status stays 'active' until returned), so the Active list excludes
+        # anything already past due and the Overdue list is those past-due rows.
         status_filter = request.args.get('status', '').lower()
         valid_statuses = [status.value for status in LoanStatus]
-        if status_filter in valid_statuses:
+        now = datetime.utcnow()
+        if status_filter == 'active':
+            query = query.filter(Loan.status == LoanStatus.ACTIVE.value, Loan.due_date >= now)
+        elif status_filter == 'overdue':
+            query = query.filter(Loan.status == LoanStatus.ACTIVE.value, Loan.due_date < now)
+        elif status_filter in valid_statuses:
             query = query.filter(Loan.status == status_filter)
         
         # Filter by member
@@ -308,9 +315,10 @@ def get_overdue():
         if page < 1:
             page = 1
         
-        # Get overdue loans
+        # Overdue = still on loan (status active) but past the due date.
         query = Loan.query.filter(
-            Loan.status == LoanStatus.OVERDUE.value
+            Loan.status == LoanStatus.ACTIVE.value,
+            Loan.due_date < datetime.utcnow(),
         ).options(
             joinedload(Loan.copy).joinedload(BookCopy.book),
             joinedload(Loan.member),
@@ -401,9 +409,13 @@ def get_stats():
     }
     """
     try:
+        now = datetime.utcnow()
         total_loans = Loan.query.count()
         active_loans = Loan.query.filter(Loan.status == LoanStatus.ACTIVE.value).count()
-        overdue_loans = Loan.query.filter(Loan.status == LoanStatus.OVERDUE.value).count()
+        # Overdue is date-derived (status stays 'active' until returned).
+        overdue_loans = Loan.query.filter(
+            Loan.status == LoanStatus.ACTIVE.value, Loan.due_date < now
+        ).count()
         
         # Returned today
         today = datetime.utcnow().date()
@@ -443,7 +455,9 @@ def dashboard():
             'available_copies': BookCopy.query.filter_by(status=CopyStatus.AVAILABLE.value).count(),
             'total_members': Member.query.filter_by(is_active=True).count(),
             'active_loans': Loan.query.filter_by(status=LoanStatus.ACTIVE.value).count(),
-            'overdue_loans': Loan.query.filter_by(status=LoanStatus.OVERDUE.value).count(),
+            'overdue_loans': Loan.query.filter(
+                Loan.status == LoanStatus.ACTIVE.value, Loan.due_date < datetime.utcnow()
+            ).count(),
             'pending_ocr_jobs': OCRJob.query.filter_by(status='pending').count(),
         }
 

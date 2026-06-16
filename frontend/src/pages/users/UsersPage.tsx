@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Paginated } from '../../api/client'
+import { useAuth } from '../../auth/AuthContext'
 import DeleteAccountDialog, { type DeleteTarget } from '../../components/DeleteAccountDialog'
 
 interface MemberRow {
@@ -72,6 +73,8 @@ function SortTh({
 
 export default function UsersPage() {
   const { t } = useTranslation()
+  const { session } = useAuth()
+  const isAdmin = session?.role === 'Administrator'
   const queryClient = useQueryClient()
   const [tab, setTab] = useState<'members' | 'admin'>('members')
   const [page, setPage] = useState(1)
@@ -268,7 +271,7 @@ export default function UsersPage() {
             <i className="bi bi-mortarboard me-1" />
             {t('graduatedHint')}
           </span>
-          {selected.size > 0 && (
+          {isAdmin && selected.size > 0 && (
             <button
               className="btn btn-danger btn-sm"
               onClick={() =>
@@ -382,13 +385,15 @@ export default function UsersPage() {
                             </button>
                           )}
                         </div>
-                        <button
-                          className="btn btn-outline-danger btn-sm"
-                          title={t('delete')}
-                          onClick={() => setDel({ kind: 'member', ids: [m.id], label: `${m.full_name} (${m.member_id})` })}
-                        >
-                          <i className="bi bi-trash" />
-                        </button>
+                        {isAdmin && (
+                          <button
+                            className="btn btn-outline-danger btn-sm"
+                            title={t('delete')}
+                            onClick={() => setDel({ kind: 'member', ids: [m.id], label: `${m.full_name} (${m.member_id})` })}
+                          >
+                            <i className="bi bi-trash" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

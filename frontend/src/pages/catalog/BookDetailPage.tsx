@@ -13,6 +13,7 @@ export default function BookDetailPage() {
   const queryClient = useQueryClient()
   const { session } = useAuth()
   const isStaff = session?.user_type === 'staff'
+  const isAdmin = session?.role === 'Administrator'
 
   const [showAddCopy, setShowAddCopy] = useState(false)
   const [copyForm, setCopyForm] = useState({ condition: 'Good', location: '', notes: '' })
@@ -161,21 +162,21 @@ export default function BookDetailPage() {
                 ← {t('backToCatalog')}
               </Link>
               {isStaff && (
-                <>
-                  <Link to="/circulation/checkout" className="btn btn-primary">
-                    <i className="bi bi-box-arrow-right me-1" />
-                    {t('checkoutCopy')}
-                  </Link>
-                  <button
-                    className="btn btn-outline-danger btn-sm"
-                    onClick={() => {
-                      if (confirm(`Delete "${book.title}" and all its copies?`)) deleteBook.mutate()
-                    }}
-                  >
-                    <i className="bi bi-trash me-1" />
-                    {t('delete')}
-                  </button>
-                </>
+                <Link to="/circulation/checkout" className="btn btn-primary">
+                  <i className="bi bi-box-arrow-right me-1" />
+                  {t('checkoutCopy')}
+                </Link>
+              )}
+              {isAdmin && (
+                <button
+                  className="btn btn-outline-danger btn-sm"
+                  onClick={() => {
+                    if (confirm(`Delete "${book.title}" and all its copies?`)) deleteBook.mutate()
+                  }}
+                >
+                  <i className="bi bi-trash me-1" />
+                  {t('delete')}
+                </button>
               )}
             </div>
           </div>

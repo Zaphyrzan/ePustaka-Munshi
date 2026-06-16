@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap } from '../../api/client'
+import { useAuth } from '../../auth/AuthContext'
 import DeleteAccountDialog, { type DeleteTarget } from '../../components/DeleteAccountDialog'
 
 const ADD_NEW_CLASS = '__add_new__'
@@ -22,6 +23,8 @@ const EMPTY = {
 export default function MemberFormPage() {
   const { memberId } = useParams()
   const { t } = useTranslation()
+  const { session } = useAuth()
+  const isAdmin = session?.role === 'Administrator'
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [form, setForm] = useState(EMPTY)
@@ -266,7 +269,7 @@ export default function MemberFormPage() {
           <button type="button" className="btn btn-outline-secondary" onClick={() => navigate('/users')}>
             Cancel
           </button>
-          {memberId && (
+          {memberId && isAdmin && (
             <button
               type="button"
               className="btn btn-outline-danger ms-auto"
