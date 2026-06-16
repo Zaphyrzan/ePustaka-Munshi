@@ -177,6 +177,21 @@ a {
 }
 
 /* ---- Barcode label sheet (print) ---- */
+.barcode-print-header {
+  text-align: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #333;
+}
+.barcode-print-header h2 {
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+}
+.barcode-print-header p {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin: 0;
+}
 .barcode-sheet {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

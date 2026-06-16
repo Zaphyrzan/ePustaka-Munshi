@@ -196,7 +196,7 @@ const resources = {
       coStep3: "Enter or scan the book's barcode or Accession Number.",
       coStep4: 'Verify the book information.',
       coStep5: 'Click Checkout to complete.',
-      coNote: 'Default loan period is 14 days. Members can renew up to 2 times if not reserved.',
+      coNote: 'Loan period is 7 days. Members can renew once (another 7 days) if the book is not reserved.',
       reStep1: "Enter or scan the returned book's barcode or Accession Number.",
       reStep2: 'Verify the loan and borrower shown.',
       reStep3: 'Select the condition (Good, Damaged, or Lost).',
@@ -247,6 +247,7 @@ const resources = {
       backToCatalog: 'Back to Catalog',
       checkoutCopy: 'Checkout Copy',
       price: 'Price',
+      totalBarcodes: 'Total Barcodes',
     },
   },
   ms: {
@@ -441,7 +442,7 @@ const resources = {
       coStep3: 'Masukkan atau imbas kod bar atau Nombor Aksesi buku.',
       coStep4: 'Sahkan maklumat buku.',
       coStep5: 'Klik Pinjaman untuk selesai.',
-      coNote: 'Tempoh pinjaman lalai ialah 14 hari. Ahli boleh memperbaharui sehingga 2 kali jika tidak ditempah.',
+      coNote: 'Tempoh pinjaman ialah 7 hari. Ahli boleh memperbaharui sekali (7 hari lagi) jika buku tidak ditempah.',
       reStep1: 'Masukkan atau imbas kod bar atau Nombor Aksesi buku yang dipulangkan.',
       reStep2: 'Sahkan pinjaman dan peminjam yang dipaparkan.',
       reStep3: 'Pilih keadaan buku (Baik, Rosak, atau Hilang).',
@@ -492,6 +493,7 @@ const resources = {
       backToCatalog: 'Kembali ke Katalog',
       checkoutCopy: 'Pinjam Naskhah',
       price: 'Harga',
+      totalBarcodes: 'Jumlah Kod Bar',
     },
   },
 }
