@@ -470,13 +470,14 @@ export default function UsersPage() {
                           >
                             {t('edit')}
                           </Link>
-                          <div style={{ width: 128 }} />
                           <button
-                            className="btn btn-outline-danger btn-sm"
+                            className="btn btn-outline-danger btn-sm text-nowrap"
+                            style={{ width: 128 }}
                             title={t('delete')}
                             onClick={() => setDel({ kind: 'staff', ids: [u.id], label: `${u.full_name || u.username} (${u.username})` })}
                           >
-                            <i className="bi bi-trash" />
+                            <i className="bi bi-trash me-1" />
+                            {t('delete')}
                           </button>
                         </>
                       )}
