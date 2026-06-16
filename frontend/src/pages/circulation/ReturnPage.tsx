@@ -63,16 +63,16 @@ export default function ReturnPage() {
 
           <form onSubmit={lookup} className="card shadow-sm p-4 mb-3">
             <label className="form-label fw-bold">{t('bookBarcodeLabel')}</label>
-            <div className="d-flex gap-2">
+            <div className="d-flex gap-2 align-items-start">
               <input
-                className="form-control"
+                className="form-control flex-grow-1"
                 value={barcode}
                 onChange={(e) => setBarcode(e.target.value)}
                 placeholder="Scan book barcode"
                 autoFocus
                 required
               />
-              <button className="btn btn-primary">{t('find')}</button>
+              <button className="btn btn-primary text-nowrap">{t('find')}</button>
             </div>
           </form>
 
