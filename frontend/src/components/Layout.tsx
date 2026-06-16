@@ -112,19 +112,18 @@ export default function Layout() {
           </button>
           <div className="flex-grow-1" />
           <div className="d-flex align-items-center gap-3">
-            <div className="btn-group btn-group-sm">
-              <button
-                className={`btn btn-outline-secondary ${i18n.language === 'en' ? 'active' : ''}`}
-                onClick={() => setLanguage('en')}
+            <div className="d-flex align-items-center">
+              <i className="bi bi-globe2 me-1 text-muted" />
+              <select
+                className="form-select form-select-sm"
+                style={{ width: 'auto' }}
+                value={i18n.language.startsWith('ms') ? 'ms' : 'en'}
+                onChange={(e) => setLanguage(e.target.value as 'en' | 'ms')}
+                aria-label="Language"
               >
-                EN
-              </button>
-              <button
-                className={`btn btn-outline-secondary ${i18n.language === 'ms' ? 'active' : ''}`}
-                onClick={() => setLanguage('ms')}
-              >
-                BM
-              </button>
+                <option value="en">English</option>
+                <option value="ms">Bahasa Melayu</option>
+              </select>
             </div>
 
             {/* Profile dropdown (React-controlled; app doesn't bundle Bootstrap JS) */}

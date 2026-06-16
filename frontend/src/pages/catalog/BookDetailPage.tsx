@@ -80,52 +80,88 @@ export default function BookDetailPage() {
         </Link>
       </nav>
 
-      <div className="card shadow-sm mb-4">
-        <div className="card-body">
-          <div className="d-flex justify-content-between align-items-start">
-            <div>
-              <h4 className="mb-1">{book.title}</h4>
-              <p className="text-muted mb-3">{book.author}</p>
-            </div>
-            {isStaff && (
-              <div className="d-flex gap-2">
-                <Link to={`/catalog/${book.id}/edit`} className="btn btn-outline-primary btn-sm">
-                  <i className="bi bi-pencil me-1" />
-                  {t('edit')}
-                </Link>
-                <Link to={`/catalog/${book.id}/print-barcodes`} className="btn btn-outline-secondary btn-sm">
-                  <i className="bi bi-printer me-1" />
-                  {t('printBarcodes')}
-                </Link>
-                <button
-                  className="btn btn-outline-danger btn-sm"
-                  onClick={() => {
-                    if (confirm(`Delete "${book.title}" and all its copies?`)) deleteBook.mutate()
-                  }}
-                >
-                  <i className="bi bi-trash me-1" />
-                  {t('delete')}
-                </button>
+      <div className="row g-4 mb-4">
+        {/* Book information */}
+        <div className="col-lg-8">
+          <div className="card shadow-sm h-100">
+            <div className="card-body">
+              <div className="d-flex justify-content-between align-items-start mb-3">
+                <h4 className="mb-0">{book.title}</h4>
+                {isStaff && (
+                  <Link to={`/catalog/${book.id}/edit`} className="btn btn-outline-primary btn-sm text-nowrap">
+                    <i className="bi bi-pencil me-1" />
+                    {t('edit')}
+                  </Link>
+                )}
               </div>
-            )}
+              <table className="table table-sm mb-0">
+                <tbody>
+                  <tr>
+                    <th className="text-muted fw-normal" style={{ width: 160 }}>{t('author')}</th>
+                    <td>{book.author || '—'}</td>
+                  </tr>
+                  <tr>
+                    <th className="text-muted fw-normal">ISBN</th>
+                    <td>{book.isbn || '—'}</td>
+                  </tr>
+                  <tr>
+                    <th className="text-muted fw-normal">{t('publisher')}</th>
+                    <td>{book.publisher || '—'}</td>
+                  </tr>
+                  <tr>
+                    <th className="text-muted fw-normal">{t('publicationYear')}</th>
+                    <td>{book.publication_year || '—'}</td>
+                  </tr>
+                  <tr>
+                    <th className="text-muted fw-normal">{t('category')}</th>
+                    <td>{book.category || '—'}</td>
+                  </tr>
+                  <tr>
+                    <th className="text-muted fw-normal">{t('callNo')}</th>
+                    <td className="text-danger">{book.call_number || '—'}</td>
+                  </tr>
+                  <tr>
+                    <th className="text-muted fw-normal">{t('language')}</th>
+                    <td>{book.language || '—'}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div className="row small">
-            <div className="col-md-3">
-              <strong>{t('publisher')}:</strong> {book.publisher || '—'}
+        </div>
+
+        {/* Availability + quick actions */}
+        <div className="col-lg-4">
+          <div className="card shadow-sm mb-3">
+            <div className="card-header bg-white">
+              <h6 className="mb-0">{t('availability')}</h6>
             </div>
-            <div className="col-md-2">
-              <strong>{t('year')}:</strong> {book.publication_year || '—'}
-            </div>
-            <div className="col-md-3">
-              <strong>{t('callNo')}:</strong> {book.call_number || '—'}
-            </div>
-            <div className="col-md-2">
-              <strong>{t('category')}:</strong> {book.category || '—'}
-            </div>
-            <div className="col-md-2">
-              <strong>ISBN:</strong> {book.isbn || '—'}
+            <div className="card-body text-center py-4">
+              <div
+                className={`display-5 fw-bold ${(book.available_copies ?? 0) > 0 ? 'text-success' : 'text-danger'}`}
+              >
+                {book.available_copies ?? 0} / {book.total_copies ?? copies.length}
+              </div>
+              <div className="text-muted">{t('copiesAvailable')}</div>
             </div>
           </div>
+          {isStaff && (
+            <div className="d-grid gap-2">
+              <Link to={`/catalog/${book.id}/print-barcodes`} className="btn btn-outline-secondary">
+                <i className="bi bi-printer me-1" />
+                {t('printBarcodes')}
+              </Link>
+              <button
+                className="btn btn-outline-danger"
+                onClick={() => {
+                  if (confirm(`Delete "${book.title}" and all its copies?`)) deleteBook.mutate()
+                }}
+              >
+                <i className="bi bi-trash me-1" />
+                {t('delete')}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
