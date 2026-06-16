@@ -158,7 +158,7 @@ class Config:
     # Circulation defaults
     DEFAULT_LOAN_DAYS = 7  # 1 week loan period
     RENEWAL_LOAN_DAYS = 7  # 1 week renewal period
-    MAX_RENEWALS = 2
+    MAX_RENEWALS = 1       # one 7-day renewal (14 days total)
     MAX_LOANS_PER_MEMBER = 5
 
 

@@ -101,6 +101,19 @@ export default function PrintBarcodesPage() {
         )}
       </div>
 
+      {/* Printable header */}
+      {toPrint.length > 0 && (
+        <div className="barcode-print-header">
+          <h2>{book.title}</h2>
+          <p>
+            {t('author')}: {book.author || '—'}
+          </p>
+          <p>
+            {t('totalBarcodes')}: {toPrint.length}
+          </p>
+        </div>
+      )}
+
       {/* Printable label sheet */}
       <div className="barcode-sheet">
         {toPrint.map((c) => (

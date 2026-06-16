@@ -188,12 +188,12 @@ export default function BookDetailPage() {
           {t('copies')} ({copies.length})
         </h5>
         {isStaff && (
-          <div className="d-flex gap-2">
-            <Link to={`/catalog/${book.id}/print-barcodes`} className="btn btn-info btn-sm text-white">
+          <div className="btn-group btn-group-sm shadow-sm">
+            <Link to={`/catalog/${book.id}/print-barcodes`} className="btn btn-outline-primary">
               <i className="bi bi-printer me-1" />
               {t('printBarcodes')}
             </Link>
-            <button className="btn btn-success btn-sm" onClick={() => setShowAddCopy((v) => !v)}>
+            <button className="btn btn-primary" onClick={() => setShowAddCopy((v) => !v)}>
               <i className={`bi ${showAddCopy ? 'bi-x-lg' : 'bi-plus-lg'} me-1`} />
               {showAddCopy ? t('cancel') : t('addCopy')}
             </button>
