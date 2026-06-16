@@ -6,10 +6,11 @@ generation) by reusing its helpers. OCR *processing* requires local binaries
 (Poppler/Tesseract) and the Anthropic key, so upload/process endpoints work
 on the locally-run Flask app; review/commit endpoints work anywhere.
 """
+import io
 import os
 from datetime import datetime
 
-from flask import Blueprint, request, current_app
+from flask import Blueprint, request, current_app, send_file
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 
@@ -244,6 +245,98 @@ def commit_job(job_id):
     else:
         db.session.rollback()
 
+    return ApiResponse.success(
+        {'committed': count, 'errors': errors[:10], 'remaining': remaining, 'job': _job_summary(job)},
+        message=f'Uploaded {count} books' + (f', {len(errors)} rows had issues' if errors else ''),
+    )
+
+
+@bp.route('/jobs/<int:job_id>/page/<int:n>', methods=['GET'])
+@login_required
+def job_page_image(job_id, n):
+    """Return the scanned source page image so reviewers can verify the OCR
+    against the original. Read-only; modifies no data. Works on the local
+    station only (needs the source file + Poppler for PDFs)."""
+    denied = _require(Permission.OCR_DIGITIZE)
+    if denied:
+        return denied
+    job = OCRJob.query.get(job_id)
+    if not job:
+        return ApiResponse.error('Job not found', status_code=404)
+    path = job.source_path
+    if not path or not os.path.exists(path):
+        return ApiResponse.error('Source file not available on this server', status_code=404)
+    ext = os.path.splitext(path)[1].lower()
+    try:
+        if ext == '.pdf':
+            from pdf2image import convert_from_path
+            from app.services.vision_ocr_service import _find_poppler
+            images = convert_from_path(path, first_page=n, last_page=n, dpi=150, poppler_path=_find_poppler())
+            if not images:
+                return ApiResponse.error('Page not found', status_code=404)
+            buf = io.BytesIO()
+            images[0].save(buf, format='PNG')
+            buf.seek(0)
+            return send_file(buf, mimetype='image/png')
+        return send_file(path)
+    except Exception as e:  # Poppler missing (e.g. on Vercel) or unreadable file
+        current_app.logger.warning(f'OCR page image error: {e}')
+        return ApiResponse.error('Could not render page image (Poppler required)', status_code=503)
+
+
+@bp.route('/jobs/<int:job_id>/review-selected', methods=['POST'])
+@login_required
+def review_selected(job_id):
+    """Mark only the selected (uncommitted) rows reviewed+valid."""
+    denied = _require(Permission.OCR_APPROVE)
+    if denied:
+        return denied
+    job = OCRJob.query.get(job_id)
+    if not job:
+        return ApiResponse.error('Job not found', status_code=404)
+    ids = (request.get_json(silent=True) or {}).get('ids') or []
+    if not ids:
+        return ApiResponse.error('No rows selected', status_code=400)
+    rows = job.results.filter(OCRResult.id.in_(ids), OCRResult.committed_ledger_id.is_(None)).all()
+    for r in rows:
+        r.mark_reviewed(True)
+    db.session.commit()
+    return ApiResponse.success(_job_summary(job), message=f'Marked {len(rows)} rows reviewed')
+
+
+@bp.route('/jobs/<int:job_id>/commit-selected', methods=['POST'])
+@login_required
+def commit_selected(job_id):
+    """Mark the selected rows reviewed and upload them to the catalog. Mirrors
+    the per-row commit (same _commit_result_row), scoped to the chosen ids."""
+    denied = _require(Permission.OCR_APPROVE)
+    if denied:
+        return denied
+    job = OCRJob.query.get(job_id)
+    if not job:
+        return ApiResponse.error('Job not found', status_code=404)
+    ids = (request.get_json(silent=True) or {}).get('ids') or []
+    if not ids:
+        return ApiResponse.error('No rows selected', status_code=400)
+
+    from app.routes.ocr import _commit_result_row
+    rows = job.results.filter(OCRResult.id.in_(ids), OCRResult.committed_ledger_id.is_(None)).all()
+    count, errors = 0, []
+    for r in rows:
+        r.mark_reviewed(True)
+        err = _commit_result_row(job, r)
+        if err:
+            errors.append(err)
+        else:
+            count += 1
+
+    remaining = job.results.filter(OCRResult.committed_ledger_id.is_(None)).count()
+    if count > 0:
+        if remaining == 0:
+            job.mark_committed()
+        db.session.commit()
+    else:
+        db.session.rollback()
     return ApiResponse.success(
         {'committed': count, 'errors': errors[:10], 'remaining': remaining, 'job': _job_summary(job)},
         message=f'Uploaded {count} books' + (f', {len(errors)} rows had issues' if errors else ''),
