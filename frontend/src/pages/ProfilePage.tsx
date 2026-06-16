@@ -101,17 +101,17 @@ export default function ProfilePage() {
         <div className="card-header bg-white d-flex justify-content-between align-items-center">
           <h5 className="mb-0">
             <i className="bi bi-info-circle me-2" />
-            Account Details
+            {t('accountDetails')}
           </h5>
           {!editing ? (
             <button className="btn btn-outline-primary btn-sm" onClick={() => setEditing(true)}>
               <i className="bi bi-pencil me-1" />
-              Edit contact
+              {t('editContact')}
             </button>
           ) : (
             <div className="d-flex gap-2">
               <button className="btn btn-primary btn-sm" onClick={saveContact} disabled={busy}>
-                {busy ? t('loading') : 'Save'}
+                {busy ? t('loading') : t('save')}
               </button>
               <button
                 className="btn btn-outline-secondary btn-sm"
@@ -120,18 +120,18 @@ export default function ProfilePage() {
                   setForm({ email: u.email || '', phone: u.phone || '' })
                 }}
               >
-                Cancel
+                {t('cancel')}
               </button>
             </div>
           )}
         </div>
         <div className="card-body">
           <div className="row">
-            <Field label="Login ID" value={loginId} />
-            <Field label="Full Name" value={u.full_name} />
+            <Field label={t('loginId')} value={loginId} />
+            <Field label={t('fullName')} value={u.full_name} />
             {editing ? (
               <div className="col-md-6 mb-3">
-                <label className="text-muted small">Email</label>
+                <label className="text-muted small">{t('email')}</label>
                 <input
                   type="email"
                   className="form-control"
@@ -140,12 +140,12 @@ export default function ProfilePage() {
                 />
               </div>
             ) : (
-              <Field label="Email" value={u.email} />
+              <Field label={t('email')} value={u.email} />
             )}
             {isMember &&
               (editing ? (
                 <div className="col-md-6 mb-3">
-                  <label className="text-muted small">Phone Number</label>
+                  <label className="text-muted small">{t('phoneNumber')}</label>
                   <input
                     className="form-control"
                     value={form.phone}
@@ -153,22 +153,22 @@ export default function ProfilePage() {
                   />
                 </div>
               ) : (
-                <Field label="Phone Number" value={u.phone} />
+                <Field label={t('phoneNumber')} value={u.phone} />
               ))}
-            {isMember && <Field label="Class" value={u.class_group || u.form_name} />}
+            {isMember && <Field label={t('studentClass')} value={u.class_group || u.form_name} />}
             {isMember && (
-              <Field label="Member Type" value={u.member_type === 'Library Prefect' ? 'Library Prefect' : u.member_type} />
+              <Field label={t('memberType')} value={u.member_type === 'Library Prefect' ? 'Library Prefect' : u.member_type} />
             )}
-            <Field label="Role" value={data.role} />
+            <Field label={t('role')} value={data.role} />
             <div className="col-md-6 mb-3">
-              <label className="text-muted small">Account Status</label>
+              <label className="text-muted small">{t('accountStatus')}</label>
               <p className="mb-0">
-                <span className={`badge ${u.is_active === false ? 'bg-danger' : 'bg-success'}`}>
-                  {u.is_active === false ? 'Inactive' : 'Active'}
+                <span className={`badge text-capitalize ${u.is_active === false ? 'bg-danger' : 'bg-success'}`}>
+                  {u.is_active === false ? t('inactive') : t('active')}
                 </span>
               </p>
             </div>
-            {!isMember && <Field label="Last Login" value={lastLogin} />}
+            {!isMember && <Field label={t('lastLogin')} value={lastLogin} />}
           </div>
         </div>
       </div>
@@ -178,7 +178,7 @@ export default function ProfilePage() {
         <div className="card-header bg-white">
           <h5 className="mb-0">
             <i className="bi bi-shield-lock me-2" />
-            Security
+            {t('security')}
           </h5>
         </div>
         <div className="card-body d-flex justify-content-between align-items-center">

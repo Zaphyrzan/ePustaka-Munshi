@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { API_BASE, api, unwrap } from '../../api/client'
+import { api, unwrap } from '../../api/client'
 import { useAuth } from '../../auth/AuthContext'
 import type { Book, BookCopy } from '../../types'
 
@@ -91,17 +91,12 @@ export default function BookDetailPage() {
               <div className="d-flex gap-2">
                 <Link to={`/catalog/${book.id}/edit`} className="btn btn-outline-primary btn-sm">
                   <i className="bi bi-pencil me-1" />
-                  Edit
+                  {t('edit')}
                 </Link>
-                <a
-                  href={`${API_BASE}/catalog/book/${book.id}/print-barcodes`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn btn-outline-secondary btn-sm"
-                >
+                <Link to={`/catalog/${book.id}/print-barcodes`} className="btn btn-outline-secondary btn-sm">
                   <i className="bi bi-printer me-1" />
-                  Print barcodes
-                </a>
+                  {t('printBarcodes')}
+                </Link>
                 <button
                   className="btn btn-outline-danger btn-sm"
                   onClick={() => {
@@ -109,7 +104,7 @@ export default function BookDetailPage() {
                   }}
                 >
                   <i className="bi bi-trash me-1" />
-                  Delete
+                  {t('delete')}
                 </button>
               </div>
             )}
@@ -141,7 +136,7 @@ export default function BookDetailPage() {
         {isStaff && (
           <button className="btn btn-success btn-sm" onClick={() => setShowAddCopy((v) => !v)}>
             <i className={`bi ${showAddCopy ? 'bi-x-lg' : 'bi-plus-lg'} me-1`} />
-            {showAddCopy ? 'Cancel' : 'Add copy'}
+            {showAddCopy ? t('cancel') : t('addCopy')}
           </button>
         )}
       </div>
@@ -202,7 +197,7 @@ export default function BookDetailPage() {
               <th>{t('status')}</th>
               <th>{t('condition')}</th>
               <th>{t('location')}</th>
-              {isStaff && <th className="text-end">Actions</th>}
+              {isStaff && <th className="text-end">{t('actions')}</th>}
             </tr>
           </thead>
           <tbody>
@@ -249,10 +244,10 @@ export default function BookDetailPage() {
                       onClick={() => updateCopy.mutate(copy.id)}
                       disabled={updateCopy.isPending}
                     >
-                      Save
+                      {t('save')}
                     </button>
                     <button className="btn btn-outline-secondary btn-sm" onClick={() => setEditId(null)}>
-                      Cancel
+                      {t('cancel')}
                     </button>
                   </td>
                 </tr>
