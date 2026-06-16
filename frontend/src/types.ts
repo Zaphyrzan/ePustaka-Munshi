@@ -52,7 +52,7 @@ export interface Loan {
   days_overdue?: number
   days_remaining?: number
   renewals?: number
-  member?: { id: number; member_id: string; full_name: string }
+  member?: { id: number; member_id: string; full_name: string; form_name?: string; class_group?: string }
   copy?: BookCopy & { book?: Book }
   checkout_staff?: { id: number; username?: string; full_name?: string } | null
   return_staff?: { id: number; username?: string; full_name?: string } | null

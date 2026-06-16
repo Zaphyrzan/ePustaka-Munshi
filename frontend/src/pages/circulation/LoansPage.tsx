@@ -88,6 +88,7 @@ export default function LoansPage() {
                   <>
                     <th>{t('title')}</th>
                     <th>{t('member')}</th>
+                    <th>{t('formClass')}</th>
                     <th>{t('dueDate')}</th>
                     <th>{t('status')}</th>
                   </>
@@ -95,6 +96,7 @@ export default function LoansPage() {
                   <>
                     <SortHeader label={t('title')} field="book" sort={sort} order={order} onSort={onSort} />
                     <SortHeader label={t('member')} field="member" sort={sort} order={order} onSort={onSort} />
+                    <th>{t('formClass')}</th>
                     <SortHeader label={t('dueDate')} field="due_date" sort={sort} order={order} onSort={onSort} />
                     <SortHeader label={t('status')} field="status" sort={sort} order={order} onSort={onSort} />
                   </>
@@ -110,6 +112,11 @@ export default function LoansPage() {
                   <td>
                     {loan.member?.full_name}{' '}
                     <span className="text-muted small">({loan.member?.member_id})</span>
+                  </td>
+                  <td className="small">
+                    {loan.member?.form_name || loan.member?.class_group
+                      ? `${loan.member?.form_name || ''}${loan.member?.class_group ? ` ${loan.member.class_group}` : ''}`.trim()
+                      : '—'}
                   </td>
                   <td>{loan.due_date?.slice(0, 10) || '—'}</td>
                   <td>
@@ -142,7 +149,7 @@ export default function LoansPage() {
               ))}
               {data?.items.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="text-center text-muted py-4">
+                  <td colSpan={7} className="text-center text-muted py-4">
                     {t('noLoans')}
                   </td>
                 </tr>

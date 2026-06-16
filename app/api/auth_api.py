@@ -106,17 +106,33 @@ def login():
         
         # Try direct Member login
         member = Member.query.filter_by(member_id=username).first()
-        
+
         if member and member.check_password(password):
             # Member/student found with correct password
             if member.is_active:
+                # Promoted members (Library Prefect / Librarian) have a linked
+                # operator account (username == member_id). Log them in with
+                # those privileges, and resync the operator password so it
+                # never drifts from the member's current one.
+                operator = User.query.filter_by(username=member.member_id, is_active=True).first()
+                if operator:
+                    operator.password_hash = member.password_hash
+                    login_user(operator, remember=remember_me)
+                    operator.last_login = datetime.utcnow()
+                    db.session.commit()
+                    return ApiResponse.success({
+                        'user': UserSerializer.to_dict(operator),
+                        'role': operator.role.name if operator.role else 'Unknown',
+                        'user_type': 'staff'
+                    }, message='Staff login successful')
+
                 # Active member account - login as student
                 login_user(member, remember=remember_me)
                 member.last_login = datetime.utcnow()
                 db.session.commit()
-                
+
                 member_data = MemberSerializer.to_dict(member)
-                
+
                 return ApiResponse.success({
                     'user': member_data,
                     'role': 'Student',

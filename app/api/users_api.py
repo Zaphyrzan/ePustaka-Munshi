@@ -574,10 +574,11 @@ def delete_member(member_id):
     """Delete a member with safety checks (mirrors the old Flask flow):
     blocked while loans are outstanding, requires the admin's password, and
     logs the deletion reason. Historical loan records are preserved.
+    Deleting members is Administrator-only.
     """
     try:
-        if not _has_permission(Permission.MANAGE_USERS):
-            return ApiResponse.error('Insufficient permissions', status_code=403)
+        if not _has_permission(Permission.ADMIN):
+            return ApiResponse.error('Only an Administrator can delete members', status_code=403)
         member = Member.query.get(member_id)
         if not member:
             return ApiResponse.error('Member not found', status_code=404)
@@ -625,11 +626,11 @@ def delete_member(member_id):
 def bulk_delete_members():
     """Delete several members at once (e.g. clearing graduated students).
     Requires the admin's password and a reason; members with active loans are
-    skipped and reported back so nothing is lost silently.
+    skipped and reported back so nothing is lost silently. Administrator-only.
     """
     try:
-        if not _has_permission(Permission.MANAGE_USERS):
-            return ApiResponse.error('Insufficient permissions', status_code=403)
+        if not _has_permission(Permission.ADMIN):
+            return ApiResponse.error('Only an Administrator can delete members', status_code=403)
         data = request.get_json(silent=True) or {}
         ids = data.get('ids') or []
         if not isinstance(ids, list) or not ids:

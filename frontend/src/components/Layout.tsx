@@ -43,6 +43,10 @@ export default function Layout() {
     navigate('/login')
   }
 
+  // Library Prefects get catalog + circulation only; OCR and member/staff
+  // administration are for Librarians and Administrators.
+  const isAdminOrLibrarian = session?.role === 'Administrator' || session?.role === 'Librarian'
+
   const sections: NavSection[] = isStaff
     ? [
         { title: t('staff_functions'), items: [{ to: '/dashboard', icon: 'bi-speedometer2', label: t('dashboard') }] },
@@ -55,8 +59,12 @@ export default function Layout() {
             { to: '/circulation', icon: 'bi-list-check', label: t('activeLoans'), end: true },
           ],
         },
-        { title: t('digitization'), items: [{ to: '/ocr', icon: 'bi-file-earmark-text', label: t('ocr') }] },
-        { title: t('administration'), items: [{ to: '/users', icon: 'bi-people', label: t('users') }] },
+        ...(isAdminOrLibrarian
+          ? [
+              { title: t('digitization'), items: [{ to: '/ocr', icon: 'bi-file-earmark-text', label: t('ocr') }] },
+              { title: t('administration'), items: [{ to: '/users', icon: 'bi-people', label: t('users') }] },
+            ]
+          : []),
       ]
     : [
         {
