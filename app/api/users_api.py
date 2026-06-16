@@ -294,9 +294,20 @@ def update_staff(user_id):
         
         if 'is_active' in data:
             user.is_active = bool(data['is_active'])
-        
+
+        # Accept the role by name too (the edit form sends a name, not an id).
+        if 'role' in data and data.get('role'):
+            role = Role.query.filter_by(name=data['role']).first()
+            if role:
+                user.role_id = role.id
+
+        # Password reset: leave blank to keep the existing one.
+        new_password = (data.get('password') or '').strip()
+        if new_password:
+            user.set_password(new_password)
+
         db.session.commit()
-        
+
         return ApiResponse.success(UserSerializer.to_dict(user), message='Staff updated successfully')
     
     except Exception as e:
@@ -536,6 +547,15 @@ def update_member(member_id):
                 op = User.query.filter_by(username=member.member_id).first()
                 if op:
                     op.is_active = member.is_active
+
+        # Password reset: admins (or the member themselves) may set a new one.
+        new_password = (data.get('password') or '').strip()
+        if new_password:
+            member.set_password(new_password)
+            # Mirror to the linked operator account if this is a promoted member.
+            op = User.query.filter_by(username=member.member_id).first()
+            if op:
+                op.password_hash = member.password_hash
 
         db.session.commit()
 
