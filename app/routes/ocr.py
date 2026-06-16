@@ -320,21 +320,23 @@ def _commit_result_row(job, result):
     """
     from app.models import Book, BookCopy
     from app.models.ocr import DigitizedLedger
-    from app.utils.barcode_utils import standard_barcode
+    from app.utils.barcode_utils import standard_barcode, generate_accession_number
     from app.utils.text_format import to_caps
 
     # Final values (corrected or extracted), trimmed to catalog column limits.
     # Descriptive fields stored UPPERCASE per school policy.
     title = to_caps(_truncate(result.final_tajuk_buku, 256))
     author = to_caps(_truncate(result.final_pengarang, 256)) or ''
-    accession = _truncate(result.final_no_perolehan, 32)
+    ledger_no = _truncate(result.final_no_perolehan, 32)  # original ledger accession
 
-    if not title or not accession:
+    if not title or not ledger_no:
         return f'Row {result.row_number}: Missing title or accession number'
 
-    # Skip rows whose accession is already catalogued (re-commit safety)
-    if BookCopy.query.filter_by(accession_number=accession).first():
-        return f'Row {result.row_number}: Accession {accession} already in database'
+    # Re-commit safety: skip if this ledger entry was already imported. We match
+    # on the original ledger number (archived in DigitizedLedger) because the
+    # copy's own accession is now a fresh standardized ACC-YYYY-NNNN value.
+    if DigitizedLedger.query.filter_by(no_perolehan=result.final_no_perolehan).first():
+        return f'Row {result.row_number}: Ledger no {ledger_no} already in database'
 
     try:
         with db.session.begin_nested():
@@ -355,8 +357,14 @@ def _commit_result_row(job, result):
                 db.session.flush()  # Get book.id for the copy below
 
             # Physical copy carries the acquisition details from the ledger.
-            # Barcode is assigned after flush (standard EPM####### format),
-            # so scanner-based checkout/return works for OCR-committed books.
+            # Accession is standardized (ACC-YYYY-NNNN), matching the manual
+            # add-copy flow; the original ledger number is kept in notes and in
+            # the DigitizedLedger archive. Barcode is assigned after flush
+            # (standard EPM####### format) for scanner checkout/return.
+            accession = generate_accession_number()
+            ledger_note = f'Ledger No: {ledger_no}'
+            if result.final_catatan:
+                ledger_note = f'{ledger_note} | {result.final_catatan}'
             copy = BookCopy(
                 book_id=book.id,
                 accession_number=accession,
@@ -365,7 +373,7 @@ def _commit_result_row(job, result):
                 acquisition_date=result.final_tarikh_perolehan,
                 acquisition_source=_truncate(result.final_punca, 64),
                 price=result.final_harga,
-                notes=result.final_catatan
+                notes=_truncate(ledger_note, 500)
             )
             db.session.add(copy)
 
