@@ -4,6 +4,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Paginated } from '../../api/client'
 import { loanBadge, type Loan } from '../../types'
+import SortHeader from '../../components/SortHeader'
 
 type Tab = 'active' | 'overdue' | 'all'
 
@@ -12,14 +13,25 @@ export default function LoansPage() {
   const queryClient = useQueryClient()
   const [tab, setTab] = useState<Tab>('active')
   const [page, setPage] = useState(1)
+  const [sort, setSort] = useState('checkout_date')
+  const [order, setOrder] = useState<'asc' | 'desc'>('desc')
+
+  function onSort(field: string) {
+    if (sort === field) setOrder(order === 'asc' ? 'desc' : 'asc')
+    else {
+      setSort(field)
+      setOrder('asc')
+    }
+    setPage(1)
+  }
 
   const { data, isLoading } = useQuery({
-    queryKey: ['loans', tab, page],
+    queryKey: ['loans', tab, page, sort, order],
     queryFn: () => {
       if (tab === 'overdue') {
         return unwrap<Paginated<Loan>>(api.get('/api/circulation/overdue', { params: { page, per_page: 15 } }))
       }
-      const params: Record<string, unknown> = { page, per_page: 15 }
+      const params: Record<string, unknown> = { page, per_page: 15, sort, order }
       if (tab === 'active') params.status = 'active'
       return unwrap<Paginated<Loan>>(api.get('/api/circulation/loans', { params }))
     },
@@ -59,7 +71,7 @@ export default function LoansPage() {
                 setPage(1)
               }}
             >
-              {k === 'active' ? t('activeLoans') : k === 'overdue' ? t('overdue') : 'History'}
+              {k === 'active' ? t('activeLoans') : k === 'overdue' ? t('overdue') : t('history')}
             </button>
           </li>
         ))}
@@ -72,11 +84,22 @@ export default function LoansPage() {
           <table className="table table-hover mb-0 align-middle">
             <thead className="table-light">
               <tr>
-                <th>{t('title')}</th>
-                <th>Member</th>
-                <th>Due date</th>
-                <th>Status</th>
-                <th>Handled By</th>
+                {tab === 'overdue' ? (
+                  <>
+                    <th>{t('title')}</th>
+                    <th>{t('member')}</th>
+                    <th>{t('dueDate')}</th>
+                    <th>{t('status')}</th>
+                  </>
+                ) : (
+                  <>
+                    <SortHeader label={t('title')} field="book" sort={sort} order={order} onSort={onSort} />
+                    <SortHeader label={t('member')} field="member" sort={sort} order={order} onSort={onSort} />
+                    <SortHeader label={t('dueDate')} field="due_date" sort={sort} order={order} onSort={onSort} />
+                    <SortHeader label={t('status')} field="status" sort={sort} order={order} onSort={onSort} />
+                  </>
+                )}
+                <th>{t('handledBy')}</th>
                 <th />
               </tr>
             </thead>
@@ -111,7 +134,7 @@ export default function LoansPage() {
                         onClick={() => renew.mutate(loan.id)}
                         disabled={renew.isPending}
                       >
-                        Renew
+                        {t('renew')}
                       </button>
                     )}
                   </td>
@@ -120,7 +143,7 @@ export default function LoansPage() {
               {data?.items.length === 0 && (
                 <tr>
                   <td colSpan={6} className="text-center text-muted py-4">
-                    No loans
+                    {t('noLoans')}
                   </td>
                 </tr>
               )}

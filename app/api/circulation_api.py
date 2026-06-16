@@ -7,7 +7,7 @@ from flask_login import login_required, current_user
 from datetime import datetime, timedelta
 from sqlalchemy.orm import joinedload
 from app import db
-from app.models import Loan, LoanStatus, BookCopy, CopyStatus, Member, Permission
+from app.models import Loan, LoanStatus, BookCopy, CopyStatus, Member, Permission, Book
 from app.utils.serializers import LoanSerializer, ApiResponse
 
 bp = Blueprint('api_circulation', __name__, url_prefix='/api/circulation')
@@ -64,8 +64,22 @@ def list_loans():
         if member_id:
             query = query.filter(Loan.member_id == member_id)
         
-        # Sort by checkout date descending
-        query = query.order_by(Loan.checkout_date.desc())
+        # Sorting (clickable column headers in the UI)
+        sort = request.args.get('sort', 'checkout_date')
+        order = request.args.get('order', 'desc' if sort in ('checkout_date', 'due_date') else 'asc')
+        if sort == 'member':
+            query = query.join(Loan.member)
+            col = Member.full_name
+        elif sort == 'book':
+            query = query.join(Loan.copy).join(BookCopy.book)
+            col = Book.title
+        else:
+            col = {
+                'checkout_date': Loan.checkout_date,
+                'due_date': Loan.due_date,
+                'status': Loan.status,
+            }.get(sort, Loan.checkout_date)
+        query = query.order_by(col.asc() if order == 'asc' else col.desc())
         
         # Get total and paginate
         total = query.count()

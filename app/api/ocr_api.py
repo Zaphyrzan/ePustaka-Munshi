@@ -63,7 +63,15 @@ def list_jobs():
     denied = _require(Permission.OCR_DIGITIZE)
     if denied:
         return denied
-    query = OCRJob.query.order_by(OCRJob.created_at.desc())
+    sort = request.args.get('sort', 'created_at')
+    order = request.args.get('order', 'desc' if sort == 'created_at' else 'asc')
+    sort_map = {
+        'job_name': OCRJob.job_name,
+        'status': OCRJob.status,
+        'created_at': OCRJob.created_at,
+    }
+    col = sort_map.get(sort, OCRJob.created_at)
+    query = OCRJob.query.order_by(col.asc() if order == 'asc' else col.desc())
     jobs, pagination = _paginate(query, default_per_page=20, max_per_page=100)
     return ApiResponse.success({'items': [_job_summary(j) for j in jobs], 'pagination': pagination})
 

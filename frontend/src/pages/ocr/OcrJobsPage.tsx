@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Paginated } from '../../api/client'
+import SortHeader from '../../components/SortHeader'
 
 export interface OcrJob {
   id: number
@@ -30,13 +31,25 @@ export default function OcrJobsPage() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
+  const [sort, setSort] = useState('created_at')
+  const [order, setOrder] = useState<'asc' | 'desc'>('desc')
   const [msg, setMsg] = useState<{ kind: 'success' | 'danger'; text: string } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const nameRef = useRef<HTMLInputElement>(null)
 
+  function onSort(field: string) {
+    if (sort === field) setOrder(order === 'asc' ? 'desc' : 'asc')
+    else {
+      setSort(field)
+      setOrder('asc')
+    }
+    setPage(1)
+  }
+
   const { data, isLoading } = useQuery({
-    queryKey: ['ocr-jobs', page],
-    queryFn: () => unwrap<Paginated<OcrJob>>(api.get('/api/ocr/jobs', { params: { page, per_page: 20 } })),
+    queryKey: ['ocr-jobs', page, sort, order],
+    queryFn: () =>
+      unwrap<Paginated<OcrJob>>(api.get('/api/ocr/jobs', { params: { page, per_page: 20, sort, order } })),
     placeholderData: keepPreviousData,
   })
 
@@ -106,12 +119,19 @@ export default function OcrJobsPage() {
             <thead className="table-light">
               <tr>
                 <th>#</th>
-                <th>Job</th>
-                <th>Status</th>
-                <th className="text-center">Rows</th>
-                <th className="text-center">Reviewed</th>
-                <th className="text-center">Uploaded</th>
-                <th className="text-end">Actions</th>
+                <SortHeader label={t('job')} field="job_name" sort={sort} order={order} onSort={onSort} />
+                <SortHeader label={t('status')} field="status" sort={sort} order={order} onSort={onSort} />
+                <th className="text-center">{t('rows')}</th>
+                <th className="text-center">{t('reviewed')}</th>
+                <SortHeader
+                  label={t('uploaded')}
+                  field="created_at"
+                  sort={sort}
+                  order={order}
+                  onSort={onSort}
+                  className="text-center"
+                />
+                <th className="text-end">{t('actions')}</th>
               </tr>
             </thead>
             <tbody>
