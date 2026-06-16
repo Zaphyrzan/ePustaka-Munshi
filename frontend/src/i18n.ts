@@ -215,6 +215,22 @@ const resources = {
       reviewed: 'Reviewed',
       uploaded: 'Uploaded',
       noJobs: 'No OCR jobs yet',
+      howItWorks: 'How it works',
+      hideDetails: 'Hide details',
+      ocrEngine: 'OCR engine',
+      ocrAboutTitle: 'How the OCR digitization works',
+      ocrAboutIntro:
+        'This module digitizes the school’s handwritten acquisition ledger ("Daftar Buku-Buku Perpustakaan") into the catalogue. Each scanned page is read by an OCR engine that extracts structured fields — accession number, call number, author, title, publisher, year and source — each with a confidence score you verify before uploading.',
+      ocrEngineVisionTitle: 'Claude Vision (AI) — primary',
+      ocrEngineVisionDesc:
+        'A multimodal large language model (Claude) reads the handwriting directly from the page image and returns guaranteed-structured JSON via tool-calling. It handles cursive, smudges and rotated pages far better than classical OCR — the only engine that reliably reads this ledger.',
+      ocrEngineTessTitle: 'Tesseract — baseline',
+      ocrEngineTessDesc:
+        'A classical open-source OCR engine, kept as a comparison baseline for the study and used to auto-detect page orientation. Fast and free, but weak on handwriting.',
+      ocrPipe1: 'Upload a scanned ledger page (PDF or image).',
+      ocrPipe2: 'The page is auto-rotated, then sent to the selected OCR engine.',
+      ocrPipe3: 'Extracted rows come back with confidence scores; low-confidence rows are flagged for review.',
+      ocrPipe4: 'You verify/correct each row, then upload it into the book catalogue.',
     },
   },
   ms: {
@@ -428,6 +444,22 @@ const resources = {
       reviewed: 'Disemak',
       uploaded: 'Dimuat Naik',
       noJobs: 'Tiada kerja OCR lagi',
+      howItWorks: 'Cara ia berfungsi',
+      hideDetails: 'Sembunyi butiran',
+      ocrEngine: 'Enjin OCR',
+      ocrAboutTitle: 'Cara pendigitalan OCR berfungsi',
+      ocrAboutIntro:
+        'Modul ini mendigitalkan daftar perolehan buku tulisan tangan sekolah ("Daftar Buku-Buku Perpustakaan") ke dalam katalog. Setiap halaman yang diimbas dibaca oleh enjin OCR yang mengekstrak medan berstruktur — nombor perolehan, nombor panggilan, pengarang, tajuk, penerbit, tahun dan punca — setiap satu dengan skor keyakinan yang anda sahkan sebelum dimuat naik.',
+      ocrEngineVisionTitle: 'Claude Vision (AI) — utama',
+      ocrEngineVisionDesc:
+        'Model bahasa besar multimodal (Claude) membaca tulisan tangan terus daripada imej halaman dan memulangkan JSON berstruktur melalui pemanggilan alat. Ia mengendalikan tulisan bersambung, calaran dan halaman terputar jauh lebih baik daripada OCR klasik — satu-satunya enjin yang membaca daftar ini dengan boleh dipercayai.',
+      ocrEngineTessTitle: 'Tesseract — asas',
+      ocrEngineTessDesc:
+        'Enjin OCR sumber terbuka klasik, dikekalkan sebagai garis dasar perbandingan untuk kajian dan digunakan untuk mengesan orientasi halaman secara automatik. Pantas dan percuma, tetapi lemah dengan tulisan tangan.',
+      ocrPipe1: 'Muat naik halaman daftar yang diimbas (PDF atau imej).',
+      ocrPipe2: 'Halaman diputar automatik, kemudian dihantar ke enjin OCR yang dipilih.',
+      ocrPipe3: 'Baris yang diekstrak dipulangkan dengan skor keyakinan; baris keyakinan rendah ditanda untuk semakan.',
+      ocrPipe4: 'Anda sahkan/betulkan setiap baris, kemudian muat naik ke dalam katalog buku.',
     },
   },
 }

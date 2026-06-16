@@ -33,6 +33,8 @@ export default function OcrJobsPage() {
   const [page, setPage] = useState(1)
   const [sort, setSort] = useState('created_at')
   const [order, setOrder] = useState<'asc' | 'desc'>('desc')
+  const [engine, setEngine] = useState<'vision' | 'tesseract'>('vision')
+  const [showAbout, setShowAbout] = useState(false)
   const [msg, setMsg] = useState<{ kind: 'success' | 'danger'; text: string } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const nameRef = useRef<HTMLInputElement>(null)
@@ -72,7 +74,8 @@ export default function OcrJobsPage() {
   })
 
   const process = useMutation({
-    mutationFn: (jobId: number) => unwrap(api.post(`/api/ocr/jobs/${jobId}/process`, {}, { timeout: 600_000 })),
+    mutationFn: (jobId: number) =>
+      unwrap(api.post(`/api/ocr/jobs/${jobId}/process`, { engine }, { timeout: 600_000 })),
     onSuccess: () => {
       setMsg({ kind: 'success', text: 'Processing complete — review the extracted rows' })
       queryClient.invalidateQueries({ queryKey: ['ocr-jobs'] })
@@ -89,10 +92,52 @@ export default function OcrJobsPage() {
 
   return (
     <div>
-      <h4 className="mb-3">
-        <i className="bi bi-file-earmark-text me-2" />
-        {t('ocr')}
-      </h4>
+      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h4 className="mb-0">
+          <i className="bi bi-file-earmark-text me-2" />
+          {t('ocr')}
+        </h4>
+        <button className="btn btn-outline-secondary btn-sm" onClick={() => setShowAbout((v) => !v)}>
+          <i className="bi bi-info-circle me-1" />
+          {showAbout ? t('hideDetails') : t('howItWorks')}
+        </button>
+      </div>
+
+      {/* Research methodology / engine description */}
+      {showAbout && (
+        <div className="card shadow-sm mb-4 border-primary border-opacity-25">
+          <div className="card-body">
+            <h6 className="text-primary">
+              <i className="bi bi-cpu me-2" />
+              {t('ocrAboutTitle')}
+            </h6>
+            <p className="small mb-2">{t('ocrAboutIntro')}</p>
+            <div className="row small g-3">
+              <div className="col-md-6">
+                <div className="fw-semibold">
+                  <i className="bi bi-stars text-warning me-1" />
+                  {t('ocrEngineVisionTitle')}
+                </div>
+                <p className="text-muted mb-0">{t('ocrEngineVisionDesc')}</p>
+              </div>
+              <div className="col-md-6">
+                <div className="fw-semibold">
+                  <i className="bi bi-fonts text-secondary me-1" />
+                  {t('ocrEngineTessTitle')}
+                </div>
+                <p className="text-muted mb-0">{t('ocrEngineTessDesc')}</p>
+              </div>
+            </div>
+            <ol className="small mt-3 mb-0 ps-3">
+              <li>{t('ocrPipe1')}</li>
+              <li>{t('ocrPipe2')}</li>
+              <li>{t('ocrPipe3')}</li>
+              <li>{t('ocrPipe4')}</li>
+            </ol>
+          </div>
+        </div>
+      )}
+
       {msg && <div className={`alert alert-${msg.kind} py-2`}>{msg.text}</div>}
 
       <div className="card shadow-sm p-3 mb-4">
@@ -102,8 +147,19 @@ export default function OcrJobsPage() {
             <input ref={fileRef} type="file" className="form-control" accept=".pdf,.png,.jpg,.jpeg,.tiff" />
           </div>
           <div>
-            <label className="form-label small mb-1">Job name (optional)</label>
+            <label className="form-label small mb-1">{t('job')} (optional)</label>
             <input ref={nameRef} className="form-control" placeholder="e.g. Ledger page 4" />
+          </div>
+          <div>
+            <label className="form-label small mb-1">{t('ocrEngine')}</label>
+            <select
+              className="form-select"
+              value={engine}
+              onChange={(e) => setEngine(e.target.value as 'vision' | 'tesseract')}
+            >
+              <option value="vision">Claude Vision (AI)</option>
+              <option value="tesseract">Tesseract (baseline)</option>
+            </select>
           </div>
           <button className="btn btn-primary" onClick={() => upload.mutate()} disabled={upload.isPending}>
             <i className="bi bi-cloud-arrow-up me-1" />
