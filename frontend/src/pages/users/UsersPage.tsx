@@ -111,6 +111,7 @@ export default function UsersPage() {
         }),
       ),
     placeholderData: keepPreviousData,
+    staleTime: 60_000,
     enabled: tab === 'members',
   })
 
@@ -123,6 +124,7 @@ export default function UsersPage() {
         }),
       ),
     placeholderData: keepPreviousData,
+    staleTime: 60_000,
     enabled: tab === 'admin',
   })
 

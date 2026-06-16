@@ -11,7 +11,14 @@ import { AuthProvider } from './auth/AuthContext'
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: 1, refetchOnWindowFocus: false },
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      // Serve cached data instantly when revisiting a page within the window
+      // (revalidates in the background), so navigation feels instant.
+      staleTime: 60_000,
+      gcTime: 10 * 60_000,
+    },
   },
 })
 

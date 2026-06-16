@@ -51,6 +51,7 @@ export default function OcrJobsPage() {
     queryFn: () =>
       unwrap<Paginated<OcrJob>>(api.get('/api/ocr/jobs', { params: { page, per_page: 20, sort, order } })),
     placeholderData: keepPreviousData,
+    staleTime: 60_000,
   })
 
   const upload = useMutation({

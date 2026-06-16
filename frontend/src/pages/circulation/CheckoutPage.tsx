@@ -64,16 +64,16 @@ export default function CheckoutPage() {
 
       <form onSubmit={lookupMember} className="card shadow-sm p-4 mb-3">
         <label className="form-label fw-bold">1. {t('memberIdLabel')}</label>
-        <div className="d-flex gap-2">
+        <div className="d-flex gap-2 align-items-start">
           <input
-            className="form-control"
+            className="form-control flex-grow-1"
             value={memberCode}
             onChange={(e) => setMemberCode(e.target.value)}
             placeholder="STU0001"
             autoFocus
             required
           />
-          <button className="btn btn-primary">{t('find')}</button>
+          <button className="btn btn-primary text-nowrap">{t('find')}</button>
         </div>
         {member && (
           <div className={`card mt-3 mb-0 border ${member.can_borrow ? 'border-success' : 'border-danger'}`}>
@@ -125,17 +125,17 @@ export default function CheckoutPage() {
 
       <form onSubmit={doCheckout} className="card shadow-sm p-4">
         <label className="form-label fw-bold">2. {t('bookBarcodeLabel')}</label>
-        <div className="d-flex gap-2">
+        <div className="d-flex gap-2 align-items-start">
           <input
             ref={barcodeRef}
-            className="form-control"
+            className="form-control flex-grow-1"
             value={barcode}
             onChange={(e) => setBarcode(e.target.value)}
             placeholder="Scan book barcode"
             disabled={!member || !member.can_borrow}
             required
           />
-          <button className="btn btn-success" disabled={!member || !member.can_borrow}>
+          <button className="btn btn-success text-nowrap" disabled={!member || !member.can_borrow}>
             <i className="bi bi-check-circle me-1" />
             {t('processCheckout')}
           </button>
