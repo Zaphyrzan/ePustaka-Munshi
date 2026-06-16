@@ -58,6 +58,8 @@ export default function OcrReviewPage() {
   const [editRow, setEditRow] = useState<number | null>(null)
   const [drafts, setDrafts] = useState<Drafts>({})
   const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [rowPage, setRowPage] = useState(1)
+  const [perPage, setPerPage] = useState(25)
   const [msg, setMsg] = useState<{ kind: 'success' | 'danger'; text: string } | null>(null)
 
   const { data: job } = useQuery({
@@ -81,6 +83,11 @@ export default function OcrReviewPage() {
     setSelected(new Set())
     setEditRow(null)
   }, [ledgerPage])
+
+  // Back to the first chunk whenever the visible set changes.
+  useEffect(() => {
+    setRowPage(1)
+  }, [ledgerPage, statusFilter, lowConfOnly, sortByConf, perPage])
 
   function refresh() {
     queryClient.invalidateQueries({ queryKey: ['ocr-results', jobId] })
@@ -152,10 +159,16 @@ export default function OcrReviewPage() {
     })
   }
 
-  // Client-side confidence filter/sort over the current ledger page's rows.
-  let rows = data?.items ?? []
-  if (lowConfOnly) rows = rows.filter((r) => (r.confidence_overall ?? 1) < 0.7)
-  if (sortByConf) rows = [...rows].sort((a, b) => (a.confidence_overall ?? 1) - (b.confidence_overall ?? 1))
+  // Client-side confidence filter/sort over the current ledger page's rows,
+  // then slice into pages of `perPage` so reviewers work in small chunks.
+  let processed = data?.items ?? []
+  if (lowConfOnly) processed = processed.filter((r) => (r.confidence_overall ?? 1) < 0.7)
+  if (sortByConf) processed = [...processed].sort((a, b) => (a.confidence_overall ?? 1) - (b.confidence_overall ?? 1))
+  const totalRows = processed.length
+  const totalRowPages = Math.max(1, Math.ceil(totalRows / perPage))
+  const start = (rowPage - 1) * perPage
+  const rows = processed.slice(start, start + perPage)
+  // Header checkbox selects the uncommitted rows on the current chunk.
   const selectableIds = rows.filter((r) => !r.committed).map((r) => r.id)
   const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selected.has(id))
 
@@ -422,6 +435,51 @@ export default function OcrReviewPage() {
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Row pagination + page size */}
+      {totalRows > 0 && (
+        <div className="d-flex flex-wrap justify-content-between align-items-center mt-3 gap-2">
+          <div className="d-flex align-items-center gap-2 small text-muted">
+            <span>Show</span>
+            <select
+              className="form-select form-select-sm"
+              style={{ width: 'auto' }}
+              value={perPage}
+              onChange={(e) => setPerPage(Number(e.target.value))}
+            >
+              {[10, 25, 50, 100].map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+            <span>
+              per page — showing {start + 1}–{Math.min(start + perPage, totalRows)} of {totalRows}
+            </span>
+          </div>
+          {totalRowPages > 1 && (
+            <nav className="d-flex gap-2 align-items-center">
+              <button
+                className="btn btn-outline-primary btn-sm"
+                disabled={rowPage <= 1}
+                onClick={() => setRowPage((p) => Math.max(1, p - 1))}
+              >
+                ‹
+              </button>
+              <span className="small text-muted">
+                {rowPage} / {totalRowPages}
+              </span>
+              <button
+                className="btn btn-outline-primary btn-sm"
+                disabled={rowPage >= totalRowPages}
+                onClick={() => setRowPage((p) => Math.min(totalRowPages, p + 1))}
+              >
+                ›
+              </button>
+            </nav>
+          )}
         </div>
       )}
     </div>
