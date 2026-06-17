@@ -1,191 +1,77 @@
-# ePustaka Munshi - Library Management System
+# ePustaka Munshi — Smart Library System
 
-A prototype library management system with OCR-based ledger digitization for Malaysian school libraries.
+A full-stack library management system for a Malaysian secondary school (SMK Abdullah Munshi), built to replace a handwritten paper ledger. Its headline feature is **digitizing the school's handwritten acquisition ledger with a vision LLM**, benchmarked against a traditional OCR baseline.
 
-## Features
+**Live demo:** https://epustaka-munshi.vercel.app
+**Stack:** React + TypeScript · Flask (Python) · Supabase (PostgreSQL) · Anthropic Claude Vision · Vercel
 
-### ✅ Implemented (Prototype)
-- **Authentication & RBAC**: Login, role-based permissions (Administrator, Librarian, Student Assistant, Student)
-- **Book Catalog**: Add/edit/delete books, manage bibliographic data
-- **Inventory Management**: Track physical copies with accession numbers, barcodes, status, location
-- **Circulation**: Book checkout, return, loan tracking, due dates, overdue detection
-- **Member Management**: Student/staff records, borrowing eligibility
-- **OCR Digitization**: Upload scanned ledger images/PDFs, extract data using Tesseract OCR, review & commit
-- **Scanner Abstraction**: Interface for future USB scanner integration (WIA/TWAIN)
+> Final Year Project — B.Sc. Software Engineering, Universiti Teknologi Malaysia.
 
-### 🔮 Future Expansion
-- USB Scanner Integration (WIA/TWAIN)
-- Renewals & Reservations
-- Fine Management
-- Email/SMS Reminders
-- Reports & Analytics
-- Multi-site/LAN Mode
-
-## Quick Start
-
-### Prerequisites
-- Python 3.10+
-- (Optional) Tesseract OCR for ledger digitization
-
-### Installation
-
-```powershell
-# 1. Navigate to project folder
-cd "c:\Users\wanza\Documents\Github Folder\ePustaka-Munshi"
-
-# 2. Create virtual environment (first time only)
-python -m venv venv
-
-# 3. Activate virtual environment
-.\venv\Scripts\Activate
-
-# 4. Install dependencies (first time only)
-pip install -r requirements.txt
-
-# 5. Initialize database and seed demo data (first time only)
-$env:FLASK_APP = "run.py"
-flask init-db
-flask seed-demo
-
-# 6. Run the application
-python run.py
-```
-
-### Running the Server (After Setup)
-
-```powershell
-# Quick start (after initial setup)
-cd "c:\Users\wanza\Documents\Github Folder\ePustaka-Munshi"
-.\venv\Scripts\Activate
-python run.py
-```
-
-The server will start at **![alt text](image.png)**
-
-### Access
-Open http://localhost:5000 in your browser.
-
-**Demo Accounts:**
-| Username | Password | Role |
-|----------|----------|------|
-| admin | admin123 | Administrator |
-| librarian | password123 | Librarian |
-| STU0001 | password123 | Student Assistant (Staff) |
-| STU0002 | password123 | Student (Form 1) |
-| STU0003 | password123 | Student (Form 3) |
-
-Member Accounts (Student/Staff):
-
-STU0001 / student123 — Staff Member (sees Circulation tab + dashboard)
-STU0002 / student123 — Student (student portal only)
-STU0003 / student123 — Student (student portal only)
-STU0004 / student123 — Student (student portal only - pure student for testing)
-STU0005 / student123 — Student (student portal only - pure student for testing)
-TCH001 / student123 — Teacher (sees Circulation tab + dashboard)
-
-### Customization
-
-**Add Your School Logo:**
-1. Save your logo as `school_logo.png`
-2. Place it in: `app/static/images/school_logo.png`
-3. Recommended size: 200x200 pixels, PNG with transparency
-
-## Project Structure
-
-```
-ePustaka-Munshi/
-├── app/
-│   ├── __init__.py          # App factory
-│   ├── models/               # Database models
-│   │   ├── user.py           # User, Role, Permission
-│   │   ├── member.py         # Library members
-│   │   ├── catalog.py        # Book, BookCopy
-│   │   ├── circulation.py    # Loan
-│   │   └── ocr.py            # OCRJob, OCRResult
-│   ├── routes/               # Flask blueprints
-│   │   ├── auth.py           # Login/logout
-│   │   ├── catalog.py        # Book management
-│   │   ├── circulation.py    # Checkout/return
-│   │   ├── ocr.py            # OCR digitization
-│   │   ├── student.py        # Student portal
-│   │   └── users.py          # User/member management
-│   ├── services/             # Business logic
-│   │   ├── scanner_service.py  # Scanner abstraction (future USB)
-│   │   └── ocr_service.py      # Tesseract OCR processing
-│   ├── static/               # Static files
-│   │   ├── css/              # Custom CSS
-│   │   ├── js/               # JavaScript files
-│   │   └── images/           # ⬅️ PUT YOUR SCHOOL LOGO HERE (school_logo.png)
-│   └── templates/            # HTML templates
-├── config.py                 # Configuration
-├── run.py                    # Entry point + CLI commands
-├── requirements.txt          # Dependencies
-└── instance/                 # SQLite database (auto-created)
-```
-
-## OCR Setup (Optional)
-
-To enable ledger digitization:
-
-1. **Install Tesseract OCR**
-   - Download from: https://github.com/UB-Mannheim/tesseract/wiki
-   - Install to default location or update `TESSERACT_CMD` in config.py
-
-2. **Install Poppler** (for PDF support)
-   - Download from: https://github.com/oschwartz10612/poppler-windows/releases
-   - Add `bin` folder to system PATH
-
-## Scanner Integration (Future)
-
-The prototype includes a scanner abstraction layer (`app/services/scanner_service.py`) with:
-
-- `IScannerService` - Abstract interface for any scanner
-- `FileImportScanSource` - Current implementation (file upload)
-- `WIAScanSource` - Placeholder for Windows Image Acquisition
-- `TWAINScanSource` - Placeholder for TWAIN protocol
-
-**To add USB scanner support later:**
-1. Install scanner driver
-2. Implement `WIAScanSource` or `TWAINScanSource` using pywin32/pytwain
-3. Scanner will automatically appear in the OCR upload interface
-
-## Development
-
-### CLI Commands
-
-```powershell
-# Initialize database
-flask init-db
-
-# Create admin user
-flask create-admin
-
-# Seed demo data
-flask seed-demo
-```
-
-### Environment Variables
-
-Create a `.env` file (optional):
-
-```
-SECRET_KEY=your-secret-key
-FLASK_CONFIG=development
-TESSERACT_CMD=C:\Program Files\Tesseract-OCR\tesseract.exe
-```
-
-## Tech Stack
-
-- **Backend**: Flask, SQLAlchemy, Flask-Login, Python
-- **Database**: SQLite (upgradeable to PostgreSQL/MySQL)
-- **Frontend**: Bootstrap 5, Bootstrap Icons
-- **OCR**: Tesseract (pytesseract)
-- **PDF**: pdf2image, Pillow
-
-## License
-
-This project is part of a thesis/PSM at UTM.
+<!-- Add screenshots here (login, dashboard, OCR review, circulation) for the best first impression. -->
 
 ---
 
-**ePustaka Munshi** - Digitizing Malaysian School Libraries 📚
+## What it does
+
+- **Catalog & inventory** — books with multiple physical copies, each tracked by accession number, barcode, status, condition, and shelf location.
+- **Circulation** — barcode checkout/return, 7-day loans with one renewal, overdue tracking, and loan history with the staff handler.
+- **Members & roles** — borrowers (student, staff, external) and operators (Administrator, Librarian, Library Prefect) with role-based permissions. Students can be promoted to Library Prefect and demoted back.
+- **Ledger OCR** — upload a scanned page of the handwritten ledger; a vision LLM reads it and extracts structured fields with a per-row confidence score; staff verify each row against the source image before committing it to the catalog. ~2,000 real ledger rows digitized.
+- **Bilingual UI** — English / Bahasa Melayu.
+
+## OCR pipeline (the novel part)
+
+Traditional OCR (Tesseract) could not reliably read the decades-old cursive handwriting, so the system uses **Anthropic's Claude vision model** as the primary OCR engine and keeps **Tesseract as a comparison baseline** and for page-orientation detection.
+
+1. Upload a scanned ledger page (PDF or image).
+2. The page is auto-rotated and sent to the selected engine.
+3. Rows return as structured JSON with confidence scores; low-confidence rows are flagged.
+4. A reviewer corrects rows against the source image, then commits them to the catalog.
+
+OCR runs on a local scanning station (it needs the API key and native libraries); the verified records sync to Supabase, which the web app serves to the whole school.
+
+## Architecture
+
+Three-tier, deployed on Vercel:
+
+| Tier | Technology |
+|------|------------|
+| Frontend (SPA) | React 19, TypeScript, Vite, TanStack Query, React Router, i18next, Bootstrap 5 |
+| Backend (REST API) | Flask 3, SQLAlchemy 2, Flask-Login |
+| Database | Supabase (PostgreSQL) via psycopg3 |
+| OCR | Anthropic Claude Vision API (primary) · Tesseract + Poppler (baseline) |
+
+Role-based access is enforced in the Flask API (permission flags), not in the client.
+
+## Run locally
+
+**Backend** (Python 3.10+):
+
+```bash
+pip install -r requirements.txt
+python scripts/run_local_sqlite.py      # serves the API on a local SQLite DB
+```
+
+**Frontend** (Node 18+):
+
+```bash
+cd frontend
+npm install
+npm run dev                             # http://localhost:5173
+```
+
+**OCR digitization** (optional — needs an Anthropic API key and the OCR extras):
+
+```bash
+pip install -r requirements-ocr.txt
+# set ANTHROPIC_API_KEY in a .env file
+```
+
+## Project structure
+
+```
+app/         Flask backend — models, REST API blueprints, OCR services
+frontend/    React + TypeScript SPA (Vite)
+scripts/     local runners and data/maintenance scripts
+api/         Vercel serverless entry point
+```
