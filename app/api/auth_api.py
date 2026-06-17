@@ -111,10 +111,16 @@ def login():
             # Member/student found with correct password
             if member.is_active:
                 # Promoted members (Library Prefect / Librarian) have a linked
-                # operator account (username == member_id). Log them in with
-                # those privileges, and resync the operator password so it
-                # never drifts from the member's current one.
+                # operator account (username == member_id, and User.id ==
+                # Member.id). Log them in with those privileges. Match on
+                # username first, then fall back to the id link in case a
+                # username drifted — but only for members that are operators,
+                # so a regular member never inherits an unrelated account.
                 operator = User.query.filter_by(username=member.member_id, is_active=True).first()
+                if not operator and member.member_type in ('Library Prefect', 'Librarian'):
+                    by_id = User.query.get(member.id)
+                    if by_id and by_id.is_active:
+                        operator = by_id
                 if operator:
                     operator.password_hash = member.password_hash
                     login_user(operator, remember=remember_me)
