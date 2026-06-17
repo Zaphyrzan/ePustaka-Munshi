@@ -3,6 +3,8 @@
 Seed demo data - Creates test users and members for development
 Run this after init_db.py to populate test data
 """
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
 from app import create_app, db
 from app.models.user import Role, User, Permission
 from app.models.member import Member

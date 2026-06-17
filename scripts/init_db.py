@@ -3,6 +3,8 @@
 Database initialization script - Creates tables and default admin user
 Run this after a fresh database setup
 """
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
 from app import create_app, db
 from app.models.user import Role, User, Permission
 

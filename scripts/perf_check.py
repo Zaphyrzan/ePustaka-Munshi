@@ -5,6 +5,8 @@ import os
 os.environ['FLASK_ENV'] = 'development'
 
 from sqlalchemy import event
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
 from app import create_app, db
 
 app = create_app('development')

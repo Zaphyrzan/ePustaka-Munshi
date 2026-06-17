@@ -20,3 +20,6 @@ dist/
 .DS_Store
 Thumbs.db
 scripts/accession_mapping_*.csv
+
+# Claude Code tooling (not part of the project)
+skills-lock.json
