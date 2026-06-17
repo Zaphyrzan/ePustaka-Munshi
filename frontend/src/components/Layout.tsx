@@ -46,6 +46,19 @@ export default function Layout() {
   // Library Prefects get catalog + circulation only; OCR and member/staff
   // administration are for Librarians and Administrators.
   const isAdminOrLibrarian = session?.role === 'Administrator' || session?.role === 'Librarian'
+  // A Library Prefect is a promoted student, so they keep their student portal
+  // (home, search, my loans, NILAM leaderboard) alongside their prefect tools.
+  const isPrefect = session?.role === 'Library Prefect'
+
+  const studentPortalSection: NavSection = {
+    title: t('student_portal'),
+    items: [
+      { to: '/student', icon: 'bi-house', label: t('home'), end: true },
+      { to: '/student/search', icon: 'bi-search', label: t('search') },
+      { to: '/student/loans', icon: 'bi-journal-bookmark', label: t('myLoans') },
+      { to: '/student/leaderboard', icon: 'bi-trophy', label: t('leaderboard') },
+    ],
+  }
 
   const sections: NavSection[] = isStaff
     ? [
@@ -65,18 +78,9 @@ export default function Layout() {
               { title: t('administration'), items: [{ to: '/users', icon: 'bi-people', label: t('users') }] },
             ]
           : []),
+        ...(isPrefect ? [studentPortalSection] : []),
       ]
-    : [
-        {
-          title: t('student_portal'),
-          items: [
-            { to: '/student', icon: 'bi-house', label: t('home'), end: true },
-            { to: '/student/search', icon: 'bi-search', label: t('search') },
-            { to: '/student/loans', icon: 'bi-journal-bookmark', label: t('myLoans') },
-            { to: '/student/leaderboard', icon: 'bi-trophy', label: t('leaderboard') },
-          ],
-        },
-      ]
+    : [studentPortalSection]
 
   return (
     <div>
