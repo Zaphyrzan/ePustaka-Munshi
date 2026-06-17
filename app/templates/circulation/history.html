@@ -46,7 +46,7 @@
     <div class="col-12">
         <div class="card table-card">
             <div class="card-body p-0">
-                {% if loans.items %}
+                {% if loans['items'] %}
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
@@ -60,7 +60,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for loan in loans.items %}
+                            {% for loan in loans['items'] %}
                             <tr>
                                 <td>
                                     <strong>{{ loan.copy.book.title }}</strong>

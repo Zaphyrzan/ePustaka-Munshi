@@ -38,3 +38,65 @@
 .leaderboard-item-3 {
     background: linear-gradient(135deg, #cd7f32 0%, #e8c39e 100%);
 }
+
+/* Mobile-first member portal helpers */
+.member-hero-card {
+    overflow: hidden;
+}
+
+.member-hero-card .card-body {
+    padding: 1.25rem;
+}
+
+.member-action-card {
+    border: 0;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.06);
+}
+
+.mobile-data-card {
+    border: 1px solid rgba(13, 34, 64, 0.08);
+    border-radius: 1rem;
+    box-shadow: 0 0.35rem 1rem rgba(0, 0, 0, 0.06);
+}
+
+.mobile-data-card .card-body {
+    padding: 1rem;
+}
+
+.mobile-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 999px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.mobile-rank-card {
+    border: 1px solid rgba(13, 34, 64, 0.08);
+    border-radius: 1rem;
+    box-shadow: 0 0.35rem 1rem rgba(0, 0, 0, 0.06);
+}
+
+.mobile-rank-dot {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(26, 58, 110, 0.1);
+    color: var(--primary-color, #1a3a6e);
+    font-weight: 700;
+}
+
+@media (max-width: 575.98px) {
+    .member-hero-card .card-body {
+        padding: 1rem;
+    }
+
+    .mobile-data-card .card-body {
+        padding: 0.9rem;
+    }
+}

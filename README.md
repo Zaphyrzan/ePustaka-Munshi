@@ -60,7 +60,7 @@ cd "c:\Users\wanza\Documents\Github Folder\ePustaka-Munshi"
 python run.py
 ```
 
-The server will start at **http://localhost:5000**
+The server will start at **![alt text](image.png)**
 
 ### Access
 Open http://localhost:5000 in your browser.

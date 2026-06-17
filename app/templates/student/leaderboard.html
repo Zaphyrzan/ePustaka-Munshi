@@ -2,16 +2,131 @@
 
 {% block title %}{{ t('borrowing_leaderboard') }} - ePustaka Munshi{% endblock %}
 {% block page_title %}{{ t('borrowing_leaderboard') }}{% endblock %}
+{% block extra_css %}
+<style>
+    .top-three-wrap {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        align-items: end;
+        gap: 0.75rem;
+        text-align: center;
+    }
+
+    .top-three-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .top-three-avatar {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: #6c757d;
+        background: #f1f3f5;
+    }
+
+    .top-three-avatar.first {
+        width: 72px;
+        height: 72px;
+        background: #f8c400;
+        color: #1f2a37;
+        box-shadow: 0 6px 16px rgba(248, 196, 0, 0.35);
+    }
+
+    .rank-badge {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.9rem;
+    }
+
+    .rank-badge i {
+        font-size: 1rem;
+    }
+
+    .rank-gold { background: #f8c400; color: #1f2a37; }
+    .rank-silver { background: #d9dde2; color: #1f2a37; }
+    .rank-bronze { background: #cd7f32; color: #fff; }
+
+    .top-three-name {
+        font-weight: 600;
+        font-size: 0.95rem;
+        line-height: 1.15;
+    }
+
+    .top-three-sub {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+
+    @media (max-width: 575.98px) {
+        .top-three-wrap {
+            gap: 0.45rem;
+        }
+
+        .top-three-avatar {
+            width: 46px;
+            height: 46px;
+            font-size: 1.2rem;
+        }
+
+        .top-three-avatar.first {
+            width: 60px;
+            height: 60px;
+        }
+
+        .rank-badge {
+            width: 26px;
+            height: 26px;
+            font-size: 0.8rem;
+        }
+
+        .top-three-name {
+            max-width: 100%;
+            font-size: 0.82rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .top-three-sub {
+            font-size: 0.75rem;
+        }
+
+        .class-rank-item {
+            gap: 0.5rem;
+        }
+
+        .class-rank-name {
+            font-size: 0.88rem;
+        }
+
+        .class-rank-form {
+            font-size: 0.76rem;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
     <!-- Filter Section -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card">
+            <div class="card member-action-card">
                 <div class="card-body">
                     <form method="GET" class="row g-3 align-items-end">
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6">
                             <label for="form_filter" class="form-label fw-bold">{{ t('filter_by_form') }}</label>
                             <select name="form" id="form_filter" class="form-select" onchange="this.form.submit()">
                                 <option value="">{{ t('all_forms') }}</option>
@@ -24,7 +139,7 @@
                         </div>
 
                         {% if selected_form and classes_in_form %}
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6">
                             <label for="class_filter" class="form-label fw-bold">{{ t('filter_by_class') }}</label>
                             <select name="class" id="class_filter" class="form-select" onchange="this.form.submit()">
                                 <option value="">{{ t('all_classes') }}</option>
@@ -38,7 +153,7 @@
                         {% endif %}
 
                         {% if selected_form or selected_class %}
-                        <div class="col-auto">
+                        <div class="col-12 col-md-auto">
                             <a href="{{ url_for('student.leaderboard') }}" class="btn btn-outline-secondary">
                                 {{ t('clear_filters') }}
                             </a>
@@ -51,9 +166,9 @@
     </div>
 
     <!-- Leaderboard Section -->
-    <div class="row">
-        <div class="col-lg-8">
-            <div class="card">
+    <div class="row g-4">
+        <div class="col-lg-8 order-1">
+            <div class="card h-100">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">
                         <i class="bi bi-trophy me-2"></i>
@@ -67,7 +182,7 @@
                 </div>
                 <div class="card-body p-0">
                     {% if leaderboard %}
-                    <div class="table-responsive">
+                    <div class="table-responsive d-none d-md-block">
                         <table class="table table-hover mb-0">
                             <thead class="table-light">
                                 <tr>
@@ -78,25 +193,30 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for member_id, student_id, name, form, class, borrow_count in leaderboard %}
+                                {% for member_id, student_id, name, form, class_group, borrow_count in leaderboard %}
                                 <tr>
                                     <td class="text-center">
-                                        {% if loop.index1 == 1 %}
-                                        <span class="badge bg-warning text-dark"><i class="bi bi-star-fill"></i></span>
-                                        {% elif loop.index1 == 2 %}
-                                        <span class="badge bg-secondary"><i class="bi bi-star-fill"></i></span>
-                                        {% elif loop.index1 == 3 %}
-                                        <span class="badge bg-danger"><i class="bi bi-star-fill"></i></span>
+                                        {% if loop.index == 1 %}
+                                        <span class="badge" style="background:#d4af37;color:#000"><i class="bi bi-award-fill"></i></span>
+                                        {% elif loop.index == 2 %}
+                                        <span class="badge" style="background:#c0c0c0;color:#000"><i class="bi bi-award-fill"></i></span>
+                                        {% elif loop.index == 3 %}
+                                        <span class="badge" style="background:#cd7f32;color:#fff"><i class="bi bi-award-fill"></i></span>
                                         {% else %}
-                                        <strong>{{ loop.index1 }}</strong>
+                                        <strong>{{ loop.index }}</strong>
                                         {% endif %}
                                     </td>
                                     <td>
+                                        {% if loop.index == 1 %}
+                                        <div class="d-flex align-items-center gap-2">
+                                            <h5 class="mb-0">{{ name }}</h5>
+                                        </div>
+                                        {% else %}
                                         <strong>{{ name }}</strong>
-                                        <br><small class="text-muted">{{ student_id }}</small>
+                                        {% endif %}
                                     </td>
                                     <td>
-                                        <span class="badge bg-light text-dark">{{ class }}</span>
+                                        <span class="badge bg-light text-dark">{{ class_group }}</span>
                                     </td>
                                     <td class="text-end">
                                         <strong class="text-primary fs-5">{{ borrow_count }}</strong>
@@ -105,6 +225,41 @@
                                 {% endfor %}
                             </tbody>
                         </table>
+                    </div>
+                    <div class="d-md-none p-3">
+                        <div class="row g-3">
+                            {% for member_id, student_id, name, form, class_group, borrow_count in leaderboard %}
+                            <div class="col-12">
+                                <div class="card mobile-rank-card">
+                                    <div class="card-body d-flex align-items-center gap-3">
+                                        <div class="mobile-rank-dot flex-shrink-0">
+                                            {% if loop.index == 1 %}
+                                                <i class="bi bi-award-fill" style="color:#d4af37"></i>
+                                            {% elif loop.index == 2 %}
+                                                <i class="bi bi-award-fill" style="color:#c0c0c0"></i>
+                                            {% elif loop.index == 3 %}
+                                                <i class="bi bi-award-fill" style="color:#cd7f32"></i>
+                                            {% else %}
+                                                {{ loop.index }}
+                                            {% endif %}
+                                        </div>
+                                        <div class="flex-grow-1 min-w-0">
+                                            <div class="fw-bold text-truncate">{{ name }}</div>
+                                            <div class="small text-muted text-truncate">{{ t('form') }} {{ form }} • {{ t('class') }} {{ class_group }}</div>
+                                            <div class="d-flex flex-wrap gap-2 mt-2">
+                                                <span class="badge bg-light text-dark">{{ t('form') }} {{ form }}</span>
+                                                <span class="badge bg-light text-dark">{{ t('class') }} {{ class_group }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="text-end flex-shrink-0">
+                                            <div class="fs-4 fw-bold text-primary">{{ borrow_count }}</div>
+                                            <div class="small text-muted">{{ t('books_borrowed_count') }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
                     </div>
                     {% else %}
                     <div class="text-center py-5">
@@ -117,24 +272,93 @@
             </div>
         </div>
 
-        <!-- Statistics Card -->
-        <div class="col-lg-4">
+        <div class="col-lg-4 order-2 d-flex flex-column gap-3">
+            <div class="card">
+                <div class="card-header bg-warning-subtle">
+                    <h5 class="mb-0"><i class="bi bi-trophy me-2"></i>{{ t('top_3_most_borrowed_per_student') }}</h5>
+                </div>
+                <div class="card-body">
+                    {% if top_three_students and top_three_students|length > 0 %}
+                    {% set first = top_three_students[0] if top_three_students|length > 0 else None %}
+                    {% set second = top_three_students[1] if top_three_students|length > 1 else None %}
+                    {% set third = top_three_students[2] if top_three_students|length > 2 else None %}
+
+                    <div class="top-three-wrap">
+                        <div class="top-three-item">
+                            {% if second %}
+                            <div class="top-three-avatar"><i class="bi bi-person-fill"></i></div>
+                            <div class="rank-badge rank-silver"><i class="bi bi-award-fill"></i></div>
+                            <div class="top-three-name">{{ second[2] }}</div>
+                            <div class="top-three-sub">{{ second[5] }} {{ t('books') }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="top-three-item">
+                            {% if first %}
+                            <div class="top-three-avatar first"><i class="bi bi-person-fill"></i></div>
+                            <div class="rank-badge rank-gold"><i class="bi bi-award-fill"></i></div>
+                            <div class="top-three-name">{{ first[2] }}</div>
+                            <div class="top-three-sub">{{ first[5] }} {{ t('books') }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="top-three-item">
+                            {% if third %}
+                            <div class="top-three-avatar"><i class="bi bi-person-fill"></i></div>
+                            <div class="rank-badge rank-bronze"><i class="bi bi-award-fill"></i></div>
+                            <div class="top-three-name">{{ third[2] }}</div>
+                            <div class="top-three-sub">{{ third[5] }} {{ t('books') }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3 text-muted">{{ t('no_borrowing_data') }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-info-subtle">
+                    <h5 class="mb-0"><i class="bi bi-people-fill me-2"></i>{{ t('top_3_most_borrowed_per_class') }}</h5>
+                </div>
+                <div class="card-body">
+                    {% if top_three_classes %}
+                    <div class="list-group list-group-flush">
+                        {% for form, class_group, borrow_count in top_three_classes %}
+                        <div class="list-group-item class-rank-item d-flex justify-content-between align-items-center px-0">
+                            <div>
+                                <div class="fw-semibold class-rank-name">{{ t('class') }} {{ class_group }}</div>
+                                <div class="small text-muted class-rank-form">{{ t('form') }} {{ form }}</div>
+                            </div>
+                            <div class="text-end">
+                                {% if loop.index == 1 %}<span class="rank-badge rank-gold"><i class="bi bi-award-fill"></i></span>{% endif %}
+                                {% if loop.index == 2 %}<span class="rank-badge rank-silver"><i class="bi bi-award-fill"></i></span>{% endif %}
+                                {% if loop.index == 3 %}<span class="rank-badge rank-bronze"><i class="bi bi-award-fill"></i></span>{% endif %}
+                                <div class="fw-bold text-primary mt-1">{{ borrow_count }} {{ t('books') }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3 text-muted">{{ t('no_statistics') }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-header bg-success text-white">
-                    <h5 class="mb-0">
-                        <i class="bi bi-bar-chart me-2"></i>{{ t('statistics_by_form') }}
-                    </h5>
+                    <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>{{ t('statistics_by_form') }}</h5>
                 </div>
                 <div class="card-body">
                     {% if form_stats %}
                     <div class="list-group list-group-flush">
                         {% for form, student_count, total_borrowed, avg_borrowed in form_stats %}
-                        <div class="list-group-item">
+                        <div class="list-group-item px-0">
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <strong>{{ t('form') }} {{ form }}</strong>
                                 <span class="badge bg-primary">{{ student_count }} {{ t('students') }}</span>
                             </div>
-                            <div class="d-flex justify-content-between text-sm mb-2">
+                            <div class="d-flex justify-content-between text-sm mb-1">
                                 <span class="text-muted">{{ t('total') }}:</span>
                                 <strong>{{ total_borrowed or 0 }}</strong>
                             </div>
@@ -142,16 +366,11 @@
                                 <span class="text-muted">{{ t('average') }}:</span>
                                 <strong>{{ "%.1f"|format(avg_borrowed or 0) }}</strong>
                             </div>
-                            <div class="progress mt-2" style="height: 5px;">
-                                <div class="progress-bar" style="width: {% if avg_borrowed %}{{ (avg_borrowed / (total_borrowed / student_count if student_count else 1)) * 100 }}%{% else %}0%{% endif %}"></div>
-                            </div>
                         </div>
                         {% endfor %}
                     </div>
                     {% else %}
-                    <div class="text-center py-4">
-                        <p class="text-muted">{{ t('no_statistics') }}</p>
-                    </div>
+                    <div class="text-center py-3 text-muted">{{ t('no_statistics') }}</div>
                     {% endif %}
                 </div>
             </div>

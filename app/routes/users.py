@@ -10,6 +10,7 @@ from app.utils.excel_import import (
     import_student_data, save_upload_file, get_class_groups, 
     get_form_levels, read_excel_file
 )
+from app.utils.api_utils import OffsetPagination, ResponseFilter, ApiResponse
 from datetime import datetime
 
 users_bp = Blueprint('users', __name__)
@@ -35,9 +36,28 @@ def permission_required(perm):
 @login_required
 @permission_required(Permission.MANAGE_USERS)
 def staff_list():
-    """List staff users"""
-    users = User.query.order_by(User.username).all()
-    return render_template('users/staff_list.html', users=users)
+    """List staff users with pagination"""
+    page = request.args.get('page', 1, type=int)
+
+    # Search/filter
+    search = request.args.get('search', '').strip()
+    query = User.query
+
+    if search:
+        search_term = f'%{search}%'
+        query = query.filter(
+            db.or_(
+                User.username.ilike(search_term),
+                User.email.ilike(search_term),
+                User.full_name.ilike(search_term)
+            )
+        )
+
+    query = query.order_by(User.username)
+    # Native pagination object: iterable in the template ({% for user in users %})
+    users = query.paginate(page=page, per_page=15, error_out=False)
+
+    return render_template('users/staff_list.html', users=users, search=search)
 
 
 @users_bp.route('/staff/add', methods=['GET', 'POST'])
@@ -265,11 +285,12 @@ def edit_staff(user_id):
 @login_required
 @permission_required(Permission.MANAGE_MEMBERS)
 def member_list():
-    """List library members"""
+    """List library members with pagination and filtering"""
     page = request.args.get('page', 1, type=int)
-    
+
     query = Member.query
-    
+
+    # Search/filter
     search = request.args.get('search', '').strip()
     if search:
         search_term = f'%{search}%'
@@ -281,9 +302,24 @@ def member_list():
             )
         )
     
-    members = query.order_by(Member.full_name).paginate(page=page, per_page=20)
+    # Filter by member type (optional)
+    member_type = request.args.get('type', '').strip()
+    if member_type:
+        query = query.filter(Member.member_type == member_type)
     
-    return render_template('users/member_list.html', members=members, search=search)
+    # Filter by status (optional)
+    status = request.args.get('status', '').strip()
+    if status == 'active':
+        query = query.filter(Member.is_active == True)
+    elif status == 'inactive':
+        query = query.filter(Member.is_active == False)
+    
+    query = query.order_by(Member.full_name)
+    # Native pagination: template uses members['items'] and members.iter_pages()
+    members = query.paginate(page=page, per_page=15, error_out=False)
+
+    return render_template('users/member_list.html', members=members, search=search,
+                          member_type=member_type, status=status)
 
 
 @users_bp.route('/members/add', methods=['GET', 'POST'])
@@ -347,7 +383,7 @@ def add_member():
             phone = None
         
         # Get and validate member_type
-        valid_member_types = ['Student', 'Staff', 'Teacher', 'Librarian', 'Admin', 'Student Assistant', 'External']
+        valid_member_types = ['Student', 'Staff', 'Teacher', 'Librarian', 'Admin', 'Library Prefect', 'External']
         member_type = request.form.get('member_type', 'Student')
         if member_type not in valid_member_types:
             flash('Invalid member type', 'error')
@@ -489,7 +525,7 @@ def edit_member(member_id):
             phone = None
         
         # Get and validate member_type
-        valid_member_types = ['Student', 'Staff', 'Teacher', 'Librarian', 'Admin', 'Student Assistant', 'External']
+        valid_member_types = ['Student', 'Staff', 'Teacher', 'Librarian', 'Admin', 'Library Prefect', 'External']
         member_type = request.form.get('member_type', 'Student')
         if member_type not in valid_member_types:
             flash('Invalid member type', 'error')
@@ -1018,17 +1054,51 @@ def api_form_levels():
 @login_required
 @permission_required(Permission.MANAGE_USERS)
 def promote_to_staff(member_id):
-    """Promote a member to staff (Student Assistant)"""
+    """Promote a member to staff (Library Prefect)"""
     # Get member
     member = Member.query.get_or_404(member_id)
+    role = Role.query.filter_by(name='Library Prefect').first()
     
-    # Change member type to Staff
-    member.member_type = 'Student Assistant'
-    member.form_level = None  # Staff don't have form level
-    member.class_group = None
+    # Change member type but keep form_level/class_group: a Library Prefect
+    # is still a student in their class and must stay in the NILAM leaderboard.
+    member.member_type = 'Library Prefect'
+
+    # Keep a matching staff User row so checkout/return audit fields can reference users.id
+    user = User.query.get(member.id)
+    if user is None:
+        username = member.member_id
+        if User.query.filter(User.username == username, User.id != member.id).first():
+            username = f'staff_{member.id}'
+
+        email = member.email
+        if email and User.query.filter(User.email == email, User.id != member.id).first():
+            email = f'{member.member_id.lower()}@local.invalid'
+        elif not email:
+            email = f'{member.member_id.lower()}@local.invalid'
+
+        user = User(
+            id=member.id,
+            username=username,
+            email=email,
+            full_name=member.full_name,
+            is_active=True,
+            role=role,
+            password_hash=member.password_hash,
+        )
+        db.session.add(user)
+    else:
+        user.username = member.member_id if user.username != member.member_id else user.username
+        user.email = member.email or user.email
+        user.full_name = member.full_name
+        user.is_active = True
+        if role:
+            user.role = role
+        if member.password_hash:
+            user.password_hash = member.password_hash
+
     db.session.commit()
     
-    flash(f'{member.full_name} promoted to Student Assistant', 'success')
+    flash(f'{member.full_name} promoted to Library Prefect', 'success')
     return redirect(request.referrer or url_for('users.member_list'))
 
 
@@ -1043,6 +1113,12 @@ def demote_from_staff(member_id):
     # Change member type back to Student
     member.member_type = 'Student'
     member.form_level = 1  # Default to Form 1
+
+    # Disable the linked staff login so the account falls back to the member login
+    user = User.query.get(member.id)
+    if user:
+        user.is_active = False
+
     db.session.commit()
     
     flash(f'{member.full_name} demoted to Student', 'success')

@@ -12,6 +12,7 @@ from app.services.scanner_service import (
 )
 from app.services.ocr_service import OCRService
 from app.services.ocr_correction import OCRCorrectionService
+from app.services.vision_ocr_service import VisionOCRService
 
 __all__ = [
     'ScannerServiceFactory',
@@ -22,5 +23,6 @@ __all__ = [
     'ScannedImage',
     'ScannerDevice',
     'OCRService',
-    'OCRCorrectionService'
+    'OCRCorrectionService',
+    'VisionOCRService'
 ]

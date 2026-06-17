@@ -1,17 +1,21 @@
 # ePustaka-Munshi - Library Management System
-# Core dependencies
+# Web/API dependencies (installed on Vercel).
+# OCR/imaging processing deps are local-only -> requirements-ocr.txt
+# (Vercel has no Tesseract/Poppler binaries and never runs OCR).
 
 Flask==3.0.0
 Flask-SQLAlchemy==3.1.1
 Flask-Login==0.6.3
 Flask-WTF==1.2.1
+Flask-CORS==4.0.0
 Werkzeug==3.0.1
-SQLAlchemy==2.0.23
+SQLAlchemy==2.0.49
+# psycopg (v3) ships wheels for current Python versions, so Vercel's uv
+# installer never compiles from source (which needs pg_config/libpq).
+psycopg[binary]>=3.2
 
-# OCR dependencies
-pytesseract==0.3.10
-Pillow==10.1.0
-pdf2image==1.16.3
+# Pillow stays: python-barcode's ImageWriter renders barcode PNGs at runtime
+Pillow==10.4.0
 
 # Excel import/export
 openpyxl==3.1.5
@@ -20,7 +24,3 @@ openpyxl==3.1.5
 python-dotenv==1.0.0
 python-dateutil==2.8.2
 python-barcode==0.15.1
-
-# Future scanner integration (placeholder)
-# pyinsane2  # SANE-based scanners (Linux/Mac)
-# wia-python # Windows WIA (when available)

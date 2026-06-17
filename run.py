@@ -233,6 +233,83 @@ def seed_loans():
     click.echo('STU002: 1 overdue book (7 days late)')
 
 
+@app.cli.command('optimize-indexes')
+def optimize_indexes():
+    """Add performance indexes to database tables."""
+    # Import the migration script directly
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("add_indexes", "scripts/add_indexes.py")
+    add_indexes_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(add_indexes_module)
+    add_indexes_module.run_migration()
+
+
+@app.cli.command('db-health')
+def db_health():
+    """Check database connection health."""
+    from app.utils.db_pool_utils import health_check_db, get_pool_monitor
+    
+    is_healthy, status = health_check_db(db.engine)
+    click.echo(f"Database Health: {'✓ HEALTHY' if is_healthy else '✗ UNHEALTHY'}")
+    click.echo(f"Status: {status}")
+    
+    monitor = get_pool_monitor()
+    if monitor:
+        stats = monitor.get_pool_stats()
+        click.echo("\nConnection Pool Stats:")
+        click.echo(f"  Total Connections: {stats.get('total_connections', '?')}")
+        click.echo(f"  Connection Errors: {stats.get('connection_errors', 0)}")
+        click.echo(f"  Pool Overflows: {stats.get('pool_overflow_count', 0)}")
+        if stats.get('last_error'):
+            click.echo(f"  Last Error: {stats.get('last_error')}")
+
+
+@app.cli.command('db-pool-test')
+@click.option('--connections', default=5, help='Number of test connections to create')
+def db_pool_test(connections):
+    """Test database connection pool under load."""
+    import time
+    from app.utils.db_pool_utils import health_check_db, get_pool_monitor
+    
+    click.echo(f"Testing database pool with {connections} concurrent connections...")
+    
+    # Warm up
+    health_check_db(db.engine)
+    
+    # Test connections
+    start_time = time.time()
+    errors = 0
+    
+    for i in range(connections):
+        try:
+            is_healthy, status = health_check_db(db.engine)
+            if not is_healthy:
+                errors += 1
+                click.echo(f"  Connection {i+1}: FAILED - {status}")
+            else:
+                click.echo(f"  Connection {i+1}: OK")
+        except Exception as e:
+            errors += 1
+            click.echo(f"  Connection {i+1}: ERROR - {str(e)}")
+    
+    elapsed = time.time() - start_time
+    
+    click.echo(f"\nResults:")
+    click.echo(f"  Total Connections: {connections}")
+    click.echo(f"  Successful: {connections - errors}")
+    click.echo(f"  Failed: {errors}")
+    click.echo(f"  Time: {elapsed:.2f}s")
+    click.echo(f"  Avg Time/Connection: {(elapsed/connections)*1000:.2f}ms")
+    
+    monitor = get_pool_monitor()
+    if monitor:
+        stats = monitor.get_pool_stats()
+        click.echo(f"\nPool Stats After Test:")
+        click.echo(f"  Total Connections: {stats.get('total_connections', '?')}")
+        click.echo(f"  Connection Errors: {stats.get('connection_errors', 0)}")
+        click.echo(f"  Pool Overflows: {stats.get('pool_overflow_count', 0)}")
+
+
 @app.shell_context_processor
 def make_shell_context():
     """Add models to flask shell context."""

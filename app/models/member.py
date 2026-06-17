@@ -7,41 +7,44 @@ from flask_login import UserMixin
 from app import db
 
 
-def generate_member_id():
+# Member IDs are standardised as a type prefix + a 4-digit zero-padded running
+# number, with a separate sequence per type (e.g. STU0001, TCH0001, EXT0001).
+# Promoted members keep their original ID (a prefect is still a student).
+MEMBER_ID_PREFIX = {
+    'Student': 'STU',
+    'Staff': 'TCH',          # teachers / staff
+    'External': 'EXT',
+    'Library Prefect': 'STU',  # promoted student
+    'Librarian': 'TCH',        # promoted staff
+}
+
+
+def generate_member_id(member_type='Student'):
     """
-    Generate a unique member ID (auto-increment style).
-    Queries all existing member_ids to find the highest numeric value,
-    then increments it. This ensures no duplicate IDs even if records are deleted.
-    Format: STU0001, STU0002, STU0003, etc.
+    Generate the next unique member ID for a member type.
+
+    Format: <PREFIX><NNNN> with a per-prefix running number, e.g. STU0001 for
+    students, TCH0001 for staff, EXT0001 for external members. The number is the
+    highest existing value for that prefix + 1, so deletions never cause a clash.
     """
+    prefix = MEMBER_ID_PREFIX.get(member_type, 'STU')
     try:
-        # Fetch all members and their IDs from the database
-        all_members = Member.query.with_entities(Member.member_id).all()
-        
-        if not all_members:
-            # If no members exist, start with 1
-            next_number = 1
-        else:
-            # Extract numeric part from all member_ids and find the maximum
-            max_number = 0
-            for (member_id,) in all_members:
-                try:
-                    # Remove 'STU' prefix and convert to integer
-                    numeric_part = int(member_id.replace('STU', ''))
-                    max_number = max(max_number, numeric_part)
-                except (ValueError, AttributeError, TypeError):
-                    # Skip invalid member_ids and continue
-                    continue
-            
-            # Increment the maximum found number
-            next_number = max_number + 1
+        rows = (
+            Member.query.with_entities(Member.member_id)
+            .filter(Member.member_id.like(f'{prefix}%'))
+            .all()
+        )
+        max_number = 0
+        for (member_id,) in rows:
+            digits = ''.join(ch for ch in (member_id or '') if ch.isdigit())
+            if digits:
+                max_number = max(max_number, int(digits))
+        next_number = max_number + 1
     except Exception as e:
-        # Fallback: if any error occurs during lookup, start from 1
         print(f"Error generating member ID: {e}")
         next_number = 1
-    
-    # Format the ID as STU followed by 4-digit zero-padded number
-    return f'STU{next_number:04d}'
+
+    return f'{prefix}{next_number:04d}'
 
 
 class Member(UserMixin, db.Model):
@@ -96,17 +99,20 @@ class Member(UserMixin, db.Model):
     @property
     def is_staff(self):
         """Check if member is staff (Staff, Teacher, Librarian, etc.) - cannot borrow"""
-        staff_types = ['Staff', 'Teacher', 'Librarian', 'Admin', 'Student Assistant']
+        staff_types = ['Staff', 'Teacher', 'Librarian', 'Admin', 'Library Prefect']
         return self.member_type in staff_types
     
     @property
     def is_graduated(self):
         """Check if student has graduated (Form 5 completed or form_level >= 6)"""
-        return self.form_level >= 6
+        return (self.form_level or 0) >= 6
     
     @property
     def form_name(self):
         """Get human-readable form name"""
+        if not self.form_level:
+            return 'Unknown'
+
         if self.form_level == 6:
             return 'Graduated'
         return f'Form {self.form_level}' if self.form_level <= 5 else 'Unknown'
@@ -137,8 +143,13 @@ class Member(UserMixin, db.Model):
         if self.member_type == 'Student':
             return False
         # Staff members can do checkout/return/view catalog/search
-        if self.member_type in ['Staff', 'Student Assistant', 'Librarian', 'Teacher']:
-            return perm in [Permission.CHECKOUT, Permission.RETURN, Permission.VIEW_CATALOG, Permission.SEARCH]
+        # Library Prefects also manage the catalog.
+        if self.member_type in ['Staff', 'Library Prefect', 'Librarian', 'Teacher']:
+            allowed = [Permission.CHECKOUT, Permission.RETURN, Permission.VIEW_CATALOG, Permission.SEARCH]
+            if self.member_type == 'Library Prefect':
+                allowed.append(Permission.MANAGE_CATALOG)
+                allowed.append(Permission.MANAGE_COPIES)
+            return perm in allowed
         return False
     
     @property
@@ -146,10 +157,20 @@ class Member(UserMixin, db.Model):
         """Return dummy role object for sidebar compatibility"""
         class DummyRole:
             def __init__(self, member_type):
-                if member_type == 'Student':
+                # Map common member_type values to role names used by
+                # the staff `Role` model so templates and permission
+                # checks behave consistently for staff-like members.
+                staff_like = ['Librarian', 'Admin', 'Staff', 'Teacher', 'Library Prefect']
+                if member_type == 'Student' or not member_type:
                     self.name = 'Student'
+                elif member_type in staff_like:
+                    # Preserve the explicit staff type when possible
+                    # (e.g., 'Librarian' -> 'Librarian') so UI/permissions
+                    # match expectations.
+                    self.name = member_type
                 else:
-                    self.name = 'Student Assistant'
+                    # Fallback: treat unknown types as student assistant
+                    self.name = 'Library Prefect'
         
         return DummyRole(self.member_type)
     
@@ -174,3 +195,49 @@ class Member(UserMixin, db.Model):
             'overdue_loans': self.overdue_loans_count,
             'can_borrow': self.can_borrow
         }
+
+
+class ClassGroup(db.Model):
+    """
+    Admin-managed list of class names (e.g. "Bestari", "Science 1").
+
+    This backs the class dropdown in the member form and the Excel import
+    preview. Classes are also discovered automatically from existing members,
+    but storing them here lets an admin pre-create a class before any student
+    is assigned to it.
+    """
+    __tablename__ = 'class_groups'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    form_level = db.Column(db.Integer)  # Optional default form this class belongs to (1-5)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # SMK Abdullah Munshi Form 1 streams, used to seed the table on first run.
+    DEFAULT_CLASSES = [
+        'Bestari', 'Efektif', 'Setia', 'Tekun', 'Arif', 'Rajin', 'Inovatif',
+    ]
+
+    def __repr__(self):
+        return f'<ClassGroup {self.name}>'
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'form_level': self.form_level,
+            'is_active': self.is_active,
+        }
+
+    @staticmethod
+    def seed_defaults():
+        """Insert the default class names if the table is empty. Idempotent."""
+        try:
+            if ClassGroup.query.first() is not None:
+                return
+            for name in ClassGroup.DEFAULT_CLASSES:
+                db.session.add(ClassGroup(name=name, form_level=1, is_active=True))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()

@@ -10,6 +10,20 @@ from app.models import User, Member
 auth_bp = Blueprint('auth', __name__)
 
 
+@auth_bp.before_app_request
+def enforce_active_account():
+    """Immediately invalidate sessions for deactivated accounts."""
+    if not current_user.is_authenticated:
+        return None
+
+    if not getattr(current_user, 'is_active', True):
+        logout_user()
+        flash('Your account is disabled', 'error')
+        return redirect(url_for('auth.login'))
+
+    return None
+
+
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     """User login - accepts both User (staff) and Member (students)"""
@@ -27,6 +41,14 @@ def login():
         if user and user.check_password(password):
             # Staff user found with correct password
             if user.is_active:
+                # If this staff username is linked to a member record, honor
+                # the member active flag too. This prevents login bypass when
+                # member access is explicitly disabled.
+                linked_member = Member.query.filter_by(member_id=user.username).first()
+                if linked_member and not linked_member.is_active:
+                    flash('Your account is disabled', 'error')
+                    return render_template('auth/login.html')
+
                 # Active staff account - login as staff
                 login_user(user, remember=remember)
                 user.last_login = datetime.utcnow()
@@ -107,38 +129,83 @@ def profile():
 @auth_bp.route('/profile/edit', methods=['GET', 'POST'])
 @login_required
 def edit_profile():
-    """Edit user profile - name, email, username"""
+    """Edit user profile - restricted by account type
+    
+    Staff: Can edit username, full_name, email
+    Student (Member): Can only edit email, phone, and class_group (full_name and username are admin-only)
+    """
+    is_staff_account = hasattr(current_user, 'username')
+    is_member_account = hasattr(current_user, 'member_id')
+    
+    current_username = getattr(current_user, 'username', '')
+    current_email = getattr(current_user, 'email', '')
+    current_phone = getattr(current_user, 'phone', '')
+    current_class = getattr(current_user, 'class_group', '')
+
+    # Get list of available classes for dropdown (members only)
+    available_classes = []
+    if is_member_account:
+        available_classes = db.session.query(Member.class_group).distinct().filter(
+            Member.class_group.isnot(None),
+            Member.is_active == True
+        ).order_by(Member.class_group).all()
+        available_classes = [c[0] for c in available_classes if c[0]]
+
     if request.method == 'POST':
-        full_name = request.form.get('full_name', '').strip()
         email = request.form.get('email', '').strip()
+        phone = request.form.get('phone', '').strip()
+        class_group = request.form.get('class_group', '').strip()
+        full_name = request.form.get('full_name', '').strip()
         new_username = request.form.get('username', '').strip()
         
-        # Validate username uniqueness (if changed)
-        if new_username != current_user.username:
-            existing = User.query.filter_by(username=new_username).first()
-            if existing:
-                flash('Username already taken', 'error')
-                return render_template('auth/edit_profile.html', user=current_user)
-            if len(new_username) < 3:
-                flash('Username must be at least 3 characters', 'error')
-                return render_template('auth/edit_profile.html', user=current_user)
-            current_user.username = new_username
+        # Staff accounts can edit all fields
+        if is_staff_account:
+            # Validate username uniqueness (if changed)
+            if new_username != current_username:
+                existing = User.query.filter_by(username=new_username).first()
+                if existing:
+                    flash('Username already taken', 'error')
+                    return render_template('auth/edit_profile.html', user=current_user, is_staff=is_staff_account, is_member=is_member_account, available_classes=available_classes)
+                if len(new_username) < 3:
+                    flash('Username must be at least 3 characters', 'error')
+                    return render_template('auth/edit_profile.html', user=current_user, is_staff=is_staff_account, is_member=is_member_account, available_classes=available_classes)
+                current_user.username = new_username
+            
+            current_user.full_name = full_name
         
+        # Student members can ONLY edit email, phone, and class_group
+        elif is_member_account:
+            # Block attempts to modify full_name or username
+            if full_name and full_name != current_user.full_name:
+                flash('Full name can only be changed by administrators', 'error')
+                return render_template('auth/edit_profile.html', user=current_user, is_staff=is_staff_account, is_member=is_member_account, available_classes=available_classes)
+            if new_username:
+                flash('Username cannot be changed by students', 'error')
+                return render_template('auth/edit_profile.html', user=current_user, is_staff=is_staff_account, is_member=is_member_account, available_classes=available_classes)
+        
+        # Both staff and members can update email and phone
         # Validate email uniqueness (if changed and not empty)
-        if email and email != current_user.email:
-            existing = User.query.filter_by(email=email).first()
-            if existing:
+        if email and email != current_email:
+            if is_staff_account:
+                existing = User.query.filter_by(email=email).first()
+            else:
+                existing = Member.query.filter_by(email=email).first()
+            if existing and existing.id != current_user.id:
                 flash('Email already in use', 'error')
-                return render_template('auth/edit_profile.html', user=current_user)
+                return render_template('auth/edit_profile.html', user=current_user, is_staff=is_staff_account, is_member=is_member_account, available_classes=available_classes)
         
-        current_user.full_name = full_name
         current_user.email = email
+        if is_member_account:
+            current_user.phone = phone
+            if class_group:
+                current_user.class_group = class_group
+        
         db.session.commit()
         
         flash('Profile updated successfully', 'success')
         return redirect(url_for('auth.profile'))
     
-    return render_template('auth/edit_profile.html', user=current_user)
+    return render_template('auth/edit_profile.html', user=current_user, is_staff=is_staff_account, is_member=is_member_account, available_classes=available_classes)
 
 
 @auth_bp.route('/change-password', methods=['GET', 'POST'])

@@ -1,0 +1,51 @@
+{
+  "framework": null,
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/dist",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/catalog/api/(.*)", "destination": "/api/index" },
+    { "source": "/circulation/api/(.*)", "destination": "/api/index" },
+    { "source": "/ocr/api/(.*)", "destination": "/api/index" },
+    { "source": "/users/api/(.*)", "destination": "/api/index" },
+    { "source": "/catalog/book/(.*)/print-barcodes", "destination": "/api/index" },
+    { "source": "/users/students/import", "destination": "/api/index" },
+    { "source": "/users/staff/import", "destination": "/api/index" },
+    { "source": "/users/students/active", "destination": "/api/index" },
+    { "source": "/users/students/graduation-list", "destination": "/api/index" },
+    { "source": "/users/admin/(.*)", "destination": "/api/index" },
+    { "source": "/ocr/import-ledger", "destination": "/api/index" },
+    { "source": "/auth/(.*)", "destination": "/api/index" },
+    { "source": "/static/(.*)", "destination": "/api/index" },
+    { "source": "/health", "destination": "/api/index" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        }
+      ]
+    }
+  ],
+  "env": {
+    "FLASK_CONFIG": "production",
+    "FLASK_ENV": "production"
+  }
+}

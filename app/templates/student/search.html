@@ -6,18 +6,18 @@
 {% block content %}
 <div class="mb-4">
     <!-- Filters Card at Top -->
-    <div class="card shadow-sm">
+    <div class="card shadow-sm member-action-card">
         <div class="card-header bg-light">
             <h6 class="mb-0"><i class="bi bi-funnel me-2"></i>{{ t('filters') }}</h6>
         </div>
         <div class="card-body">
             <form method="GET" class="row g-3 align-items-end">
-                <div class="col-md-5">
+                <div class="col-12 col-lg-5">
                     <label class="form-label fw-bold">{{ t('search_title_author') }}</label>
                     <input type="text" name="search" class="form-control" value="{{ search }}" placeholder="Search...">
                 </div>
 
-                <div class="col-md-3">
+                <div class="col-12 col-md-6 col-lg-3">
                     <label class="form-label fw-bold">{{ t('category') }}</label>
                     <select name="category" class="form-select">
                         <option value="">{{ t('all_categories') }}</option>
@@ -27,7 +27,7 @@
                     </select>
                 </div>
 
-                <div class="col-md-2">
+                <div class="col-12 col-sm-6 col-lg-2">
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input" id="available" name="available" value="1" {% if show_available %}checked{% endif %}>
                         <label class="form-check-label" for="available">
@@ -36,7 +36,7 @@
                     </div>
                 </div>
 
-                <div class="col-md-2">
+                <div class="col-12 col-sm-6 col-lg-2">
                     <button type="submit" class="btn btn-primary w-100">
                         <i class="bi bi-search me-1"></i>{{ t('search') }}
                     </button>
@@ -47,9 +47,9 @@
 </div>
 
 <!-- Results -->
-{% if books.items %}
+{% if books['items'] %}
 <div class="row g-4">
-    {% for book in books.items %}
+    {% for book in books['items'] %}
     <div class="col-md-4 col-lg-3">
         <div class="card book-card h-100 shadow-sm">
             <div class="card-body d-flex flex-column">
@@ -84,7 +84,7 @@
 
 <!-- Pagination -->
 <nav class="mt-4">
-    <ul class="pagination justify-content-center">
+    <ul class="pagination pagination-sm flex-wrap justify-content-center gap-1 mb-0">
         {% if books.has_prev %}
         <li class="page-item">
             <a class="page-link" href="{{ url_for('student.search_books', page=books.prev_num, search=search, category=category, available=1 if show_available else '') }}">
@@ -139,6 +139,16 @@
 .book-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+@media (max-width: 575.98px) {
+    .book-card .card-body {
+        padding: 0.9rem;
+    }
+
+    .pagination .page-link {
+        padding: 0.35rem 0.6rem;
+    }
 }
 </style>
 {% endblock %}

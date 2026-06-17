@@ -1,0 +1,9 @@
+# Local-only OCR / ledger-digitization dependencies.
+# NOT installed on Vercel (no Tesseract/Poppler there; processing runs on the
+# local scanning station via scripts/process_job_cli.py and /ocr upload).
+#
+# Install locally:  pip install -r requirements.txt -r requirements-ocr.txt
+
+pytesseract==0.3.13
+pdf2image==1.16.3
+anthropic==0.92.0
