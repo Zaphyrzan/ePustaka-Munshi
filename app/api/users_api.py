@@ -464,9 +464,10 @@ def create_member():
         if requested_member_id and Member.query.filter_by(member_id=requested_member_id).first():
             return ApiResponse.error('Member ID already exists', status_code=409)
         
-        # Generate member ID
+        # Generate a standardized member ID for the member's type when one
+        # wasn't supplied (STU#### students, TCH#### staff, EXT#### external).
         from app.models.member import generate_member_id
-        member_id = requested_member_id or generate_member_id()
+        member_id = requested_member_id or generate_member_id(data.get('member_type', 'Student'))
         
         # Create member
         member = Member(
