@@ -7,41 +7,44 @@ from flask_login import UserMixin
 from app import db
 
 
-def generate_member_id():
+# Member IDs are standardised as a type prefix + a 4-digit zero-padded running
+# number, with a separate sequence per type (e.g. STU0001, TCH0001, EXT0001).
+# Promoted members keep their original ID (a prefect is still a student).
+MEMBER_ID_PREFIX = {
+    'Student': 'STU',
+    'Staff': 'TCH',          # teachers / staff
+    'External': 'EXT',
+    'Library Prefect': 'STU',  # promoted student
+    'Librarian': 'TCH',        # promoted staff
+}
+
+
+def generate_member_id(member_type='Student'):
     """
-    Generate a unique member ID (auto-increment style).
-    Queries all existing member_ids to find the highest numeric value,
-    then increments it. This ensures no duplicate IDs even if records are deleted.
-    Format: STU0001, STU0002, STU0003, etc.
+    Generate the next unique member ID for a member type.
+
+    Format: <PREFIX><NNNN> with a per-prefix running number, e.g. STU0001 for
+    students, TCH0001 for staff, EXT0001 for external members. The number is the
+    highest existing value for that prefix + 1, so deletions never cause a clash.
     """
+    prefix = MEMBER_ID_PREFIX.get(member_type, 'STU')
     try:
-        # Fetch all members and their IDs from the database
-        all_members = Member.query.with_entities(Member.member_id).all()
-        
-        if not all_members:
-            # If no members exist, start with 1
-            next_number = 1
-        else:
-            # Extract numeric part from all member_ids and find the maximum
-            max_number = 0
-            for (member_id,) in all_members:
-                try:
-                    # Remove 'STU' prefix and convert to integer
-                    numeric_part = int(member_id.replace('STU', ''))
-                    max_number = max(max_number, numeric_part)
-                except (ValueError, AttributeError, TypeError):
-                    # Skip invalid member_ids and continue
-                    continue
-            
-            # Increment the maximum found number
-            next_number = max_number + 1
+        rows = (
+            Member.query.with_entities(Member.member_id)
+            .filter(Member.member_id.like(f'{prefix}%'))
+            .all()
+        )
+        max_number = 0
+        for (member_id,) in rows:
+            digits = ''.join(ch for ch in (member_id or '') if ch.isdigit())
+            if digits:
+                max_number = max(max_number, int(digits))
+        next_number = max_number + 1
     except Exception as e:
-        # Fallback: if any error occurs during lookup, start from 1
         print(f"Error generating member ID: {e}")
         next_number = 1
-    
-    # Format the ID as STU followed by 4-digit zero-padded number
-    return f'STU{next_number:04d}'
+
+    return f'{prefix}{next_number:04d}'
 
 
 class Member(UserMixin, db.Model):

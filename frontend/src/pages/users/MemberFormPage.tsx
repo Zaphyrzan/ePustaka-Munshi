@@ -138,10 +138,13 @@ export default function MemberFormPage() {
               className="form-control"
               value={form.member_id}
               onChange={(e) => setForm({ ...form, member_id: e.target.value })}
-              placeholder="STU0001"
-              required
+              placeholder={memberId ? '' : 'Auto-generated (STU/TCH/EXT)'}
+              required={!!memberId}
               disabled={!!memberId}
             />
+            {!memberId && (
+              <div className="form-text">Leave blank to auto-generate a standardized ID by member type.</div>
+            )}
           </div>
           <div className="col-md-6 mb-3">
             <label className="form-label">Full name</label>
