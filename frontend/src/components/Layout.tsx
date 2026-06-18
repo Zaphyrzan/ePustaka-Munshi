@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
 import { setLanguage } from '../i18n'
+import { api, unwrap } from '../api/client'
+import type { CirculationStats } from '../types'
 
 const STAFF_ROLES = ['Administrator', 'Librarian', 'Library Prefect']
 // Served straight from the CDN (frontend/public), not the Flask function.
@@ -13,6 +16,7 @@ interface NavItem {
   icon: string
   label: string
   end?: boolean
+  badge?: number
 }
 interface NavSection {
   title: string
@@ -50,12 +54,36 @@ export default function Layout() {
   // (home, search, my loans, NILAM leaderboard) alongside their prefect tools.
   const isPrefect = session?.role === 'Library Prefect'
 
+  const { data: statsData } = useQuery({
+    queryKey: ['circulation-stats'],
+    queryFn: () => unwrap<CirculationStats>(api.get('/api/circulation/stats')),
+    enabled: isStaff,
+    staleTime: 60_000,
+  })
+  const staffOverdue = statsData?.overdue_loans ?? 0
+
+  interface StudentLoansData { active?: { items?: { status: string; is_overdue?: boolean }[] } }
+  const { data: studentLoansData } = useQuery({
+    queryKey: ['student-loans-full'],
+    queryFn: () => unwrap<StudentLoansData>(api.get('/api/student/loans')),
+    enabled: !isStaff || isPrefect,
+    staleTime: 60_000,
+  })
+  const studentOverdue = (studentLoansData?.active?.items ?? []).filter(
+    (l) => l.status === 'overdue' || l.is_overdue,
+  ).length
+
   const studentPortalSection: NavSection = {
     title: t('student_portal'),
     items: [
       { to: '/student', icon: 'bi-house', label: t('home'), end: true },
       { to: '/student/search', icon: 'bi-search', label: t('search') },
-      { to: '/student/loans', icon: 'bi-journal-bookmark', label: t('myLoans') },
+      {
+        to: '/student/loans',
+        icon: 'bi-journal-bookmark',
+        label: t('myLoans'),
+        badge: studentOverdue || undefined,
+      },
       { to: '/student/leaderboard', icon: 'bi-trophy', label: t('leaderboard') },
     ],
   }
@@ -69,7 +97,13 @@ export default function Layout() {
           items: [
             { to: '/circulation/checkout', icon: 'bi-box-arrow-right', label: t('checkout') },
             { to: '/circulation/return', icon: 'bi-box-arrow-in-left', label: t('return') },
-            { to: '/circulation', icon: 'bi-list-check', label: t('activeLoans'), end: true },
+            {
+              to: '/circulation',
+              icon: 'bi-list-check',
+              label: t('activeLoans'),
+              end: true,
+              badge: staffOverdue || undefined,
+            },
           ],
         },
         ...(isAdminOrLibrarian
@@ -105,9 +139,14 @@ export default function Layout() {
                 <li className="sidebar-section">{section.title}</li>
                 {section.items.map((item) => (
                   <li className="nav-item" key={item.to}>
-                    <NavLink className="nav-link" to={item.to} end={item.end} onClick={() => setOpen(false)}>
-                      <i className={`bi ${item.icon}`} />
-                      {item.label}
+                    <NavLink className="nav-link d-flex align-items-center justify-content-between" to={item.to} end={item.end} onClick={() => setOpen(false)}>
+                      <span>
+                        <i className={`bi ${item.icon} me-1`} />
+                        {item.label}
+                      </span>
+                      {item.badge ? (
+                        <span className="badge bg-danger rounded-pill">{item.badge}</span>
+                      ) : null}
                     </NavLink>
                   </li>
                 ))}

@@ -32,9 +32,24 @@ export default function StudentLoansPage() {
 
   const active: Loan[] = data?.active?.items ?? []
   const history: Loan[] = data?.history?.items ?? []
+  const overdueLoans = active.filter((l) => l.status === 'overdue' || l.is_overdue)
 
   return (
     <div>
+      {overdueLoans.length > 0 && (
+        <div className="alert alert-danger d-flex align-items-center gap-2 mb-3" role="alert">
+          <i className="bi bi-exclamation-triangle-fill fs-5 flex-shrink-0" />
+          <div>
+            <strong>
+              {overdueLoans.length === 1
+                ? t('overdueAlert_one', { defaultValue: 'You have 1 overdue book.' })
+                : t('overdueAlert_other', { count: overdueLoans.length, defaultValue: `You have ${overdueLoans.length} overdue books.` })}
+            </strong>{' '}
+            {t('overdueAlertSub', { defaultValue: 'Please return them as soon as possible.' })}
+          </div>
+        </div>
+      )}
+
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h4 className="mb-0">
           <i className="bi bi-journal-bookmark me-2" />

@@ -77,19 +77,20 @@ class Loan(db.Model):
         max_renewals = current_app.config.get('MAX_RENEWALS', 2)
         return (
             self.status == LoanStatus.ACTIVE.value and
-            not self.is_overdue and
             self.renewal_count < max_renewals
         )
-    
+
     def renew(self, days=None):
         """Renew the loan"""
         if not self.can_renew:
             return False
-        
+
         if days is None:
             days = current_app.config.get('RENEWAL_LOAN_DAYS', 7)
-        
-        self.due_date = self.due_date + timedelta(days=days)
+
+        # Overdue loans extend from today so the member gets the full period
+        base = datetime.utcnow() if self.is_overdue else self.due_date
+        self.due_date = base + timedelta(days=days)
         self.renewal_count += 1
         self.updated_at = datetime.utcnow()
         return True

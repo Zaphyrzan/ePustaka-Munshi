@@ -373,8 +373,6 @@ def renew(loan_id=None):
             return ApiResponse.error('Loan not found', status_code=404)
 
         if not loan.can_renew:
-            if loan.is_overdue:
-                return ApiResponse.error('Cannot renew overdue loan', status_code=409)
             return ApiResponse.error('Maximum renewals reached', status_code=409)
 
         loan.renew(days=data.get('loan_days'))

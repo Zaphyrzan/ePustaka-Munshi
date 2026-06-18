@@ -3,8 +3,14 @@ import { Link } from 'react-router-dom'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api, unwrap, type Paginated } from '../../api/client'
-import { loanBadge, type Loan } from '../../types'
+import { loanBadge, type Loan, type CirculationStats } from '../../types'
 import SortHeader from '../../components/SortHeader'
+
+function fmtDate(iso?: string) {
+  if (!iso) return '—'
+  const [y, m, d] = iso.slice(0, 10).split('-')
+  return `${d}/${m}/${y}`
+}
 
 type Tab = 'active' | 'overdue' | 'all'
 
@@ -26,6 +32,13 @@ export default function LoansPage() {
     setPage(1)
   }
 
+  const { data: statsData } = useQuery({
+    queryKey: ['circulation-stats'],
+    queryFn: () => unwrap<CirculationStats>(api.get('/api/circulation/stats')),
+    staleTime: 60_000,
+  })
+  const overdueCount = statsData?.overdue_loans ?? 0
+
   const { data, isLoading } = useQuery({
     queryKey: ['loans', tab, page, sort, order],
     queryFn: () => {
@@ -42,7 +55,7 @@ export default function LoansPage() {
   const renew = useMutation({
     mutationFn: (loanId: number) => unwrap<Loan>(api.post(`/api/circulation/loans/${loanId}/renew`, {})),
     onSuccess: (loan) => {
-      setMsg({ kind: 'success', text: `${t('renewedNewDue')} ${loan.due_date?.slice(0, 10) ?? ''}` })
+      setMsg({ kind: 'success', text: `${t('renewedNewDue')} ${fmtDate(loan.due_date)}` })
       queryClient.invalidateQueries({ queryKey: ['loans'] })
     },
     onError: (err) => setMsg({ kind: 'danger', text: err instanceof Error ? err.message : t('error') }),
@@ -92,6 +105,9 @@ export default function LoansPage() {
               }}
             >
               {k === 'active' ? t('activeLoans') : k === 'overdue' ? t('overdue') : t('history')}
+              {k === 'overdue' && overdueCount > 0 && (
+                <span className="badge bg-danger ms-2">{overdueCount}</span>
+              )}
             </button>
           </li>
         ))}
@@ -138,7 +154,7 @@ export default function LoansPage() {
                       ? `${loan.member?.form_name || ''}${loan.member?.class_group ? ` ${loan.member.class_group}` : ''}`.trim()
                       : '—'}
                   </td>
-                  <td>{loan.due_date?.slice(0, 10) || '—'}</td>
+                  <td>{fmtDate(loan.due_date)}</td>
                   <td>
                     <span className={`badge ${loanBadge(loan).className}`}>{loanBadge(loan).label}</span>
                   </td>
