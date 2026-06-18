@@ -47,9 +47,9 @@ def _build_database_uri():
         selected = 'POOLER' if (is_vercel and pooler_url) else 'DATABASE'
         print(f"[CONFIG] Using {selected}_URL", flush=True)
         if database_url and 'pooler' in database_url.lower():
-            print(f"[CONFIG] ✓ Successfully using POOLER URL (contains 'pooler')", flush=True)
+            print(f"[CONFIG] OK: Successfully using POOLER URL (contains 'pooler')", flush=True)
         elif database_url and 'db.' in database_url:
-            print(f"[CONFIG] ✗ ERROR: Still using direct DB URL (contains 'db.')", flush=True)
+            print(f"[CONFIG] ERROR: Still using direct DB URL (contains 'db.')", flush=True)
 
     if database_url:
         # SQLAlchemy 1.4+/2.x expects postgresql:// instead of postgres://
@@ -98,6 +98,7 @@ class Config:
     _db_uri = SQLALCHEMY_DATABASE_URI
     _is_sqlite = 'sqlite' in _db_uri
     _is_postgres = 'postgresql' in _db_uri
+    _is_pooler = _is_postgres and 'pooler' in _db_uri.lower()
     
     # Base options (safe for all databases)
     SQLALCHEMY_ENGINE_OPTIONS = {
@@ -135,6 +136,11 @@ class Config:
             'max_overflow': 10,
             'pool_pre_ping': False,  # SQLite doesn't need ping
         })
+
+    if _is_pooler:
+        # Supabase transaction pooler can reuse server-side connections between
+        # app instances, so psycopg3 named prepared statements may collide.
+        SQLALCHEMY_ENGINE_OPTIONS.setdefault('connect_args', {})['prepare_threshold'] = None
     
     # OCR settings
     TESSERACT_CMD = os.environ.get('TESSERACT_CMD') or r'C:\Program Files\Tesseract-OCR\tesseract.exe'
