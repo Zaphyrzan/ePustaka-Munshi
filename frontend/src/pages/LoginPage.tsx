@@ -13,6 +13,7 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [showPw, setShowPw] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
@@ -47,24 +48,45 @@ export default function LoginPage() {
         {error && <div className="alert alert-danger py-2">{error}</div>}
         <form onSubmit={handleSubmit}>
             <div className="mb-3">
-              <label className="form-label">{t('username')}</label>
-              <input
-                className="form-control"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoFocus
-                required
-              />
+              <label className="form-label">{t('memberIdLogin')}</label>
+              <div className="input-group">
+                <span className="input-group-text">
+                  <i className="bi bi-person-vcard" />
+                </span>
+                <input
+                  className="form-control"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="e.g. STU0001"
+                  autoFocus
+                  required
+                />
+              </div>
             </div>
             <div className="mb-4">
               <label className="form-label">{t('password')}</label>
-              <input
-                type="password"
-                className="form-control"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <div className="input-group">
+                <span className="input-group-text">
+                  <i className="bi bi-lock" />
+                </span>
+                <input
+                  type={showPw ? 'text' : 'password'}
+                  className="form-control"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={() => setShowPw((v) => !v)}
+                  tabIndex={-1}
+                  aria-label={showPw ? t('hidePassword') : t('showPassword')}
+                  title={showPw ? t('hidePassword') : t('showPassword')}
+                >
+                  <i className={`bi ${showPw ? 'bi-eye-slash' : 'bi-eye'}`} />
+                </button>
+              </div>
             </div>
             <button className="btn btn-primary w-100" disabled={busy}>
               {busy ? t('loading') : t('login')}

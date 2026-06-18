@@ -15,6 +15,7 @@ export default function LoansPage() {
   const [page, setPage] = useState(1)
   const [sort, setSort] = useState('checkout_date')
   const [order, setOrder] = useState<'asc' | 'desc'>('desc')
+  const [msg, setMsg] = useState<{ kind: 'success' | 'danger'; text: string } | null>(null)
 
   function onSort(field: string) {
     if (sort === field) setOrder(order === 'asc' ? 'desc' : 'asc')
@@ -39,9 +40,21 @@ export default function LoansPage() {
   })
 
   const renew = useMutation({
-    mutationFn: (loanId: number) => unwrap(api.post(`/api/circulation/loans/${loanId}/renew`, {})),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['loans'] }),
+    mutationFn: (loanId: number) => unwrap<Loan>(api.post(`/api/circulation/loans/${loanId}/renew`, {})),
+    onSuccess: (loan) => {
+      setMsg({ kind: 'success', text: `${t('renewedNewDue')} ${loan.due_date?.slice(0, 10) ?? ''}` })
+      queryClient.invalidateQueries({ queryKey: ['loans'] })
+    },
+    onError: (err) => setMsg({ kind: 'danger', text: err instanceof Error ? err.message : t('error') }),
   })
+
+  function confirmRenew(loan: Loan) {
+    const title = loan.copy?.book?.title || loan.copy?.accession_number || ''
+    if (window.confirm(`${t('renewConfirm')}\n\n${title} — ${loan.member?.full_name ?? ''}`)) {
+      setMsg(null)
+      renew.mutate(loan.id)
+    }
+  }
 
   const pg = data?.pagination
 
@@ -60,6 +73,13 @@ export default function LoansPage() {
           </Link>
         </div>
       </div>
+
+      {msg && (
+        <div className={`alert alert-${msg.kind} py-2 d-flex justify-content-between align-items-center`}>
+          <span>{msg.text}</span>
+          <button type="button" className="btn-close" onClick={() => setMsg(null)} />
+        </div>
+      )}
 
       <ul className="nav nav-tabs mb-3">
         {(['active', 'overdue', 'all'] as Tab[]).map((k) => (
@@ -138,7 +158,7 @@ export default function LoansPage() {
                     {(loan.status === 'active' || loan.status === 'overdue') && (
                       <button
                         className="btn btn-outline-primary btn-sm"
-                        onClick={() => renew.mutate(loan.id)}
+                        onClick={() => confirmRenew(loan)}
                         disabled={renew.isPending}
                       >
                         {t('renew')}

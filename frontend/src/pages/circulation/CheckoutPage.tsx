@@ -15,12 +15,22 @@ interface MemberInfo {
   is_active?: boolean
 }
 
-/** Scanner-first checkout: scan member card, then book barcode. */
+interface CopyInfo {
+  id: number
+  barcode?: string
+  accession_number?: string
+  book_title?: string
+  status?: string
+  is_available?: boolean
+}
+
+/** Scanner-first checkout: scan member card, then scan the book, verify, Process. */
 export default function CheckoutPage() {
   const { t } = useTranslation()
   const [memberCode, setMemberCode] = useState('')
   const [member, setMember] = useState<MemberInfo | null>(null)
   const [barcode, setBarcode] = useState('')
+  const [book, setBook] = useState<CopyInfo | null>(null)
   const [msg, setMsg] = useState<{ kind: 'success' | 'danger'; text: string } | null>(null)
   const barcodeRef = useRef<HTMLInputElement>(null)
 
@@ -38,14 +48,32 @@ export default function CheckoutPage() {
     }
   }
 
-  async function doCheckout(e: React.FormEvent) {
+  // Step 2a: scan/find the book and show it for verification (no commit yet).
+  async function lookupBook(e: React.FormEvent) {
     e.preventDefault()
-    if (!member) return
+    setMsg(null)
+    setBook(null)
+    try {
+      const res = await api.get(`/circulation/api/copy/${encodeURIComponent(barcode.trim())}/loan`)
+      if (res.data.current_loan) {
+        setMsg({ kind: 'danger', text: t('bookAlreadyOnLoan') })
+        return
+      }
+      setBook(res.data)
+    } catch {
+      setMsg({ kind: 'danger', text: t('copyNotFound') })
+    }
+  }
+
+  // Step 2b: operator confirms by pressing Process.
+  async function doCheckout() {
+    if (!member || !book) return
     setMsg(null)
     try {
       await unwrap(api.post('/api/circulation/checkout', { barcode: barcode.trim(), member_id: member.id }))
-      setMsg({ kind: 'success', text: `Checked out ${barcode} to ${member.full_name}` })
+      setMsg({ kind: 'success', text: `Checked out ${book.book_title || barcode} to ${member.full_name}` })
       setBarcode('')
+      setBook(null)
       barcodeRef.current?.focus()
     } catch (err) {
       setMsg({ kind: 'danger', text: err instanceof Error ? err.message : t('error') })
@@ -128,7 +156,7 @@ export default function CheckoutPage() {
         )}
       </form>
 
-      <form onSubmit={doCheckout} className="card shadow-sm p-4">
+      <form onSubmit={lookupBook} className="card shadow-sm p-4">
         <label className="form-label fw-bold">2. {t('bookBarcodeLabel')}</label>
         <div className="d-flex gap-2 align-items-start">
           <div className="input-group flex-grow-1">
@@ -139,19 +167,39 @@ export default function CheckoutPage() {
               ref={barcodeRef}
               className="form-control"
               value={barcode}
-              onChange={(e) => setBarcode(e.target.value)}
+              onChange={(e) => {
+                setBarcode(e.target.value)
+                setBook(null)
+              }}
               placeholder="Scan book barcode"
               disabled={!member || !member.can_borrow}
               required
             />
           </div>
-          <button className="btn btn-success text-nowrap" disabled={!member || !member.can_borrow}>
-            <i className="bi bi-check-circle me-1" />
-            {t('processCheckout')}
+          <button className="btn btn-primary text-nowrap" disabled={!member || !member.can_borrow}>
+            {t('find')}
           </button>
         </div>
         {member && !member.can_borrow && (
           <div className="small text-danger mt-2">{t('cannotBorrow')}</div>
+        )}
+
+        {/* Verify the scanned book, then confirm with Process */}
+        {book && (
+          <div className="card mt-3 mb-0 border border-success">
+            <div className="card-body py-3 d-flex justify-content-between align-items-center gap-3">
+              <div>
+                <h6 className="mb-1">{book.book_title || book.accession_number}</h6>
+                <span className="text-muted small">
+                  {t('accessionNo')}: {book.accession_number || '—'} • {book.status || '—'}
+                </span>
+              </div>
+              <button type="button" className="btn btn-success text-nowrap" onClick={doCheckout}>
+                <i className="bi bi-check-circle me-1" />
+                {t('processCheckout')}
+              </button>
+            </div>
+          </div>
         )}
       </form>
         </div>
