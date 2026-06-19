@@ -1,0 +1,12 @@
+ 
+ 
+Figure  3.3:  SMK  Abdullah  Munshi’s  Library  Handwritten  Ledger  
+Table  3.3:  Excluded  Features  Table  
+Feature  Description  
+Mobile  Application  
+No  native  iOS  or  Android  app  will  be  developed;  the  system  is  strictly  web-based.  
+Online  Payments  The  system  will  not  handle  fines  or  monetary  transactions.  
+External  Integration  
+No  integration  with  National  Library  systems  or  third-party  digital  libraries.  
+ 
+25  

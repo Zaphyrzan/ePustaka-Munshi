@@ -34,7 +34,15 @@ export interface Paginated<T> {
 
 /** Unwrap the API envelope, throwing the server's message on failure */
 export async function unwrap<T>(promise: Promise<{ data: ApiEnvelope<T> }>): Promise<T> {
-  const res = await promise
-  if (!res.data.success) throw new Error(res.data.message || 'Request failed')
-  return res.data.data
+  try {
+    const res = await promise
+    if (!res.data.success) throw new Error(res.data.message || 'Request failed')
+    return res.data.data
+  } catch (err) {
+    if (axios.isAxiosError<ApiEnvelope<unknown>>(err)) {
+      const message = err.response?.data?.message
+      if (message) throw new Error(message)
+    }
+    throw err
+  }
 }

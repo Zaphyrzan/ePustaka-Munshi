@@ -451,33 +451,73 @@ def create_member():
         # Validate required fields
         full_name = data.get('full_name', '').strip()
         email = data.get('email', '').strip()
-        password = data.get('password', '').strip()
+        password = data.get('password', '').strip() or 'Munshi123'
         
-        if not full_name or not email or not password:
-            return ApiResponse.error('Full name, email, and password required', status_code=400)
+        if not full_name:
+            return ApiResponse.error('Full name is required', status_code=400)
+
+        if len(full_name) < 2:
+            return ApiResponse.error('Full name must be at least 2 characters', status_code=400)
+
+        if len(full_name) > 128:
+            return ApiResponse.error('Full name cannot exceed 128 characters', status_code=400)
+
+        if email:
+            if '@' not in email or '.' not in email.split('@')[-1]:
+                return ApiResponse.error('Invalid email format', status_code=400)
+            if len(email) > 120:
+                return ApiResponse.error('Email cannot exceed 120 characters', status_code=400)
         
         # Check uniqueness
-        if Member.query.filter_by(email=email).first():
+        if email and Member.query.filter_by(email=email).first():
             return ApiResponse.error('Email already exists', status_code=409)
 
         requested_member_id = data.get('member_id', '').strip()
         if requested_member_id and Member.query.filter_by(member_id=requested_member_id).first():
             return ApiResponse.error('Member ID already exists', status_code=409)
+
+        valid_member_types = ['Student', 'Staff', 'Teacher', 'Librarian', 'Admin', 'Library Prefect', 'External']
+        member_type = data.get('member_type', 'Student')
+        if member_type not in valid_member_types:
+            return ApiResponse.error('Invalid member type', status_code=400)
+
+        phone = data.get('phone', '').strip()
+        if phone:
+            if not all(c.isdigit() or c in ' +-' for c in phone):
+                return ApiResponse.error('Phone number contains invalid characters', status_code=400)
+            if len(phone) > 20:
+                return ApiResponse.error('Phone number cannot exceed 20 characters', status_code=400)
+
+        student_like = member_type in ('Student', 'Library Prefect')
+        form_level = data.get('form_level')
+        if student_like:
+            try:
+                form_level = int(form_level or 1)
+            except (TypeError, ValueError):
+                return ApiResponse.error('Invalid form level', status_code=400)
+            if form_level < 1 or form_level > 6:
+                return ApiResponse.error('Form level must be between 1 and 6', status_code=400)
+        else:
+            form_level = None
+
+        class_group = data.get('class_group', '').strip() if student_like else ''
+        if class_group and len(class_group) > 64:
+            return ApiResponse.error('Class group cannot exceed 64 characters', status_code=400)
         
         # Generate a standardized member ID for the member's type when one
         # wasn't supplied (STU#### students, TCH#### staff, EXT#### external).
         from app.models.member import generate_member_id
-        member_id = requested_member_id or generate_member_id(data.get('member_type', 'Student'))
+        member_id = requested_member_id or generate_member_id(member_type)
         
         # Create member
         member = Member(
             full_name=to_caps(full_name),
-            email=email,
+            email=email or None,
             member_id=member_id,
-            phone=data.get('phone', '').strip() or None,
-            member_type=data.get('member_type', 'Student'),
-            form_level=data.get('form_level') or 1,
-            class_group=to_caps(data.get('class_group', '').strip()) or None,
+            phone=phone or None,
+            member_type=member_type,
+            form_level=form_level,
+            class_group=to_caps(class_group) or None,
             student_year=data.get('student_year'),
             is_active=True
         )

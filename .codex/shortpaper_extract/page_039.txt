@@ -1,0 +1,32 @@
+ 
+3.4  Technology  Used  Description  
+The  technology  stack  was  selected  to  ensure  the  system  is  web-based,  cost-effective,  
+and
+ 
+compatible
+ 
+with
+ 
+the
+ 
+school's
+ 
+existing
+ 
+Windows-based
+ 
+hardware.
+  Table  3.1:  Technology  Used  Comparison  Table  
+Category  Technology  Purpose  Justification  
+Frontend  React.js  User  Interface  Development  
+Provides  a  responsive,  component-based  UI  that  is  essential  for  the  interactive  OCR  verification  screen.  
+Backend  /  Database  
+Supabase  Database  &  Auth  
+Offers  a  scalable  PostgreSQL  database  to  store  book  records  and  user  data  without  complex  server  maintenance.  
+OCR  Engine  
+Claude  Vision  API  +  Tesseract.js  
+Optical  Character  Recognition  
+Required  to  convert  the  handwritten  text  from  the  uploaded  ledger  images  into  digital  strings.  
+Hardware  Barcode  Scanner  Input  Device  USB-based  scanners  act  as  keyboard  inputs  to  rapidly  enter  book  IDs  during  borrowing.  
+Design  UML  Modeling  Used  for  creating  Use  Case,  Activity,  and  Sequence  diagrams  to  visualize  system  flow.  
+23  

@@ -1,0 +1,17 @@
+ 
+it  is  combined  in  the  master  books  inventory  data  is  cleaned  before  being  
+merged
+ 
+into
+ 
+the
+ 
+master
+ 
+Books
+ 
+inventory.
+ 
+ 
+Figure  4.4:  Entity  Relationship  Diagram  for  ePustaka  Munshi  
+41  

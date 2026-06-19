@@ -1,0 +1,19 @@
+ 
+UC005  Search  and  Filter  Books  
+This  use  case  allows  users  to  search  for  books  and  apply  filters  (e.g.,  title,  author,  category,  availability)  to  quickly  locate  specific  books  in  the  catalog.  UC006  Manage  Book  Records  
+This  use  case  allows  the  Admin,  Librarian  or  Library  Prefect  to  add  new  books,  or  edit  existing  book  details,  from  the  system  database.  Only  admin  can  delete  the  book  records  UC007  Upload  Ledger  Image  for  OCR  
+This  use  case  allows  the  Admin  or  Librarian  to  upload  scanned  images  of  physical  book  ledgers  for  Optical  Character  Recognition  (OCR)  processing.  
+UC008  Verify  and  Correct  OCR  Data  
+This  use  case  allows  Admin  and  Librarian  to  review,  validate,  and  manually  correct  extracted  OCR  data  before  it  is  saved  into  the  system  to  ensure  data  accuracy.  UC009  Save  Digitized  Records  
+This  use  case  allows  the  system  to  store  verified  and  corrected  digitized  book  records  into  the  database  for  future  access  and  management.  UC010  Scan  Book  for  Borrowing  
+This  use  case  allows  the  Admin,  Librarian  or  Library  Prefect  to  scan  a  book  barcode  to  initiate  a  borrowing  transaction  for  a  student.  
+UC011  Scan  Book  for  Returning  
+This  use  case  allows  the  Admin,  Librarian  or  Library  Prefect  to  scan  a  book  barcode  to  process  the  return  of  a  borrowed  book.  UC012  Validate  Book  Availability  
+This  use  case  allows  the  system  to  verify  whether  a  book  is  available  for  borrowing  or  already  on  loan  before  completing  a  transaction.  
+UC013  Update  Book  Status  
+This  use  case  allows  the  system  to  update  the  book’s  availability  status  and  borrowing  records  after  a  borrow  or  return  transaction  is  completed.   
+ 
+ 
+ 
+ 
+34  

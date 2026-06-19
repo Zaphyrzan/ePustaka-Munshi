@@ -161,6 +161,8 @@ const resources = {
       librarianRole: 'Librarian',
       demote: 'Demote',
       promoted: 'promoted',
+      defaultPassword: 'Default password',
+      memberDefaultPasswordHelp: 'Students must change this password themselves after the account is created.',
       // --- Admin: catalog / copies ---
       printBarcodes: 'Print barcodes',
       addCopy: 'Add copy',
@@ -413,6 +415,9 @@ const resources = {
       librarianRole: 'Pustakawan',
       demote: 'Turun Pangkat',
       promoted: 'dinaik pangkat',
+      defaultPassword: 'Kata Laluan Lalai',
+      memberDefaultPasswordHelp:
+        'Pelajar mesti menukar kata laluan ini sendiri selepas akaun dicipta.',
       // --- Pentadbir: katalog / naskhah ---
       printBarcodes: 'Cetak Kod Bar',
       addCopy: 'Tambah Naskhah',

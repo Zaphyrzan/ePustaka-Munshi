@@ -101,7 +101,12 @@ export default function MemberFormPage() {
       form_level: hasClass ? Number(form.form_level) : null,
       class_group: hasClass ? form.class_group : null,
     }
-    if (!form.password) delete payload.password
+    if (memberId) {
+      if (!form.password) delete payload.password
+    } else {
+      delete payload.member_id
+      delete payload.password
+    }
     try {
       if (memberId) await unwrap(api.put(`/api/users/members/${memberId}`, payload))
       else await unwrap(api.post('/api/users/members', payload))
@@ -137,10 +142,10 @@ export default function MemberFormPage() {
             <input
               className="form-control"
               value={form.member_id}
-              onChange={(e) => setForm({ ...form, member_id: e.target.value })}
+              onChange={(e) => memberId && setForm({ ...form, member_id: e.target.value })}
               placeholder={memberId ? '' : 'Auto-generated (STU/TCH/EXT)'}
               required={!!memberId}
-              disabled={!!memberId}
+              disabled
             />
             {!memberId && (
               <div className="form-text">Leave blank to auto-generate a standardized ID by member type.</div>
@@ -237,16 +242,24 @@ export default function MemberFormPage() {
               </div>
             </>
           )}
-          <div className="col-md-6 mb-3">
-            <label className="form-label">{memberId ? 'New password (leave blank to keep)' : 'Password (optional)'}</label>
-            <input
-              type="password"
-              autoComplete="new-password"
-              className="form-control"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-            />
-          </div>
+          {memberId ? (
+            <div className="col-md-6 mb-3">
+              <label className="form-label">New password (leave blank to keep)</label>
+              <input
+                type="password"
+                autoComplete="new-password"
+                className="form-control"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+              />
+            </div>
+          ) : (
+            <div className="col-md-6 mb-3">
+              <label className="form-label">{t('defaultPassword')}</label>
+              <input className="form-control" value="Munshi123" disabled />
+              <div className="form-text">{t('memberDefaultPasswordHelp')}</div>
+            </div>
+          )}
           {memberId && (
             <div className="col-md-6 mb-3 d-flex align-items-end">
               <div className="form-check">

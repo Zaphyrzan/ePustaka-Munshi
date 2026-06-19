@@ -1,0 +1,75 @@
+ 
+ 
+3.5  System  Requirement  Analysis  
+This  project  focuses  on  developing  a  web  application  accessible  via  standard  web  
+browsers.
+ 
+The
+ 
+requirements
+ 
+are
+ 
+categorized
+ 
+into
+ 
+Included
+ 
+Features
+ 
+(As
+ 
+in
+ 
+Table
+ 
+3.2),
+ 
+Excluded
+ 
+Features
+ 
+(As
+ 
+in
+ 
+Table
+ 
+3.3),
+ 
+and
+ 
+Functional
+ 
+(As
+ 
+in
+ 
+Table
+ 
+3.4)
+ 
+Non-Functional
+ 
+Requirements
+ 
+(As
+ 
+in
+ 
+Table
+ 
+3.5).
+ 
+Table  3.2:  Features  Table  
+Feature  Description  
+OCR  Ledger  Digitization  
+Capability  to  upload  images  of  handwritten  ledgers  and  extract  book  data  for  digital  storage.  (Figure  3.3)  
+Barcode  Transaction  
+Automating  the  borrowing  and  returning  process  using  USB  barcode  scanners.  
+Role-Based  Access  Distinct  interfaces  and  permissions  for  Librarians  (Admin),  Library  Prefects,  and  Students.  
+Centralized  Database  
+A  unified  repository  for  Book,  Student,  and  Transaction  data  to  replace  manual  logbooks.  
+ 
+24  

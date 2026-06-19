@@ -1,0 +1,118 @@
+ 
+4.6  Test  Case  Design  
+In  order  to  provide  a  stable  application,  test  case  design  is  directly  derived  from  
+functional
+ 
+requirements.
+ 
+Every
+ 
+test
+ 
+case
+ 
+is
+ 
+designed
+ 
+to
+ 
+validate
+ 
+whether
+ 
+or
+ 
+not
+ 
+the
+ 
+application
+ 
+behaves
+ 
+as
+ 
+it
+ 
+is
+ 
+expected
+ 
+to
+ 
+in
+ 
+given
+ 
+scenarios.
+ 
+The  Table  4.2  below  illustrates  an  important  test  case  for  the  distinctive  feature  of  the  
+current
+ 
+project,
+ 
+namely,
+ 
+the
+ 
+verification
+ 
+and
+ 
+correction
+ 
+of
+ 
+the
+ 
+resulting
+ 
+OCR
+ 
+data
+ 
+prior
+ 
+to
+ 
+its
+ 
+inclusion
+ 
+in
+ 
+the
+ 
+database.
+ 
+Table  4.2:  Test  Case  Description  for  verifying  and  correcting  OCR   
+Test  Case   
+ID  TC008_01  Test  Case  Description  
+  
+Verify  that  the  Librarian  can  edit  the  raw  text  extracted  by  Tesseract  before  saving.  
+Created  by:  
+Wan  Zafirzan  Bin  Wan  Tarmizan  Version:  
+  
+1.0  
+  
+No  Prerequisites  
+  
+No.  Test  Data  
+ 1  Image  processed  by  OCR.  1  Raw  OCR:  "Sej@rah"  
+  2  Correction:  "Sejarah"  
+    
+  
+Test  Conditions  OCR  engine  produces  a  typo  that  requires  human  intervention.  
+  
+Step  #  Step  Details  Expected  Result  
+OCR-extracted  text  was  displayed  in  the  verification  interface  and  the  Librarian  was  able  to  manually  correct  the  OCR  error  before  saving.  
+1  
+View  Split-Screen  interface.  
+The  uploaded  image  and  OCR  result  displayed  side  by  side  
+2  
+Click  field  and  type  "Sejarah".  
+The  field  is  editable  and  focuses  when  clicked.  
+   
+ 
+48  

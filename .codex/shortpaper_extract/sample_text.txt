@@ -1,0 +1,197 @@
+
+
+===== PAGE 1 =====
+International Journal ofInnovativeComputingXX(nn) pp-pp
+CUSTOMERRELATIONSHIPMANAGEMENTFORCARSERVICESATAZAUTOWORKS
+FATEMAELHADIKHABUGNAHMalaysia-JapanInternationalInstituteofTechnologyKualaLumpur, Malaysiakh-20@graduate.utm.my
+Abstract—Effective customer relationshipmanagement (CRM) is a challenge for small carworkshops due to the lack of a dedicated system.This project proposes aportal-basedCRMsystemto improve customer engagement and streamlineoperations. The system includes a user-friendlywebsite with WhatsApp integration for directcommunication, a dashboard for managing clientinformation, booking requests, and services. Keyfeatures include appointment scheduling,feedback collection, and robust securitymeasures.Using an Agile methodology ensures reliabilityand effectiveness. This solution addresses currentchallenges, enhancing customer service for bothworkshop owners and customers. Futureimprovements may include payment gatewayintegration, a feedback system, automatedreminders, andexpandedserviceofferings.
+I. INTRODUCTIONCustomer Relationship Management (CRM)systems have become integral to the operationalstrategies of modern businesses. These systemsare designed to streamline and enhance theinteractionsbetweenacompanyandits
+AP.TS.DR.MOHDIBRAHIMSHAPIAIMalaysia-JapanInternationalInstituteofTechnologyKualaLumpur, Malaysiamd_ibrahim83@utm.my
+customers, thereby improving customersatisfaction, loyalty, and overall businessperformance.For service-orientedbusinesseslikecar workshops, a robust CRM system cansignificantly enhance the efficiency ofoperationsandthequalityof customer service.
+AZ Autoworks, a car workshop,identified several gaps in its existing customerrelationship management practices. Thetraditional methods of managing appointments,customer inquiries, and service recordswerenotonly time-consuming but also prone to errors.Furthermore, the lack of an integratedcommunication platform led to delays incustomer responses and service updates. Toaddress these challenges, this project aimed todevelop and implement a comprehensive CRMsystem tailored to the specific needs of AZAutoworks.
+The primary objectives of this projectwere threefold. Firstly, to analyze the currentCRMneeds and identify areas for improvement
+
+
+===== PAGE 2 =====
+FATEMAELHADI KHABUGNAH/ IJICVol. XXX, No. nnn(2024)
+at AZ Autoworks. This involved a thoroughassessment of existing processes and customerfeedback to pinpoint the key pain points andinefficiencies. Secondly, to design and developan integrated CRM system that incorporatesenhanced features such as real-timecommunication, appointment scheduling, anduser management. The systemwas designed tobe intuitive and user-friendly, ensuring that bothclients and workshop staff could easily navigateand utilize its functionalities. Lastly, to validatethe system's functionality and user experiencethrough rigorous testing. This included ensuringthat the systemmet theoperational requirementsof AZ Autoworks and provided a seamlessexperiencefor itsusers.
+The implementation phaseof theprojectinvolved converting the system design intoactual code, ensuring that each componentfunctioned as intended. Key features such asreal-time communication through WhatsAppintegration, automated booking notifications viaemail, and a secure, role-based access controlsystem were developed. For the adminfunctionalities, a comprehensive dashboard wascreated, providing the admin with tools tomanagecustomer bookings, viewandapproveordecline booking requests, edit and deleteappointments, and manage service records. Theadmin could also create, edit, and deleteannouncements, ensuring effectivecommunication with customers. The interfacesand communications between different systemcomponents were carefully designed to ensuresmoothoperationanddataflow.
+Testing played a crucial role in theproject, encompassing both black-box andwhite-box testing techniques. Black-box testingfocused on verifying the system's functionalityagainst the specified requirements, includingsystemflow, input-output verification, and errormessage handling. White-box testing, on the
+other hand, examined the internal logic of thesystemto ensure that the code was functioningcorrectly. User acceptance testing was alsoconducted to ensure that the system met theneeds and expectations of the end users, bothcustomersandworkshopstaff.
+In conclusion, the CRM systemdeveloped for AZ Autoworks successfullyaddressed the identified gaps and enhanced theoverall efficiency andcustomer satisfaction. Theproject demonstrated the importance of awell-designed CRM system in improvingbusiness operationsandhighlightedthepotentialfor further enhancements, such as advancedanalytics and additional security measures, tofurther benefit thebusiness.
+II. BACKGROUND AND RELATEDWORKThe literature review chapter delves into thenecessity and technological underpinnings of aCustomer Relationship Management (CRM)systemfor car services, with a specific focusonAZ Autoworks. This analysis encompasses anexamination of current systems, acomparisonofexisting technologies, and an overview of thetechnologies selected for developing theproposedCRMsystem.
+Currently, AZ Autoworks lacks a dedicatedsystem for managing appointments, clientinformation, and customer communication. Theworkshop relies on Google Calendar forscheduling appointments and WhatsApp forclient communication, leading to a fragmentedapproach that hinders comprehensive clientmanagement and engagement. GoogleCalendar,while useful for visualizing available time slots,fails to store detailed client information, thuslimiting personalized service offerings.WhatsApp, used for communication, does notintegrate with appointment details or maintain a
+
+===== PAGE 3 =====
+FATEMAELHADI KHABUGNAH/ IJICVol. XXX, No. nnn(2024)
+structured client database, resulting ininefficiencies in tracking customer interactionsand service requests. This fragmented approachlimits clients from updating their information,viewing service histories, or engaging instreamlined communication, ultimatelydetractingfromtheoverall customer experience.The need for a CRM system is evident in thelimitations posed by the current system at AZAutoworks. A unified CRM platform wouldintegrate appointment scheduling, clientinformation management, and communication,thereby enhancing operational efficiency,enabling personalized services, and fosteringlong-term client relationships. This proposedCRM solution aims to address the gapsidentifiedinthecurrent system.A comparison of existing automotive servicesector systems, namely BookIt AutomotiveScheduler, CarServe Calendar System, andAutoBooker Workshop Scheduler, reveals acommon limitation: the absence of a dedicatedclient information database. BookIt, whileuser-friendlyfor appointment scheduling, lacksacomprehensive client database and advancedcustomer engagement features. CarServe offersan intuitive calendar interface for appointmentmanagement but similarly lacks a dedicatedclient database, limiting personalized serviceofferings. AutoBooker, known for its simplicity,also struggles with the absence of an integratedclient database, restricting its ability tomaintainextensive service histories and providepersonalized services. This consistentshortcomingacrossexistingsystemsunderscoresthe need for a more comprehensive CRMsolution that can provide effective customerengagement andrelationshipmanagement.The technological framework for the proposedCRM system involves the use of PHP as theprogramming language and a local serverenvironment featuring a MySQL database,exemplified by platforms like Xampp or Wamp.PHP is celebrated for its versatility in web
+development, offering extensive libraries andframeworks that facilitate scalable andmaintainable code. Studies byZouhair Maalej etal. (2019) and Ahmed Hamed et al. (2018)highlight PHP’s efficiency in handlingserver-side scripting and database integration,making it ideal for a feature-rich CRMsystem.The MySQL database, known for its robustnessand compatibility with PHP, ensures dataintegrity, security, and efficient retrieval.Research by Riadh BenHalimaet al. (2016) andAkhtar Hayat et al. (2019) supports the use ofMySQL in conjunction with PHP for webapplications, emphasizing its alignment withthestructured data requirements of CRM systemsand its suitability for development andtestinginalocal server environment.
+In summary, the literature reviewhighlights thenecessity of developing a bespoke CRMsystemfor AZ Autoworks to address the limitations ofthe current fragmented approach. The chosentechnologies, PHPand MySQLin a local serverenvironment, are validated through literature asappropriatefor creatinganefficient andeffectiveCRMsystem. This comprehensive analysis setsthe foundation for the development of a CRMsolution that aims to enhance customerrelationship management practices at AZAutoworks, ultimately improving operationalefficiencyandclient satisfaction.
+III. METHODOLOGY
+The methodology for developing the CRMsystemfor AZ Autoworks was centered aroundthe Agile software development methodology,chosen for its flexibility and iterative nature,which is well-suited to the dynamic andevolving requirements of CRMsystems. Agile’slife cycleincludesdistinct phasessuchasprojectinitiation, inception, construction, release,production, and retirement. These phases arecomplemented by iterative workflows involving
+
+===== PAGE 4 =====
+FATEMAELHADI KHABUGNAH/ IJICVol. XXX, No. nnn(2024)
+requirement gathering, design, development,testing, delivery, and feedback, allowing forcontinuous improvement and stakeholderengagement throughout the developmentprocess.
+The first phase, requirements gathering,involved closecollaborationwithstakeholdersatAZ Autoworks. Meetings and surveys wereconducted to elicit and document the needs andexpectations for the CRMsystem. The goal wasto design a user-friendly interface that wouldmake all essential functions easily accessiblefrom the home page. Key functionalitiesidentified for customers included a personalizeddashboard for appointment bookings, viewingannouncements, and direct communication withthe car workshop via WhatsAppintegration. Foradmins, the systemneeded to manage bookingrequests, customer information, service statuses,andannouncementseffectively.
+In the design phase, the conceptualizedfunctionalities were translated into a structuredblueprint. This phase focused on creating anintuitive and visually appealing user interface.The customer dashboard was designed tofacilitate straightforward appointment bookingsthrough a user-friendly form, while the admindashboard provided a comprehensive overviewof customer information and appointmentrequests. The design also included a section forcustomers to viewtheir appointment historyandan announcements page to keep theminformedabout updates and promotions. Seamlessintegration with WhatsApp was planned toenhance real-time communication betweencustomersandtheworkshop.
+During the development phase, the CRMsystem’s source code was implementedaccording to the defined specifications.Development was carried out in designatedsprints, ensuring that each feature wassystematically created and integrated within the
+specified time frames. This phase focused ontransforming the design into a fully operationalsystem, with emphasis on bringing theconceptualized CRMsystemtolifeandensuringtheseamlessintegrationof all features.
+Testing followed the development phase,involving ameticulousanalysisof thedevelopedsystemto identify any functional discrepancies.Rigorous testing was conducted to ensure thesystem met all stakeholder requirements andfunctioned correctly. The qualityassuranceteamexamined the systemaccording to a predefinedtest plan, ensuring compliance with establishedquality criteria. This comprehensive testingprocess aimed to guarantee the reliability andfunctionalityof theCRMsystem, withnumeroustest cases developed to assess the system’sperformanceacrossvariousscenarios.
+Upon successful completionof development andtesting, the system was prepared for serverdeployment. The development teamconductedademonstration session with customers toshowcase the system and ensure satisfactionwith the final product. Once customer approvalwas obtained, the system was released foroperational use, marking the transition fromdevelopment topractical application.
+The feedback phase was integral to the Agilemethodology, ensuring continuous improvementbased on stakeholder and client input. Opencommunication during sprint reviews facilitatedthedirect collectionof feedback, whichwasthenexamined and incorporated into subsequentdevelopment iterations. This active participationensured that the systemevolved to meet actualuser requirements and adapted to changingneeds.
+The development of the CRMsystemutilized arange of technologies, including HTML, CSS,PHP, Bootstrap, and JavaScript, with Laravel asthe application framework. The system was
+
+===== PAGE 5 =====
+FATEMAELHADI KHABUGNAH/ IJICVol. XXX, No. nnn(2024)
+deployed on a Wamp server, providing a robustbackendenvironment. HTMLstructuredthewebpages, CSS styled them, Bootstrap addedresponsive components, PHP handledserver-side processing and databaseinteractions,and JavaScript enabled dynamic functionality.This combination of technologies ensured thedevelopment of a robust, dynamic, anduser-friendlyCRMsystem.
+Systemrequirement analysis encompassed bothsoftware and hardware needs. Softwarerequirements included Microsoft Windows forthe operating system, web browsers foraccessing resources, Laravel for coding, PHPand SQL for programming, WAMP for localserver development, Lucid Chart for planning,and Visual Studio Code as the integrateddevelopment environment. Hardwarerequirements included a laptop for developmenttasks, a mobile phone for accessing the system,andaserver for deployment.
+Overall, the chosen methodology andtechnologies ensured the development of asophisticated CRM system tailored to thespecific needs of AZ Autoworks, enhancingcustomer relationship management practicesandoperational efficiency.
+FigureIII.1: Agilemethodology
+IV. SYSTEMDEVELOPMENT
+A.RequirementsAnalysisRequirement analysis and design are criticalphases in the software development life cyclethat ensure the creation of a high-quality andefficient softwaresolution. Requirement analysisis the process of gathering, understanding, anddefining the needs of stakeholderssuchasusers,customers, and project managers. The objectiveof this phase is to produce a clear and conciseunderstanding of the problemthat the softwarewill solve, the objectives it will achieve, andtheconstraints it must meet. Design, on the otherhand, is the process of defining thearchitecture,components, modules, interfaces, and data for asoftware solution. In this phase, the solution isdefined in terms of its components, theirrelationships, and the data will manipulate. Thedesign phase is crucial because it serves as theblueprint for implementation and influences theperformance, maintainability, and scalability ofthesoftwaresolution.
+B.FunctionalRequirementsCustomer FunctionsandActivities:
+1. BookingServices:Fill Booking Form: Customers fill outthe booking form with their username,email ,plate number, phone number, carbrand, and appointment date and timeand Submit Booking Request: Therequest issent totheadminfor approval.2. ViewBookingStatus:Receive Notifications: Customersreceive notifications via email whentheir booking request is approved ordeclined.
+
+
+===== PAGE 6 =====
+FATEMAELHADI KHABUGNAH/ IJICVol. XXX, No. nnn(2024)
+3. AccessAnnouncements:View Announcements: Customers canview all announcements created by theadmin.4. WhatsAppIntegration:Contact Admin: Customers can useWhatsApp to chat with the admin aboutanyissuesor questions.
+AdminFunctionsandActivities
+1. LoginAdmins can securely log in with ausernameandpassword.2. ManageBookingRequestsView customer booking requests withdetails and approve or decline them.Approved bookings are moved to theAppointment Information page, andcustomers are notified. Declinedrequests are removed, and customersreceiveadeclinationemail.3. ManageAppointmentsViewandmanagebookedappointments,search by customer name or platenumber, edit or deleteappointments, andmark appointments as "done" to movethemtotheServiceRecordspage.4. ManageCompletedServicesViewall completed service recordswithcustomer information and rankings.Search by name or plate number andfilter by car brand. Records can bedeletedasneeded.5. ManageAnnouncementsView, edit, delete, and createannouncements with title, content, andimage.
+C. Nonfunctional requirements1. Performance:The CRM system mustrespond to user interactions within amaximumof 2 secondstoensureaswiftandefficient user experience.
+2. Scalability:The system should bescalable to handle a 20% increase inuser registrations and service bookingswithout a significant impact onperformance.3. Reliability:The system must have anuptime of at least 99.5%, ensuringreliable access to users and minimizingdowntimefor maintenance.4. Security:All user data, includingpersonal and transactional information,must beencryptedusingindustry-5. Compatibility:The CRMsystemshould becompatiblewiththelatest versions of popular webbrowsers(GoogleChrome, Mozilla Firefox, Safari) to ensure aconsistent user experience across differentplatforms.6. Accessibility:The system must adhere to accessibilitystandards (WCAG2.0) to ensure that userswithdisabilities can navigate and interact with theCRMsystemeffectively.7. Usability:The user interface must be intuitive anduser-friendly, requiring minimal training foruserstonavigateandperformessential tasks.
+D. UsecasediagramAuse case diagramis agraphical representationof the interactionsbetweenactors(usersor othersystems) and the system under discussion. Itshows the use cases(functional requirements) ofthe system and the actors engaged in carryingthemout. The use case of the proposed systemCRMisillustratedinFigureIV.1.In the AZAutoworks car workshop system, the**Customer** is an external user who booksappointments, views announcements, andcontacts the workshop staff through WhatsAppwithout needing to log in, receiving emailnotifications about their booking status. The**Admin** is an internal user who managescustomer booking requests, appointments,
+
+===== PAGE 7 =====
+FATEMAELHADI KHABUGNAH/ IJICVol. XXX, No. nnn(2024)
+service records, and announcements by logginginto the system's dashboard. They can approveor decline booking requests, edit or deleteappointments, mark appointments as done,manage service records, and create or editannouncements. The system facilitates varioususe cases: admins log in using their credentialsto access the dashboard; customers bookappointments through a detailed form andreceive email notifications about thestatus; theycan also view announcements and contactworkshopstaff viaWhatsApp. Adminscanview,approve, or declinebookingrequests, searchandmanage appointments, mark themas done, andmanage service records by searching, editing, ordeleting them. Additionally, admins handleannouncements by creating, editing, or deletingthemasneeded.
+FigureIV.1: Usecasediagram
+V. SystemArchitectureDesign
+The Model-View-Controller (MVC) architectureis a widely used design pattern in softwaredevelopment, providing a systematic andorganized approach to building applications. Inthe context of a Customer RelationshipManagement (CRM) system, the MVCarchitecture applied to enhance maintainability,scalability, and flexibility.In the AZ Autoworkscar workshop system, the Model represents theapplication's data and business logic, includingentities like User, Booking, Notification, andAnnouncement, with various attributes andrelationships managing customer data,appointment information, and service-relateddetails. The View comprises user interfaces,such as the login pagefor admins, bookingformfor customers, announcements page, WhatsAppintegration, and admin dashboard featuringsections for Requests, Appointmentsinformation, Service Records, andAnnouncements. It handles the presentationlayer and user interactions. The Controller actsas anintermediarybetweentheModel andView,managing user input, updating the Model, andcontrolling data flow. It includes theAuthController for login and logout functions,BookingController for handlingbooking-related actions like creating, storing,viewing, approving, declining, updating,deleting, and marking bookings as done,NotificationController for sending email andWhatsApp notifications,AnnouncementController for creating, editing,deleting, and viewing announcements, andServiceRecordController for viewing,searching, and deleting service records. Thiscomprehensive MVC architecture ensures aseamless and efficient workflow, enabling usersto interact with the system effectively whileallowing admins to manage all aspects ofcustomer interactionsandservicerecords.
+
+
+===== PAGE 8 =====
+FATEMAELHADI KHABUGNAH/ IJICVol. XXX, No. nnn(2024)
+FigureV.1:MVCArchitecture
+VI. DatabaseDesign
+The database design for the CustomerRelationship Management (CRM) system ismeticulously crafted to efficiently managecustomer-related information, appointments,notifications, and communication logs. Keyentities include "Customers" to store clientdetails,and "Admins"for systemadministrators,"Appointments" for scheduling service sessions,and "Notifications" for sending messages tocustomers. The "WhatsApp Messages" entitycaptures real-timeinteractions. Relationshipsareestablished, linking appointments, notifications,and messages to the respective customers andadministrators. This design ensures dataintegrity, facilitating seamless retrieval andmanipulation of information critical forcustomer engagement and service coordination.The system accommodates diversefunctionalities, enabling effectivecommunication, appointment scheduling, andcustomer relationship management, contributingto a robust and scalable CRM solution.In thecontext of the AZ Autoworks CRM system,various entities play critical roles. The Adminentity represents system administratorsmanaging bookings, appointments, services, andannouncements, with attributes like admin_id,username, password, andemail. TheCustomer
+entity represents users booking appointmentsand receiving services, characterized bycustomer_id, username, email, phone number,car brand, andplatenumber. TheBookingentityencapsulates customer service bookings withattributes suchasbooking_id, customer_id, date,time, and status (e.g., pending, approved,declined). The Appointment entity representsscheduled and approved bookings, includingappointment_id, booking_id, status (e.g., ontime, overdue), and is_done to indicatecompletion. The ServiceRecord entity logscompleted services, featuring service_record_id,appointment_id, service_date, and rating (e.g.,average, good, excellent). The Announcemententity contains admin-created announcementsfor customers, with attributes likeannouncement_id, title, content, image_url, andcreated_at. Lastly, the Notification entityrepresents communications sent to customersregarding booking statuses, includingnotification_id, customer_id, message, andsent_at. Each entity'sattributesandrelationshipsensure comprehensive management of the CRMsystem’sfunctionalities.
+FigureV.1:MVCArchitecture
+VII. Interface:
+A. CustomerviewBooking Page :Customers can fill out abookingformto request service appointments. The formincludes fields for username, email, plate
+
+
+===== PAGE 9 =====
+FATEMAELHADI KHABUGNAH/ IJICVol. XXX, No. nnn(2024)
+number, phone number, car brand, and thedesiredappointment dateandtime.
+FigureVII.1: BookingpageB. ViewAnnouncements:Announcements Page:Displays allannouncements created by the admin.Announcements may include information aboutpromotions, newservices, or important updates.
+FigureVII.2: ViewAnnouncementsC. WhatsappintegrationWhatsApp Integration Page:Provides a link orQR code for customers to connect withworkshopstaff viaWhatsApp.
+FigureVII.3:Whatsappintegration
+D. WhatsappintegrationAbout uspagewhichcontainall informationandlocationof AzAutoworks
+Figure VII.4:About uspage
+AdminView:login page for Admin , Admin should enter thecorrect email andpasswordtologin
+Figure VII.5:AdminLoginpage
+A. Request Page:Lists all pending customer booking requestswith details, Admins can approve or declinerequests. Approved requests move to theAppointment Information Page, and appropriateemail notificationsaresent tocustomers.
+
+
+===== PAGE 10 =====
+FATEMAELHADI KHABUGNAH/ IJICVol. XXX, No. nnn(2024)
+Figure VII.6:Request Page
+B. Appointment InformationPage:Displays all approvedbookings, alongwiththeirstatus (on time or overdue).Admins can searchfor appointments by name or plate number, editappointment details, delete appointments, ormark themas done. Marked appointmentsmovetotheServiceRecordsPage.
+FigureVII.7: Appointment InformationPage
+C. ServiceRecordsPage:Lists all customers who have completedservices, including service history andranking.Admins cansearchbycustomer nameorplate number, filter by car brand, and deleteservicerecordsasneeded.
+FigureVII.8:ServiceRecordsPage
+D.AnnouncementsPage:Displays all previously created announcements.Admins can create new announcements using aform, edit existing announcements, or deleteannouncementsfromthelist.
+FigureVII.9: showsAnnouncementsPage
+CreateAnnouncementsPage:Adminshouldfill uptheformwithrequireddetailstocreateannouncement
+FigureVII.10: CreateAnnouncementsPage
+VIII. SystemTestingandValidation
+
+
+===== PAGE 11 =====
+FATEMAELHADI KHABUGNAH/ IJICVol. XXX, No. nnn(2024)
+This section describes the numerous testingmethods used to assure the resilience anddependability of the developed system. Bothblack box and white box testing methods wereused to thoroughly assess the system'sperformance, functionality, and error handlingcapabilities.
+BlackboxTestingBlack box testing focuses on verifying thefunctionality of the CRM system withoutlooking into the internal code structure. Itinvolves testing the system's behavior byproviding inputs andexaminingtheoutputs. Theprimary aspects of black box testing includesystemflow, input-output verification, and errormessages.1. SystemFlowSystem flow testing ensures that the overallworkflowof theCRMsystemoperatessmoothlyand as expected. This involves navigatingthrough different modules and interfaces tovalidatethecorrect executionof tasks.Test Cases:
+TableVIII.1: LoginWorkflow
+TestCaseID
+InputData
+ExpectedResult
+ActualResult
+Pass/Fail
+TC001_SF_01
+Opentheloginpage.Enter validadmincredentials.Clickontheloginbutton.
+Adminshouldberedirectedtothedashboard.
+Adminredirectedtothedashboard.
+Pass
+TC002_SF_01
+OpentheloginpageEnterinvalidcredentials.Clickontheloginbutton.
+Errormessageshouldbedisplayed: "Invalidusernameorpassword."
+Errormessagedisplayed: "Invalidusernameorpassword."
+Pass
+2.Input Output VerificationInput-output verification ensures that thesystemcorrectly processes the inputs and produces theexpected outputs. This involves testing variousinputs for each function and verifying that theoutputsareaccurate.
+TableVIII.2: Booking
+TestCaseID
+InputData
+ExpectedOutput
+ActualOutput
+Pass/Fail
+TC001_IO_01
+Openthebookingform.Enter validdetailsandsubmit.
+Confirmationmessageandemailshouldbesent tothecustomer.
+Confirmationmessageandemailsent.
+Pass
+TC002_IO_01
+Openthebookingform.Enter invaliddetailsandsubmit.
+Errormessageshouldbedisplayed: "Invaliddetailsprovided."
+Errormessagedisplayed: "Invaliddetailsprovided."
+Pass
+3. ErrorMessagesTesting error messages ensures that the systemprovides appropriate feedback to users when
+
+===== PAGE 12 =====
+FATEMAELHADI KHABUGNAH/ IJICVol. XXX, No. nnn(2024)
+incorrect inputs are provided or when an erroroccurs.
+TableVIII.3: InvalidLoginErrorMessage
+TestCaseID
+InputData
+ExpectedErrorMessage
+Actual ErrorMessage
+Pass/Fail
+TC001_EM_01
+Opentheloginpage.Enterinvalidcredentials.
+"Invalidusernameorpassword."
+"Invalidusernameorpassword."
+Pass
+TC002_EM_01
+Opentheloginpage.Leavethefieldsemptyandsubmit.
+"Pleaseenteryourusernameandpassword."
+"Pleaseenteryourusernameandpassword."
+Pass
+4. UseracceptanceTestingUser Acceptance Testing (UAT) ensuresthat theCRM system meets the business requirementsand isreadyfor deployment. DuringUAT, actualusers test thesysteminacontrolledenvironmentto validate its functionality and usability. Theprocess includes testing each main function ofthe CRM, such as booking appointments,managingrequests, andcreatingannouncements,to ensure they operate correctly from theend-user perspective. Additionally,non-functional aspects like performance,usability, security, and compatibility areverifiedto guarantee the system's reliability andefficiency. The successful completion of UATconfirms that the systemis ready for real-world
+use, meeting all specified requirements anduserexpectations.
+VI.ACHIEVEMENT OF
+PROJECT
+OBJECTIVES
+The project successfully met its primaryobjectives:
+1. ToanalyzeCRMNeedsandGaps:a. Conducted a thorough analysis of thecurrentCRMpracticesat AZAutoworks.b. Identified key areas for improvement,ensuring the new system addresses existinggapsandenhancesoverall CRMefficiency.2. To develop and design an IntegratedCRMSystem:a. Created a unified CRM platform withadvanced features such as real-timecommunication via WhatsApp integrationandstreamlinedappointment scheduling.b. Designed an intuitive and user-friendlyinterface catering to both clients andadministrators.3. To validate SystemFunctionality andUserExperience:a. Performed extensive testing to ensure thesystem's effectiveness, ease of use, andimprovement incustomer satisfaction.b. Gathered feedback fromactual users duringUser Acceptance Testing (UAT) to validatefunctionalityandusability.
+VII.FUTUREWORKOne potential enhancement for theCRMsystemis the integration with payment gateways,enabling customers to make online payments
+
+===== PAGE 13 =====
+FATEMAELHADI KHABUGNAH/ IJICVol. XXX, No. nnn(2024)
+directly through the platform. This would notonly enhance convenience but also streamlinethe payment process. Secure transactionprocessing and automated invoice generationshould be implemented toensureaseamlessandsafepayment experience.Another suggestion is the development of acustomer feedback and review system. Thismodule would facilitate the collection andmanagement of customer feedback, allowingthebusiness to use this information to improveservices and foster a transparent,customer-centricculture.Automated service reminders and notificationsare also recommended. By setting upautomatedreminders for upcoming appointments, dueservices, and follow-up actions, the CRMsystem can ensure timely communication withcustomers. Customizable notification settingswould allowfor a tailored approachtocustomerinteractions.Finally, expandingserviceofferingsandpackagemanagement could greatly benefit the CRMsystem. Functionality for creatingandmanagingservice packages, special offers, and loyaltyprograms would enhance customer engagementand retention. Customers should be abletoviewand purchase these service packages directlythrough the CRM system, further improvingtheir overall experience.
+VIII.CONCLUSION
+In conclusion, The CRM systemdevelopedfor AZ Autoworks has been successfully
+implemented, providing a comprehensivesolution for managing customer bookings andstreamlining administrative tasks. The system'sintegration with WhatsApp for notificationsenhances customer communication, while theuser-friendlyinterfacesonboththecustomer andadmin sides ensure a seamless user experience.Overall, the project has achieved its goals ofimproving efficiency and customer service forAZ Autoworks, demonstrating the effectivenessof thedevelopedCRMsystem.
+ACKNOWLEDGMENT
+In preparing this thesis, I wasincontact withmany people, researchers, academicians, andpractitioners. They have contributedtowardsmyunderstanding and thoughts. Inparticular, I wishto express my sincere appreciation to my mainthesis supervisor, AP.TS.Dr. MOHDIBRAHIMSHAPIAI, for encouragement, guidance, criticsand friendship. I am also very thankful to myco-supervisor Dr Halinawati Binti Hirol and Dr.Zatul Binti Alwani for their guidance, advicesand motivation. Without their continued supportand interest, this thesis would not have beenthesameaspresentedhere.My fellowstudentsshouldalsoberecognisedfor their support. My sincere appreciation alsoextends to all my colleagues and others whohave provided assistance at various occasions.Their views and tips are useful indeed.Unfortunately, it is not possible to list all ofthem in this limited space. I amgrateful to allmyfamilymembers.
+
+===== PAGE 14 =====
+FATEMAELHADI KHABUGNAH/ IJICVol. XXX, No. nnn(2024)
+References
+[1] Q. Dou, S. Liu, Z. Wang, andY. Deng. 2019,April. Improving university operationalefficiency through workflow automation: Acase study. Proceedings of the 52nd HawaiiInternational Conference on SystemSciences, 1-10.[2] UCLANewsroom. 2019, August 28. UCLAlaunches robotic process automation (RPA)pilot program to streamline administrativetasks.https://dailybruin.com/2023/02/04/the-quad-how-accessibility-accommodations-benefit-students-what-ucla-can-improve-on[3] T. Davis and J. Higgins. 2013. ABlockbuster Failure: How an OutdatedBusiness Model Destroyed a Giant. Chapter11 Bankruptcy CaseStudies. Retrievedfromhttps://ir.law.utk.edu/utk_studlawbankruptcy/11/[4] R. A. Gershon. 2013. Innovation Failure: ACase Study Analysis of Eastman KodakandBlockbuster Inc. In Media management andeconomics research in a transmediaenvironment, 62-84. Routledge.[5] S. Sheikh, G. Suganya, and M. Premalatha.2019. Automated Resource Management onAWS Cloud Platform. In Smart innovation,systems and technologies. Springer Nature.https://doi.org/10.1007/978-981-32-9889-7_11[6] MTFeedback: Providing Notifications toEnhance Teacher Awarenessof Small GroupWork in the Classroom. 2015, June 1. IEEEJournals & Magazine | IEEE Xplore.https://ieeexplore.ieee.org/abstract/document/6936385[7] A. Haleem, M. Javaid, M. A. Qadri, and R.Suman. 2022. Understanding the role ofdigital technologies in education: Areview.Sustainable Operations and Computers. 3,275–285.https://doi.org/10.1016/j.susoc.2022.05.004[8] MJIIT MARKETING. (n.d.).Sites.google.com. Retrieved June 21, 2023,from
+https://sites.google.com/utm.my/mjiit-marketing/home?authuser=0[9] The PHP Group. 2019, April 4. PHP:Hypertext Preprocessor. Retrieved fromPhp.net website: https://www.php.net/[10] T. Otwell. 2015. Laravel - The PHPFramework For Web Artisans. Retrievedfrom Laravel.com website:https://laravel.com/[11]Oracle. 2000. MySQL. Retrieved fromMysql.com website:https://www.mysql.com/[12] Apache Friends. 2019. XAMPPInstallers and Downloads for ApacheFriends. Retrieved from Apachefriends.orgwebsite:https://www.apachefriends.org/index.html[13] F. K. Y. Chan and J. Y. Thong. 2009.Acceptance of agile methodologies: Acritical review and conceptual framework.Decision Support Systems. 46(4), 803–814.https://doi.org/10.1016/j.dss.2008.11.009[14] R. Malik, S. F. Ahmad, and M. M.Hussain. 2019. A Review of AgileMethodology in IT Projects. Social ScienceResearch Network.https://doi.org/10.2139/ssrn.3351064[15] Z. A. Masood and S. Farooq. 2017. TheBenefits and Key Challenges of AgileProject Management under Recent ResearchOpportunities. International ResearchJournal of Management Sciences. 5(1),20-28. Retrieved fromhttp://www.irjmsjournal.com.[16] K. Tsilionis, S. Sassenus, and Y.Wautelet. 2021. Determining the Benefitsand Drawbacks of Agile (Scrum) andDevOps in Addressing the DevelopmentChallenges of Cloud Applications.SpringerLink, 109–123.https://doi.org/10.1007/978-3-030-84311-3_11[17] G. S. Matharu, A. Mishra, H. Singh, andP. Upadhyay. 2015b. Empirical Study ofAgile Software DevelopmentMethodologies. ACM Sigsoft SoftwareEngineering Notes. 40(1), 1–6.https://doi.org/10.1145/2693208.2693233
+
+===== PAGE 15 =====
+FATEMAELHADI KHABUGNAH/ IJICVol. XXX, No. nnn(2024)
+[18] Y. B. Leau, W. K. Loo, W. Y. Tham, andS. F. Tan. 2012. Software development lifecycle AGILE vs traditional approaches. InInternational ConferenceonInformationandNetworkTechnology. 37(1), 162-167.[19] L. Chung and J. C. S. do Prado Leite.2009. On non-functional requirements insoftware engineering. Conceptual modeling:Foundations and applications: Essays inhonor of JohnMylopoulos, 363-379.[20] J. Eckhardt, A. Vogelsang, and D. M.Fernández. 2016, May. Are"non-functional"requirements really non-functional? Aninvestigation of non-functional requirements
+in practice. In Proceedings of the 38thInternational Conference on SoftwareEngineering, 832-842.[21] J. Deacon. 2009. Model-view-controller(mvc) architecture. Online.http://www.jdl.co.uk/briefings/MVC.pdf, 28.[22] J. Bucanek. 2009.Model-view-controller pattern. LearnObjective-Cfor JavaDevelopers, 353-402.[23] J. L. Harrington. 2016. Relationaldatabase design and implementation.MorganKaufman

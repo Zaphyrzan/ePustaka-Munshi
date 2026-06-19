@@ -1,0 +1,13 @@
+ 
+Table  3.4:  Functional  Requirements  Table  
+Category  Requirement  
+Authentication  Users  must  log  in  with  valid  credentials  to  access  the  system  (US001).  
+Inventory  The  system  allows  adding,  editing,  and  deleting  book  records  (US006).  
+Digitization  The  system  must  accept  image  uploads  and  present  OCR  data  for  verification  (US008).  
+Circulation  The  system  must  validate  book  availability  before  recording  a  borrow  transaction  (US012).  
+ 
+Table  3.5:  Non-Functional  Requirements  Table  
+Category  Requirement  
+Performance  The  system  shall  respond  to  user  login  requests  within  3  seconds.  
+Throughput  The  system  shall  support  at  least  50  concurrent  users  performing  standard  operations.  
+26  
