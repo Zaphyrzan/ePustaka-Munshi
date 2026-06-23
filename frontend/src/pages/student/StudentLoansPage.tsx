@@ -121,7 +121,7 @@ export default function StudentLoansPage() {
             </thead>
             <tbody>
               {active.map((loan) => {
-                const badge = loanBadge(loan)
+                const badge = loanBadge(loan, t)
                 return (
                   <tr key={loan.id}>
                     <td>

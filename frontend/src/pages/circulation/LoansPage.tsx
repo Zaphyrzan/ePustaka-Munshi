@@ -156,7 +156,7 @@ export default function LoansPage() {
                   </td>
                   <td>{fmtDate(loan.due_date)}</td>
                   <td>
-                    <span className={`badge ${loanBadge(loan).className}`}>{loanBadge(loan).label}</span>
+                    <span className={`badge ${loanBadge(loan, t).className}`}>{loanBadge(loan, t).label}</span>
                   </td>
                   <td className="small">
                     <div>

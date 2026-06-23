@@ -58,18 +58,23 @@ export interface Loan {
   return_staff?: { id: number; username?: string; full_name?: string } | null
 }
 
+type TFn = (key: string, opts?: Record<string, unknown>) => string
+
 /** Human status for a loan: overdue beats due-soon beats plain status */
-export function loanBadge(loan: Loan): { label: string; className: string } {
-  if (loan.status === 'returned') return { label: 'returned', className: 'bg-secondary' }
+export function loanBadge(loan: Loan, t?: TFn): { label: string; className: string } {
+  const tr = t ?? ((k: string) => k)
+  if (loan.status === 'returned') return { label: tr('loanReturned'), className: 'bg-secondary' }
   if (loan.is_overdue || loan.status === 'overdue') {
     const days = loan.days_overdue ?? 0
-    return { label: days > 0 ? `${days} day${days === 1 ? '' : 's'} overdue` : 'overdue', className: 'bg-danger' }
+    const label = days > 0 ? tr('loanOverdueDays', { count: days }) : tr('loanOverdue')
+    return { label, className: 'bg-danger' }
   }
   const left = loan.days_remaining
   if (left != null && left <= 3) {
-    return { label: left === 0 ? 'due today' : `due in ${left} day${left === 1 ? '' : 's'}`, className: 'bg-warning text-dark' }
+    const label = left === 0 ? tr('loanDueToday') : tr('loanDueInDays', { count: left })
+    return { label, className: 'bg-warning text-dark' }
   }
-  return { label: loan.status, className: 'bg-info text-dark' }
+  return { label: tr('loanActive'), className: 'bg-info text-dark' }
 }
 
 export interface CirculationStats {

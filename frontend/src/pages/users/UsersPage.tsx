@@ -329,7 +329,7 @@ export default function UsersPage() {
                       <span className={`badge ${MEMBER_BADGE[type] || 'bg-secondary'}`}>{type}</span>
                     </td>
                     <td>
-                      {m.form_level ? `Form ${m.form_level}` : '—'}
+                      {m.form_level ? `FORM ${m.form_level}` : '—'}
                       {m.class_group ? ` ${m.class_group}` : ''}
                     </td>
                     <td className="text-center">

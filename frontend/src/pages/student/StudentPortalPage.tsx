@@ -135,7 +135,7 @@ export default function StudentPortalPage() {
           </thead>
           <tbody>
             {myLoans.slice(0, 5).map((loan) => {
-              const badge = loanBadge(loan)
+              const badge = loanBadge(loan, t)
               return (
                 <tr key={loan.id}>
                   <td>{loan.copy?.book?.title || loan.copy?.accession_number}</td>
