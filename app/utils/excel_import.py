@@ -13,6 +13,7 @@ from openpyxl.utils import get_column_letter
 from app import db
 from app.models import Member, Book, BookCopy
 from app.models.member import generate_member_id
+from app.utils.text_format import to_caps
 
 
 # Configuration
@@ -154,9 +155,9 @@ def _parse_class_title(text):
     name = name.strip(' -:')
     if not name:
         return form_level, None
-    # Title-case alphabetic class names but leave short codes (e.g. "B") alone
-    pretty = name.title() if any(c.isalpha() for c in name) and len(name) > 2 else name
-    return form_level, pretty
+    # Classes are stored/displayed UPPERCASE per school policy, so the catalogue
+    # never ends up with both "Inovatif" and "INOVATIF" as separate classes.
+    return form_level, name.upper()
 
 
 def read_upload_to_memory(file):
@@ -413,7 +414,7 @@ def commit_student_records(records):
 
     for i, rec in enumerate(records, start=1):
         try:
-            full_name = _clean(rec.get('full_name'))
+            full_name = to_caps(_clean(rec.get('full_name')))
             if not full_name:
                 errors.append(f"Row {i}: Missing name")
                 continue
@@ -424,7 +425,7 @@ def commit_student_records(records):
             except (ValueError, TypeError):
                 form_level = 1
 
-            class_group = _clean(rec.get('class_group')) or None
+            class_group = to_caps(_clean(rec.get('class_group'))) or None
             email = _clean(rec.get('email')) or None
             phone = _clean(rec.get('phone')) or None
             member_type = _clean(rec.get('member_type')) or 'Student'
@@ -484,7 +485,7 @@ def _remember_classes(imported):
     existing = {c.name.lower() for c in ClassGroup.query.all()}
     added = False
     for rec in imported:
-        name = (rec.get('class_group') or '').strip()
+        name = to_caps((rec.get('class_group') or '').strip())
         if name and name.lower() not in existing:
             db.session.add(ClassGroup(name=name, form_level=rec.get('form_level'), is_active=True))
             existing.add(name.lower())
