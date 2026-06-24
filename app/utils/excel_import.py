@@ -88,17 +88,30 @@ def _sanitize_xlsx_bytes(raw):
     return out
 
 
-def _safe_load_workbook(filepath, **kwargs):
+def _safe_load_workbook(source, **kwargs):
     """
-    Load an .xlsx workbook, transparently repairing files that openpyxl's
-    strict validation would otherwise reject. Falls back to the sanitized
-    copy only when the normal load fails.
+    Load an .xlsx workbook from a filesystem path OR an in-memory stream/bytes,
+    transparently repairing files that openpyxl's strict validation would
+    otherwise reject. Falls back to the sanitized copy only when the normal
+    load fails.
+
+    Accepting a stream lets callers parse an upload without writing it to disk,
+    which is required on read-only hosts like Vercel (only /tmp is writable).
     """
     try:
-        return openpyxl.load_workbook(filepath, **kwargs)
+        if hasattr(source, 'seek'):
+            source.seek(0)
+        return openpyxl.load_workbook(source, **kwargs)
     except Exception:
-        with open(filepath, 'rb') as fh:
-            raw = fh.read()
+        # Re-read the raw bytes from whatever we were handed (path/stream/bytes).
+        if isinstance(source, (bytes, bytearray)):
+            raw = bytes(source)
+        elif hasattr(source, 'read'):
+            source.seek(0)
+            raw = source.read()
+        else:
+            with open(source, 'rb') as fh:
+                raw = fh.read()
         patched = _sanitize_xlsx_bytes(raw)
         if patched is None:
             raise
@@ -144,6 +157,31 @@ def _parse_class_title(text):
     # Title-case alphabetic class names but leave short codes (e.g. "B") alone
     pretty = name.title() if any(c.isalpha() for c in name) and len(name) > 2 else name
     return form_level, pretty
+
+
+def read_upload_to_memory(file):
+    """
+    Validate an uploaded spreadsheet and return its contents as a BytesIO,
+    WITHOUT writing to the filesystem.
+
+    Use this for parse-then-discard flows (e.g. import preview, where the
+    actual commit is driven by the returned rows, not the file). It avoids the
+    read-only filesystem error on Vercel, where only /tmp is writable.
+    Returns (BytesIO, None) on success or (None, error_message).
+    """
+    if not file or file.filename == '':
+        return None, "No file selected"
+
+    if not allowed_file(file.filename):
+        return None, "File type not allowed. Use Excel (.xlsx, .xls) or CSV"
+
+    data = file.read()
+    if len(data) > MAX_FILE_SIZE:
+        return None, "File size exceeds 10MB limit"
+    if not data:
+        return None, "Uploaded file is empty"
+
+    return io.BytesIO(data), None
 
 
 def save_upload_file(file):

@@ -279,9 +279,14 @@ def update_staff(user_id):
         # Update fields
         if 'email' in data:
             email = data['email'].strip()
-            if User.query.filter(User.email == email, User.id != user_id).first():
-                return ApiResponse.error('Email already exists', status_code=409)
-            user.email = email
+            if email:
+                if User.query.filter(User.email == email, User.id != user_id).first():
+                    return ApiResponse.error('Email already exists', status_code=409)
+                user.email = email
+            else:
+                # Blank clears the email; store NULL so multiple operators can be
+                # email-less without colliding on an empty string.
+                user.email = None
         
         if 'full_name' in data:
             user.full_name = data['full_name'].strip() or None
@@ -558,13 +563,23 @@ def update_member(member_id):
         # Update fields
         if 'email' in data:
             email = data['email'].strip()
-            if Member.query.filter(Member.email == email, Member.id != member_id).first():
-                return ApiResponse.error('Email already exists', status_code=409)
-            member.email = email
+            if email:
+                if Member.query.filter(Member.email == email, Member.id != member_id).first():
+                    return ApiResponse.error('Email already exists', status_code=409)
+                member.email = email
+            else:
+                # Blank clears the email; store NULL so multiple members can be
+                # email-less without colliding on an empty string.
+                member.email = None
         
         if 'full_name' in data:
             member.full_name = to_caps(data['full_name'].strip()) or member.full_name
-        
+            # Keep a promoted member's operator login in sync so the
+            # Administration list (operator row) matches the member edit form.
+            op = User.query.filter_by(username=member.member_id).first()
+            if op:
+                op.full_name = member.full_name
+
         if 'phone' in data:
             member.phone = data['phone'].strip() or None
 
@@ -918,12 +933,15 @@ def import_members_preview():
         if 'file' not in request.files:
             return ApiResponse.error('No file uploaded', status_code=400)
 
-        from app.utils.excel_import import save_upload_file, parse_student_workbook, get_class_groups
-        filepath, error = save_upload_file(request.files['file'])
+        from app.utils.excel_import import read_upload_to_memory, parse_student_workbook, get_class_groups
+        # Parse in memory — never touch disk. The commit step works off the
+        # returned rows, so the file is only needed transiently here, and the
+        # serverless filesystem (Vercel) is read-only outside /tmp.
+        stream, error = read_upload_to_memory(request.files['file'])
         if error:
             return ApiResponse.error(error, status_code=400)
 
-        sheets, error = parse_student_workbook(filepath)
+        sheets, error = parse_student_workbook(stream)
         if error:
             return ApiResponse.error(error, status_code=400)
 
