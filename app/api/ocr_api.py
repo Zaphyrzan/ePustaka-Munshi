@@ -7,6 +7,7 @@ generation) by reusing its helpers. OCR *processing* requires local binaries
 on the locally-run Flask app; review/commit endpoints work anywhere.
 """
 import io
+import json
 import os
 from datetime import datetime
 
@@ -488,7 +489,7 @@ def process_job(job_id):
                 confidence_overall=row.get('confidence', 0.0),
             ))
         job.page_count = result_data.get('pages', job.page_count)
-        job.ocr_config = {'engine': engine_name, 'model': getattr(engine, 'model', None)}
+        job.ocr_config = json.dumps({'engine': engine_name, 'model': getattr(engine, 'model', None)})
         job.mark_completed()
         db.session.commit()
         return ApiResponse.success(_job_summary(job), message=f'{result_data.get("total_rows", 0)} rows extracted')
