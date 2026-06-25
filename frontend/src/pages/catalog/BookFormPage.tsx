@@ -31,6 +31,24 @@ const CURATED_CATEGORIES = [
 
 const OTHERS = 'Others'
 
+// Languages most relevant to a Malaysian school library, pinned to the top.
+const COMMON_LANGUAGES = ['Malay', 'English', 'Chinese', 'Tamil', 'Arabic', 'Japanese']
+
+// A broad set of standard world languages for everything else (alphabetical).
+const OTHER_LANGUAGES = [
+  'Afrikaans', 'Albanian', 'Amharic', 'Armenian', 'Azerbaijani', 'Basque', 'Belarusian',
+  'Bengali', 'Bosnian', 'Bulgarian', 'Burmese', 'Catalan', 'Cebuano', 'Croatian', 'Czech',
+  'Danish', 'Dutch', 'Esperanto', 'Estonian', 'Filipino', 'Finnish', 'French', 'Georgian',
+  'German', 'Greek', 'Gujarati', 'Hausa', 'Hebrew', 'Hindi', 'Hungarian', 'Icelandic',
+  'Igbo', 'Indonesian', 'Irish', 'Italian', 'Javanese', 'Kannada', 'Kazakh', 'Khmer',
+  'Korean', 'Kurdish', 'Lao', 'Latin', 'Latvian', 'Lithuanian', 'Macedonian', 'Malagasy',
+  'Malayalam', 'Maltese', 'Marathi', 'Mongolian', 'Nepali', 'Norwegian', 'Pashto',
+  'Persian', 'Polish', 'Portuguese', 'Punjabi', 'Romanian', 'Russian', 'Serbian', 'Sinhala',
+  'Slovak', 'Slovenian', 'Somali', 'Spanish', 'Swahili', 'Swedish', 'Tagalog', 'Telugu',
+  'Thai', 'Tibetan', 'Turkish', 'Turkmen', 'Ukrainian', 'Urdu', 'Uzbek', 'Vietnamese',
+  'Welsh', 'Yiddish', 'Yoruba', 'Zulu',
+]
+
 const EMPTY = {
   title: '',
   author: '',
@@ -217,11 +235,25 @@ export default function BookFormPage() {
               value={form.language}
               onChange={(e) => setForm({ ...form, language: e.target.value })}
             >
-              {['Malay', 'English', 'Chinese', 'Tamil', 'Arabic'].map((l) => (
-                <option key={l} value={l}>
-                  {l}
-                </option>
-              ))}
+              {/* Preserve an existing value that isn't in our lists. */}
+              {form.language &&
+                ![...COMMON_LANGUAGES, ...OTHER_LANGUAGES].includes(form.language) && (
+                  <option value={form.language}>{form.language}</option>
+                )}
+              <optgroup label="Common">
+                {COMMON_LANGUAGES.map((l) => (
+                  <option key={l} value={l}>
+                    {l}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Other languages">
+                {OTHER_LANGUAGES.map((l) => (
+                  <option key={l} value={l}>
+                    {l}
+                  </option>
+                ))}
+              </optgroup>
             </select>
           </div>
           {field('Price (RM)', 'price', { type: 'number', step: '0.01', min: 0 })}
