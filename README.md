@@ -1,167 +1,120 @@
-# 📚 ePustaka Munshi — Smart Library System with AI Ledger Digitization
+# ePustaka Munshi
 
-> A full-stack library management system that replaces a Malaysian secondary school's **decades-old handwritten paper ledger** with a searchable digital catalogue — using a **vision LLM to read the handwriting** that traditional OCR couldn't.
+A web-based library management system for a Malaysian secondary school (SMK Abdullah Munshi). It replaces the school's handwritten paper ledger with a searchable digital catalogue, and uses a vision language model to read the old handwritten records that normal OCR couldn't handle.
 
-<p>
-  <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white">
-  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white">
-  <img alt="Flask" src="https://img.shields.io/badge/Flask-3-000000?logo=flask&logoColor=white">
-  <img alt="PostgreSQL" src="https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white">
-  <img alt="Claude" src="https://img.shields.io/badge/AI-Claude%20Vision-D97757?logo=anthropic&logoColor=white">
-  <img alt="Vercel" src="https://img.shields.io/badge/Deployed-Vercel-000000?logo=vercel&logoColor=white">
-</p>
+**Live demo:** https://epustaka-munshi.vercel.app
 
-**🔗 Live demo:** https://epustaka-munshi.vercel.app
-**🎓 Final Year Project** — B.Sc. (Hons) Software Engineering, Universiti Teknologi Malaysia (UTM)
-**🏫 Client:** SMK Abdullah Munshi (school library), in collaboration with the school librarian.
+Built as my Final Year Project for the B.Sc. (Hons) Software Engineering programme at Universiti Teknologi Malaysia (UTM), in collaboration with the school librarian.
 
-<!-- 📸 Add screenshots here (login · dashboard · OCR review · circulation) for the strongest first impression. -->
+<!-- Screenshots go here (login, dashboard, OCR review, circulation). -->
 
----
+## The problem
 
-## 📖 Table of Contents
+For years the school library recorded every book it acquired by hand, in a physical register called the *Daftar Buku-Buku Perpustakaan*. Borrowing and returning were tracked on paper too.
 
-- [The Problem](#-the-problem-statement)
-- [Objectives](#-project-objectives)
-- [Scope](#-project-scope)
-- [What It Does](#-what-it-does)
-- [The AI/OCR Pipeline](#-the-aiocr-pipeline-the-novel-contribution)
-- [System Architecture](#-system-architecture)
-- [Tech Stack](#-tech-stack)
-- [The Malaysian Ledger Format](#-the-malaysian-ledger-format)
-- [Role-Based Access](#-role-based-access)
-- [Engineering Highlights](#-engineering-highlights)
-- [Run It Locally](#-run-it-locally)
-- [Project Structure](#-project-structure)
-- [Roadmap](#-roadmap--future-work)
+That created a few problems that kept getting worse over time:
 
----
+- You can't search a paper ledger. Checking whether the library owns a title, or how many copies exist, means flipping through pages.
+- Years of acquisition data (titles, authors, prices, sources) sit in a book that no system can query or report on.
+- Paper is fragile. Fading ink, water damage or a lost page can wipe out the only record of a book.
+- Manual transcription is slow and inconsistent, so the same class or name ends up spelled several different ways.
+- Staff have no easy view of active loans, overdue books or borrowing trends.
 
-## 🎯 The Problem Statement
+The hard part isn't building a database. It's that the ledger is full of decades-old cursive handwriting that off-the-shelf OCR engines can't read accurately.
 
-For decades, SMK Abdullah Munshi's library recorded every acquired book by hand in a physical register — the *Daftar Buku-Buku Perpustakaan* ("library book ledger"). Borrowing and returning were tracked the same way: on paper.
+So the question the project tries to answer is: how do you turn a fragile, unsearchable, handwritten library ledger into a reliable digital system that a school can actually use day to day?
 
-This manual approach created real, compounding problems:
+## Objectives
 
-- **Records can't be searched.** Finding whether the library owns a title, or which copies exist, means flipping through handwritten pages.
-- **History is locked away.** Years of acquisition data — titles, authors, prices, sources — sit in a ledger that no system can query, report on, or analyse.
-- **Paper is fragile.** A single book is a single point of failure: fading ink, water damage, or a lost page erases the only copy of that record.
-- **Cataloguing is slow and error-prone.** Manual transcription is laborious and inconsistent (the same class or name spelled different ways), making the records unreliable.
-- **No operational visibility.** Staff can't easily see active loans, overdue books, or borrowing trends.
+1. To analyze and design a library management system that addresses issues in manual record-keeping, book cataloguing, and borrowing activities.
+2. To develop a web-based library management system integrated with OCR to digitize handwritten ledger records into a centralized database, and to implement barcode-based borrowing and returning with role-based access for librarians and library prefects.
+3. To evaluate the system's functionality, accuracy, and usability through testing and feedback from library staff and students.
 
-The hardest part of the digitization isn't building a database — it's that the ledger is filled with **decades-old cursive handwriting** that off-the-shelf OCR engines simply cannot read accurately.
+## Scope
 
-> **In one line:** *How do you turn a fragile, unsearchable, handwritten library ledger into a reliable, centralized digital system that a school can actually use every day?*
+- Modules for book management, student records, borrowing and returning transactions, and OCR digitization.
+- Runs in a normal web browser, deployed on Vercel, with Supabase (PostgreSQL) as the backend and React for the interface, so it works on existing school computers with nothing to install.
+- OCR is used specifically to digitize the existing handwritten ledger records into the catalogue.
 
----
+## Features
 
-## ✅ Project Objectives
-
-1. **To analyze and design** a library management system that addresses issues in manual record-keeping, book cataloguing, and borrowing activities.
-2. **To develop** a web-based library management system integrated with **OCR to digitize handwritten ledger records** into a centralized database, and to implement **barcode-based borrowing and returning** with **role-based access** for librarians and library prefects.
-3. **To evaluate** the system's functionality, accuracy, and usability through testing and feedback from library staff and students.
-
-## 🧭 Project Scope
-
-- Modules for **book management, student records, borrowing & returning transactions, and OCR digitization**.
-- Accessible through standard **web browsers**, deployed on **Vercel**, with **Supabase (PostgreSQL)** as the backend and **React** for the interface — usable on existing school computers with no installation.
-- OCR is used specifically to **digitize the existing handwritten ledger records** into the catalogue.
-
----
-
-## ✨ What It Does
-
-| Module | Description |
+| Module | What it does |
 |---|---|
-| 📕 **Catalogue & Inventory** | Books with multiple physical copies — each tracked by accession number, barcode, status, condition, and shelf location. Barcode label printing built in. |
-| 🔄 **Circulation** | Barcode checkout/return with two-step verification, 7-day loans with one renewal, date-based overdue tracking, and full loan history showing the staff handler. |
-| 👥 **Members & Roles** | Borrowers (Student / Staff / External) and operators (Administrator / Librarian / Library Prefect). Students can be **promoted to Library Prefect** and demoted back, keeping their student portal. |
-| 🤖 **Ledger OCR** | Upload a scanned ledger page → a vision LLM extracts structured fields with **per-row confidence scores** → staff verify each row against the source scan → commit to the catalogue. **Over 2,700 rows extracted from a 139-page ledger.** |
-| 🏆 **NILAM Leaderboard** | Tracks the Malaysian *NILAM* reading programme — top students, classes, and forms by books read. |
-| 📥 **Bulk Student Import** | Imports class rosters straight from the school's Excel files (one sheet per class) — parsed entirely in memory. |
-| 🌐 **Bilingual UI** | Full English / Bahasa Melayu interface (i18next). |
+| Catalogue and inventory | Books with multiple physical copies, each tracked by accession number, barcode, status, condition and shelf location. Barcode label printing included. |
+| Circulation | Barcode checkout and return with two-step verification, 7-day loans with one renewal, date-based overdue tracking, and loan history showing which staff handled it. |
+| Members and roles | Borrowers (Student, Staff, External) and operators (Administrator, Librarian, Library Prefect). A student can be promoted to Library Prefect and demoted back, keeping their student portal. |
+| Ledger OCR | Upload a scanned ledger page, the vision model extracts structured fields with a confidence score per row, staff verify each row against the source scan, then commit it to the catalogue. Over 2,700 rows were extracted from a 139-page ledger. |
+| NILAM leaderboard | Tracks the Malaysian NILAM reading programme (top students, classes and forms by books read). |
+| Student import | Imports class rosters straight from the school's Excel files (one sheet per class), parsed in memory. |
+| Bilingual UI | Full English and Bahasa Melayu interface (i18next). |
 
----
+## How the OCR works
 
-## 🤖 The AI/OCR Pipeline (the novel contribution)
+This is the main idea of the project. I tested traditional OCR (Tesseract) first, and it could not read the old cursive handwriting reliably. So the system uses Anthropic's Claude vision model as the primary OCR engine, and keeps Tesseract as a baseline for comparison and for detecting page orientation.
 
-The academic and technical core of the project. Traditional OCR (**Tesseract**) was tested first and **could not reliably read the decades-old cursive handwriting**. The solution uses a **multimodal large language model — Anthropic's Claude Vision — as the primary OCR engine**, with Tesseract kept as a research baseline and for page-orientation detection.
+A vision model works better here for a few reasons:
 
-Why a vision LLM wins here:
-
-- It reads **cursive, smudged, rotated, and inconsistent handwriting** far better than classical OCR.
-- Via **tool-calling**, the model returns **guaranteed-structured JSON** — each ledger column mapped to a typed field — instead of a blob of text that would need brittle regex parsing.
-- It emits a **confidence score per row**, so low-confidence extractions are automatically flagged for human review.
+- It handles cursive, smudged and rotated handwriting much better than classical OCR.
+- Using tool-calling, it returns structured JSON with each ledger column mapped to a typed field, instead of a block of text that would need fragile regex parsing.
+- It gives a confidence score per row, so low-confidence extractions get flagged for review.
 
 ```mermaid
 flowchart LR
-    A[📄 Scanned ledger page<br/>PDF / image] --> B[Auto-rotate<br/>Tesseract orientation]
+    A[Scanned ledger page] --> B[Auto-rotate]
     B --> C{OCR engine}
-    C -->|primary| D[🧠 Claude Vision<br/>tool-call → structured JSON]
-    C -->|baseline| E[Tesseract<br/>research comparison]
-    D --> F[(Staged rows<br/>+ confidence scores)]
+    C -->|primary| D[Claude Vision, structured JSON]
+    C -->|baseline| E[Tesseract]
+    D --> F[(Staged rows + confidence)]
     E --> F
-    F --> G[👁️ Human review<br/>verify against source scan]
-    G --> H[(✅ Committed to<br/>book catalogue)]
+    F --> G[Human review against the scan]
+    G --> H[(Committed to catalogue)]
 ```
 
-**Human-in-the-loop by design:** the AI never writes to the catalogue directly. Extracted rows are *staged*; a librarian verifies each one against the original scan before committing — accuracy where it matters, speed where it doesn't.
+The AI never writes to the catalogue on its own. Extracted rows are staged, and a librarian checks each one against the original scan before committing. Accuracy where it matters, speed where it doesn't.
 
-**Compute/serving split:** OCR processing runs on a **local scanning station** (it needs the native imaging libraries and the API key), then the verified records **sync to Supabase**, which the Vercel web app serves to the whole school. Heavy compute stays local; the lightweight review-and-commit step works anywhere.
+OCR processing runs on a local machine because it needs the native imaging libraries and the API key. The verified records then sync to Supabase, which the deployed web app serves to the whole school. The heavy work stays local, and the review-and-commit step works from anywhere.
 
----
+## Architecture
 
-## 🏗️ System Architecture
-
-A three-tier application deployed as a **single hybrid Vercel project** — one deployment serves both the React SPA and the Flask REST API.
+Three tiers, deployed as a single Vercel project that serves both the React app and the Flask API.
 
 ```mermaid
 flowchart TB
-    subgraph Client["🖥️ Browser (school computers)"]
-        UI[React 19 SPA<br/>TypeScript · Vite · TanStack Query]
+    subgraph Client[Browser]
+        UI[React SPA]
     end
-
-    subgraph Vercel["☁️ Vercel (single deployment)"]
+    subgraph Vercel[Vercel]
         SPA[Static React build]
-        API[Flask REST API<br/>serverless function]
+        API[Flask REST API as a serverless function]
     end
-
-    subgraph Data["🗄️ Supabase"]
+    subgraph Data[Supabase]
         DB[(PostgreSQL)]
     end
-
-    subgraph Local["🏠 Local scanning station"]
-        OCR[OCR pipeline<br/>Claude Vision + Tesseract + Poppler]
+    subgraph Local[Local scanning station]
+        OCR[Claude Vision + Tesseract + Poppler]
     end
-
-    UI -->|HTTPS / JSON| API
+    UI -->|JSON over HTTPS| API
     SPA --> UI
     API -->|SQLAlchemy / psycopg3| DB
-    OCR -->|extracted records sync| DB
-    OCR -.->|reads| Ledger[📚 Handwritten ledger scans]
+    OCR -->|records sync| DB
 ```
 
-- **Role-based access is enforced server-side** in the Flask API (permission flags), never trusted to the client.
-- **Overdue status is computed by date** (`due_date < now`), not a stored flag — so it's always correct without a cron job.
+Role-based access is enforced in the Flask API, not in the client. Overdue status is worked out by date (`due_date < now`) rather than stored as a flag, so it's always correct without a scheduled job.
 
----
+## Tech stack
 
-## 🛠️ Tech Stack
-
-| Layer | Technologies |
+| Layer | Tools |
 |---|---|
-| **Frontend** | React 19, TypeScript, Vite 5, TanStack Query (React Query) 5, React Router 7, i18next, Bootstrap 5 |
-| **Backend** | Flask 3, SQLAlchemy 2, Flask-Login, Flask-CORS |
-| **Database** | Supabase (PostgreSQL) via psycopg 3; SQLite for local dev |
-| **AI / OCR** | Anthropic Claude Vision (`claude-haiku-4-5`, configurable) · Tesseract + Poppler (baseline) |
-| **Tooling** | python-barcode, openpyxl (Excel import), pdf2image |
-| **Deployment** | Vercel (hybrid: static SPA + Python serverless function) |
+| Frontend | React 19, TypeScript, Vite, TanStack Query, React Router, i18next, Bootstrap 5 |
+| Backend | Flask 3, SQLAlchemy 2, Flask-Login, Flask-CORS |
+| Database | Supabase (PostgreSQL) via psycopg 3, SQLite for local dev |
+| AI / OCR | Anthropic Claude Vision (configurable model), Tesseract + Poppler baseline |
+| Other | python-barcode, openpyxl (Excel import), pdf2image |
+| Deployment | Vercel (static SPA plus Python serverless function) |
 
----
+## The ledger format
 
-## 🗂️ The Malaysian Ledger Format
-
-The OCR maps each row of the physical *Daftar Bahan Bacaan* to a structured record, preserving the original Malaysian library schema:
+The OCR maps each row of the physical *Daftar Bahan Bacaan* to a structured record, keeping the original Malaysian library fields:
 
 | Field (BM) | Meaning |
 |---|---|
@@ -169,101 +122,84 @@ The OCR maps each row of the physical *Daftar Bahan Bacaan* to a structured reco
 | No. Panggilan | Call number |
 | Pengarang | Author |
 | Tajuk Buku | Book title |
-| Penerbit | Publisher (place & name) |
+| Penerbit | Publisher |
 | Tarikh Penerbit | Publication year |
 | Tarikh Perolehan | Acquisition date |
 | Bil. No. | Bill number |
 | Punca | Source / origin |
 | Harga | Price (RM) |
 | Muka Surat | Page count |
-| Catatan | Notes / remarks |
+| Catatan | Notes |
 
-Committed rows are archived in a `digitized_ledger` table for full scan-to-book traceability, then linked to catalogue `Book` + `BookCopy` entries with standardized accession numbers and barcodes.
+Committed rows are archived in a `digitized_ledger` table for traceability back to the original scan, then linked to catalogue `Book` and `BookCopy` entries with standardized accession numbers and barcodes.
 
----
+## Roles
 
-## 🔐 Role-Based Access
-
-| Role | Capabilities |
+| Role | Access |
 |---|---|
-| **Administrator** | Full access — users, catalogue, circulation, OCR digitization, settings. |
-| **Librarian** | Catalogue, circulation, OCR digitization, member management. |
-| **Library Prefect** | A promoted student: catalogue + circulation tools **plus** their normal student portal (search, my loans, NILAM leaderboard). |
-| **Student** | Search the catalogue, view their own loans and overdue status, track NILAM reading progress. |
+| Administrator | Everything: users, catalogue, circulation, OCR, settings. |
+| Librarian | Catalogue, circulation, OCR, member management. |
+| Library Prefect | A promoted student: catalogue and circulation tools plus their normal student portal. |
+| Student | Search the catalogue, view their own loans and overdue status, track NILAM progress. |
 
----
+## Some implementation notes
 
-## 💡 Engineering Highlights
+A few decisions that came out of real constraints while building it:
 
-Decisions that show how the system handles real-world constraints:
+- The vision model returns typed JSON per column through tool-calling, so there's no fragile text parsing and the schema stays consistent.
+- The 139-page ledger is processed page by page with a commit after each page, so an interrupted run resumes where it stopped instead of restarting the whole document.
+- One Vercel project serves both the static React build and the Flask API as a serverless function, sharing a single origin in production.
+- Vercel's serverless filesystem is read-only, so Excel imports are parsed in memory instead of writing temp files. OCR source files only live on the local station that needs them.
+- Removed some N+1 query patterns that were the real cause of slow list pages, and added pagination on the heavy tables.
+- Class names are normalized to uppercase on the server so the catalogue doesn't end up with `Inovatif` and `INOVATIF` as two different classes, and blank fields are stored as NULL to avoid false uniqueness clashes.
 
-- **Vision tool-calling for structured output** — the LLM returns typed JSON per ledger column via tool-calling, eliminating fragile text parsing and guaranteeing a consistent schema.
-- **Resumable batch digitization** — a 139-page ledger is processed page-by-page with a per-page commit, so an interrupted run resumes exactly where it stopped instead of restarting (and re-paying for) the whole document.
-- **Hybrid serverless deployment** — one Vercel project serves the static React SPA *and* the Flask API as a serverless function, sharing a single origin in production.
-- **Read-only filesystem aware** — Vercel's serverless filesystem is read-only, so Excel imports are parsed **entirely in memory** (no temp files), while OCR source files persist only on the local station that needs them.
-- **Performance** — eliminated N+1 query patterns that were the real source of list-page lag, and added pagination across heavy tables.
-- **Data integrity** — server-side normalization (e.g. uppercase class names) prevents duplicate-by-casing records like `Inovatif` vs `INOVATIF`; blank fields are stored as `NULL` to avoid false uniqueness collisions.
-- **Bilingual from the ground up** — every UI string is keyed through i18next (English / Bahasa Melayu).
+## Running it locally
 
----
-
-## 🚀 Run It Locally
-
-**Backend** (Python 3.10+):
+Backend (Python 3.10+):
 
 ```bash
 pip install -r requirements.txt
-python scripts/run_local_sqlite.py      # serves the API on a local SQLite DB (port 5000)
+python scripts/run_local_sqlite.py
 ```
 
-**Frontend** (Node 18+):
+Frontend (Node 18+):
 
 ```bash
 cd frontend
 npm install
-npm run dev                             # http://localhost:5173
+npm run dev
 ```
 
-**OCR digitization** (optional — needs an Anthropic API key and the OCR extras):
+OCR digitization is optional and needs an Anthropic API key plus the OCR extras and native binaries:
 
 ```bash
-pip install -r requirements-ocr.txt     # pytesseract, pdf2image, anthropic
-# also install the Tesseract and Poppler native binaries
-# then set ANTHROPIC_API_KEY in a .env file
+pip install -r requirements-ocr.txt
+# install the Tesseract and Poppler binaries, then set ANTHROPIC_API_KEY in a .env file
 ```
 
-> OCR processing runs on a local station (it needs the native imaging libraries); the verified records sync to Supabase, which the deployed web app serves to everyone.
-
----
-
-## 📁 Project Structure
+## Project structure
 
 ```
 app/
   models/      SQLAlchemy models (catalog, circulation, members, users, OCR)
   api/         REST API blueprints (auth, catalog, circulation, users, student, OCR)
-  services/    OCR engines — vision_ocr_service (Claude), ocr_service (Tesseract)
+  services/    OCR engines: vision_ocr_service (Claude), ocr_service (Tesseract)
   utils/       Excel import, barcode, serializers, text formatting
-frontend/      React + TypeScript SPA (Vite)
-scripts/       local runners + batch OCR CLI + maintenance scripts
+frontend/      React + TypeScript app (Vite)
+scripts/       local runners, batch OCR CLI, maintenance scripts
 api/           Vercel serverless entry point
 config.py      environment-aware configuration
 ```
 
----
+## Future work
 
-## 🔭 Roadmap / Future Work
+- Email or push reminders for due-soon and overdue loans.
+- A cloud-hosted OCR option so digitization isn't tied to one local machine.
+- Reporting and analytics (borrowing trends, popular titles, overdue rates by class).
+- Syncing student records from the school registry to remove the manual Excel import.
 
-- **Automated notifications** — email/push reminders for due-soon and overdue loans.
-- **Cloud-hosted OCR** — a lightweight pipeline so digitization isn't tied to one local station.
-- **Reporting & analytics** — borrowing trends, popular titles, overdue rates by class.
-- **School registry integration** — auto-sync student records to remove the manual Excel import.
+## Author
 
----
-
-## 👤 Author
-
-**Wan Zafirzan** — B.Sc. (Hons) Software Engineering, Universiti Teknologi Malaysia
-GitHub: [@Zaphyrzan](https://github.com/Zaphyrzan) · Live demo: [epustaka-munshi.vercel.app](https://epustaka-munshi.vercel.app)
-
-> Built as a Final Year Project to give a real Malaysian school library a system it can use every day — and to digitize a piece of its history that was at risk of being lost to time.
+Wan Zafirzan Bin Wan Tarmizan
+B.Sc. (Hons) Software Engineering, Universiti Teknologi Malaysia
+GitHub: [@Zaphyrzan](https://github.com/Zaphyrzan) · LinkedIn: [zaphyrzan](https://www.linkedin.com/in/zaphyrzan)
