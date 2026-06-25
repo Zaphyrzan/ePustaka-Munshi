@@ -212,13 +212,20 @@ export default function OcrJobsPage() {
                   <td className="text-center">{job.committed_count}</td>
                   <td className="text-end">
                     {(job.status === 'pending' || job.status === 'failed') && (
-                      <button
-                        className="btn btn-primary btn-sm me-1"
-                        onClick={() => process.mutate(job.id)}
-                        disabled={process.isPending}
-                      >
-                        {process.isPending ? 'Processing…' : 'Process'}
-                      </button>
+                      <>
+                        <Link to={`/ocr/${job.id}`} className="btn btn-outline-primary btn-sm me-1">
+                          {t('preview')}
+                        </Link>
+                        <button
+                          className="btn btn-primary btn-sm me-1"
+                          onClick={() => process.mutate(job.id)}
+                          // Disable every Process button while one job runs (OCR is
+                          // synchronous), but only the clicked row shows "Processing…".
+                          disabled={process.isPending}
+                        >
+                          {process.isPending && process.variables === job.id ? 'Processing…' : 'Process'}
+                        </button>
+                      </>
                     )}
                     {job.result_count > 0 && (
                       <Link to={`/ocr/${job.id}`} className="btn btn-success btn-sm me-1">

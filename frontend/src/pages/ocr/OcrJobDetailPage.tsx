@@ -2,8 +2,17 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { api, unwrap, type Paginated } from '../../api/client'
+import { api, unwrap, API_BASE, type Paginated } from '../../api/client'
 import type { OcrJob } from './OcrJobsPage'
+
+const STATUS_BADGE: Record<string, string> = {
+  pending: 'bg-secondary',
+  processing: 'bg-primary',
+  completed: 'bg-success',
+  reviewed: 'bg-info text-dark',
+  committed: 'bg-dark',
+  failed: 'bg-danger',
+}
 
 interface RecordRow {
   id: number
@@ -42,11 +51,28 @@ export default function OcrJobDetailPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
+  const [engine, setEngine] = useState<'vision' | 'tesseract'>('vision')
+  const [imgError, setImgError] = useState(false)
+  const [msg, setMsg] = useState<{ kind: 'success' | 'danger'; text: string } | null>(null)
 
   const { data: job } = useQuery({
     queryKey: ['ocr-job', jobId],
     queryFn: () => unwrap<OcrJob>(api.get(`/api/ocr/jobs/${jobId}`)),
   })
+
+  const process = useMutation({
+    mutationFn: () =>
+      unwrap(api.post(`/api/ocr/jobs/${jobId}/process`, { engine }, { timeout: 600_000 })),
+    onSuccess: () => {
+      setMsg({ kind: 'success', text: t('ocrReviewResults') })
+      queryClient.invalidateQueries({ queryKey: ['ocr-job', jobId] })
+      queryClient.invalidateQueries({ queryKey: ['ocr-results', jobId] })
+      queryClient.invalidateQueries({ queryKey: ['ocr-jobs'] })
+    },
+    onError: (err) => setMsg({ kind: 'danger', text: err instanceof Error ? err.message : t('error') }),
+  })
+
+  const isPending = job?.status === 'pending' || job?.status === 'failed'
 
   const { data, isLoading } = useQuery({
     queryKey: ['ocr-results', jobId, page, ''],
@@ -73,12 +99,66 @@ export default function OcrJobDetailPage() {
       <h4 className="mb-3">{t('ocrJobDetails')}</h4>
       <div className="row g-4">
         <div className="col-lg-8">
+          {msg && <div className={`alert alert-${msg.kind} py-2`}>{msg.text}</div>}
+
+          {/* Source scan preview — inspect the page before processing it */}
+          <div className="card shadow-sm mb-4">
+            <div className="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <h6 className="mb-0">
+                <i className="bi bi-card-image me-2" />
+                {t('ocrSourceScan')}
+              </h6>
+              {isPending && (
+                <div className="d-flex gap-2 align-items-center">
+                  <select
+                    className="form-select form-select-sm"
+                    style={{ width: 'auto' }}
+                    value={engine}
+                    onChange={(e) => setEngine(e.target.value as 'vision' | 'tesseract')}
+                  >
+                    <option value="vision">Claude Vision (AI)</option>
+                    <option value="tesseract">Tesseract (baseline)</option>
+                  </select>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => {
+                      setMsg(null)
+                      process.mutate()
+                    }}
+                    disabled={process.isPending}
+                  >
+                    <i className="bi bi-cpu me-1" />
+                    {process.isPending ? 'Processing…' : t('processNow')}
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="card-body text-center p-2" style={{ maxHeight: 480, overflow: 'auto' }}>
+              {isPending && <p className="small text-muted mb-2">{t('ocrPreviewHint')}</p>}
+              {imgError ? (
+                <div className="text-muted small py-4">
+                  <i className="bi bi-exclamation-circle me-1" />
+                  {t('ocrScanLocalOnly')}
+                </div>
+              ) : (
+                <img
+                  src={`${API_BASE}/api/ocr/jobs/${jobId}/page/1`}
+                  alt="Scanned source page 1"
+                  className="img-fluid border rounded"
+                  onError={() => setImgError(true)}
+                />
+              )}
+            </div>
+          </div>
+
           {/* Job info */}
           <div className="card shadow-sm mb-4">
             <div className="card-body">
               <div className="d-flex justify-content-between align-items-start mb-3">
                 <h5 className="mb-0">{job?.job_name || `Job ${jobId}`}</h5>
-                <span className="badge bg-success text-uppercase">{job?.status || '—'}</span>
+                <span className={`badge text-uppercase ${STATUS_BADGE[job?.status || ''] || 'bg-secondary'}`}>
+                  {job?.status || '—'}
+                </span>
               </div>
               <table className="table table-sm mb-3">
                 <tbody>
